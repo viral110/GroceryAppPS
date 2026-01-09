@@ -13,7 +13,6 @@ class AuthServices {
   final FirebaseAuth firebaseAuth = FirebaseAuth.instance;
   final FirebaseFirestore firestore = FirebaseFirestore.instance;
 
-
   Future<UserModel?> _handleUserLogin(UserCredential credential) async {
     try {
       final firebaseUser = credential.user;
@@ -40,9 +39,9 @@ class AuthServices {
           createdAt: DateTime.now(),
         );
 
-        if(kIsWeb){
+        if (kIsWeb) {
           await UserService().setAdminUserinDb(user);
-        }else{
+        } else {
           await UserService().setUserinDb(user);
         }
       }
@@ -68,8 +67,10 @@ class AuthServices {
       'email-already-in-use': 'The account already exists for that email.',
       'weak-password': 'The password provided is too weak.',
     };
-    CommonToast.show(errorMessages[e.code] ?? 'An unexpected error occurred: ${e.message}',type: ToastType.error);
-
+    CommonToast.show(
+      errorMessages[e.code] ?? 'An unexpected error occurred: ${e.message}',
+      type: ToastType.error,
+    );
   }
 
   /// 🔹 Sign Up with Email & Password
@@ -78,11 +79,11 @@ class AuthServices {
     required String password,
   }) async {
     try {
-      UserCredential credential =
-          await firebaseAuth.createUserWithEmailAndPassword(
-        email: user.email!,
-        password: password,
-      );
+      UserCredential credential = await firebaseAuth
+          .createUserWithEmailAndPassword(
+            email: user.email!,
+            password: password,
+          );
 
       user.uid = credential.user!.uid;
       await UserService().setAdminUserinDb(user);
@@ -90,10 +91,10 @@ class AuthServices {
     } on FirebaseAuthException catch (e) {
       _handleAuthError(e);
       return false;
-    } catch (e,s) {
+    } catch (e, s) {
       log("Error during sign-up: $e");
       log("Error during sign-up: $s");
-      CommonToast.show("An unexpected error occurred.",type: ToastType.error);
+      CommonToast.show("An unexpected error occurred.", type: ToastType.error);
 
       return false;
     }
@@ -101,7 +102,9 @@ class AuthServices {
 
   /// 🔹 Sign In with Email & Password
   Future<UserModel?> signInWithEmailAndPassword(
-      String email, String password) async {
+    String email,
+    String password,
+  ) async {
     try {
       UserCredential credential = await firebaseAuth.signInWithEmailAndPassword(
         email: email,
@@ -123,7 +126,7 @@ class AuthServices {
   Future<bool> sendPasswordResetEmail(String email) async {
     try {
       await firebaseAuth.sendPasswordResetEmail(email: email);
-      CommonToast.show("Password reset email sent. Please check your inbox.",type: ToastType.success);
+      // CommonToast.show("Password reset email sent. Please check your inbox.",type: ToastType.success);
       return true;
     } on FirebaseAuthException catch (e) {
       _handleAuthError(e);

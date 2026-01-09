@@ -355,6 +355,7 @@ import 'package:image_picker/image_picker.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/features/admin/settings/view/manage_category.dart';
+import 'package:online_groceries_app/models/category_model.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 
 class AdminProductController extends GetxController {
@@ -411,17 +412,17 @@ class AdminProductController extends GetxController {
     try {
       isCategoryLoading.value = true;
 
-      final snapshot =
-      await FirebaseFirestore.instance.collection(AppConstantStrings.categoryCollection).get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection(AppConstantStrings.categoryCollection)
+          .get();
 
       categories.value = snapshot.docs
-          .map((doc) => CategoryModel.fromDoc(doc.data(), doc.id))
+          .map((doc) => CategoryModel.fromSnapshot(doc.id, doc.data()))
           .toList();
-    } catch (e,s) {
-      print(e,);
+    } catch (e, s) {
+      print(e);
       print(s);
-      CommonToast.show("Failed to load categories",
-          type: ToastType.error);
+      CommonToast.show("Failed to load categories", type: ToastType.error);
     } finally {
       isCategoryLoading.value = false;
     }
@@ -448,8 +449,7 @@ class AdminProductController extends GetxController {
   }
 
   Future<void> pickThumbnail() async {
-    final XFile? image =
-    await picker.pickImage(source: ImageSource.gallery);
+    final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
 
     if (kIsWeb) {
@@ -467,10 +467,7 @@ class AdminProductController extends GetxController {
     thumbnailUrl.value = '';
   }
 
-  void removeProductImage({
-    required bool isOld,
-    required int index,
-  }) {
+  void removeProductImage({required bool isOld, required int index}) {
     if (isOld) {
       final url = productImageUrls[index];
       productImageUrls.removeAt(index);
@@ -484,14 +481,13 @@ class AdminProductController extends GetxController {
     }
   }
 
-
-
   Future<void> pickProductImages() async {
     final images = await picker.pickMultiImage();
     if (images.isEmpty) return;
 
     final remaining =
-        3 - (productImageUrls.length +
+        3 -
+        (productImageUrls.length +
             (kIsWeb ? productImagesBytes.length : productImages.length));
 
     for (int i = 0; i < images.length && i < remaining; i++) {
@@ -523,9 +519,9 @@ class AdminProductController extends GetxController {
       debugPrint("Image delete failed: $e");
     }
   }
+
   Future<void> replaceProductImage(int index) async {
-    final image =
-    await picker.pickImage(source: ImageSource.gallery);
+    final image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
 
     if (kIsWeb) {
@@ -557,15 +553,15 @@ class AdminProductController extends GetxController {
     /// THUMBNAIL VALIDATION
     final hasThumbnail = isEdit.value
         ? thumbnailUrl.value.isNotEmpty ||
-        thumbnailBytes.value != null ||
-        thumbnailFile.value != null
-        : (kIsWeb
-        ? thumbnailBytes.value != null
-        : thumbnailFile.value != null);
+              thumbnailBytes.value != null ||
+              thumbnailFile.value != null
+        : (kIsWeb ? thumbnailBytes.value != null : thumbnailFile.value != null);
 
     if (!hasThumbnail) {
-      CommonToast.show("Please select thumbnail image",
-          type: ToastType.warning);
+      CommonToast.show(
+        "Please select thumbnail image",
+        type: ToastType.warning,
+      );
       return;
     }
 
@@ -577,8 +573,10 @@ class AdminProductController extends GetxController {
         selectedCategory.value.isEmpty ||
         selectedUnit.value.isEmpty ||
         packagingList.isEmpty) {
-      CommonToast.show("Please fill all required fields",
-          type: ToastType.warning);
+      CommonToast.show(
+        "Please fill all required fields",
+        type: ToastType.warning,
+      );
       return;
     }
 
@@ -590,8 +588,7 @@ class AdminProductController extends GetxController {
           .doc(isEdit.value ? productId : null);
 
       /// THUMBNAIL UPLOAD (ONLY IF CHANGED)
-      if (thumbnailBytes.value != null ||
-          thumbnailFile.value != null) {
+      if (thumbnailBytes.value != null || thumbnailFile.value != null) {
         thumbnailUrl.value = await _uploadImage(
           file: thumbnailFile.value,
           bytes: thumbnailBytes.value,
@@ -603,12 +600,9 @@ class AdminProductController extends GetxController {
       /// UPLOAD ONLY NEW IMAGES
       if ((kIsWeb && productImagesBytes.isNotEmpty) ||
           (!kIsWeb && productImages.isNotEmpty)) {
-
         final startIndex = productImageUrls.length;
 
-        final count = kIsWeb
-            ? productImagesBytes.length
-            : productImages.length;
+        final count = kIsWeb ? productImagesBytes.length : productImages.length;
 
         for (int i = 0; i < count; i++) {
           final url = await _uploadImage(
@@ -622,7 +616,6 @@ class AdminProductController extends GetxController {
         productImages.clear();
         productImagesBytes.clear();
       }
-
 
       final product = ProductModel(
         id: doc.id,
@@ -661,7 +654,6 @@ class AdminProductController extends GetxController {
       isLoading.value = false;
     }
   }
-
 
   void addPackaging() {
     final value = packagingController.text.trim();

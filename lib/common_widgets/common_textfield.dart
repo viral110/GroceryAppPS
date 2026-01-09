@@ -10,7 +10,8 @@ class CommonTextField extends StatelessWidget {
   final bool obscureText;
   final VoidCallback? onToggle;
   final TextInputType keyboardType;
-  final int? maxLines ;
+  final int? maxLines;
+  final bool isReadOnly;
 
   const CommonTextField({
     super.key,
@@ -20,7 +21,9 @@ class CommonTextField extends StatelessWidget {
     this.isPassword = false,
     this.obscureText = false,
     this.onToggle,
-    this.keyboardType = TextInputType.text, this.maxLines,
+    this.keyboardType = TextInputType.text,
+    this.maxLines,
+    this.isReadOnly = false,
   });
 
   @override
@@ -31,7 +34,7 @@ class CommonTextField extends StatelessWidget {
         /// Label
         Text(
           label,
-          style:  TextStyle(
+          style: TextStyle(
             fontSize: 16.sp,
             fontWeight: FontWeight.w600,
             color: Color(0xff7C7C7C),
@@ -46,17 +49,12 @@ class CommonTextField extends StatelessWidget {
           keyboardType: keyboardType,
           obscureText: isPassword ? obscureText : false,
           cursorColor: AppColors.textColor,
-          maxLines:maxLines ,
-          style: TextStyle(
-            fontSize: 18.sp,
-            color: Color(0xff181725)
-          ),
+          maxLines: maxLines,
+          readOnly: isReadOnly,
+          style: TextStyle(fontSize: 18.sp, color: Color(0xff181725)),
           decoration: InputDecoration(
             hintText: hint,
-            hintStyle: TextStyle(
-              fontSize: 18.sp,
-              color: Colors.grey.shade400
-            ),
+            hintStyle: TextStyle(fontSize: 18.sp, color: Colors.grey.shade400),
             border: const UnderlineInputBorder(),
             errorBorder: const UnderlineInputBorder(),
             focusedBorder: const UnderlineInputBorder(),
@@ -65,14 +63,14 @@ class CommonTextField extends StatelessWidget {
             disabledBorder: const UnderlineInputBorder(),
             suffixIcon: isPassword
                 ? IconButton(
-              icon: Icon(
-                obscureText
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
-                color: Colors.grey,
-              ),
-              onPressed: onToggle,
-            )
+                    icon: Icon(
+                      obscureText
+                          ? Icons.visibility_off_outlined
+                          : Icons.visibility_outlined,
+                      color: Colors.grey,
+                    ),
+                    onPressed: onToggle,
+                  )
                 : null,
           ),
         ),

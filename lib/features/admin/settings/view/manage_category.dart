@@ -8,6 +8,7 @@ import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_textfield.dart';
 import 'package:online_groceries_app/features/admin/settings/controller/manage_category_controller.dart';
+import 'package:online_groceries_app/models/category_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 class AdminManageCategoryView extends StatelessWidget {
@@ -35,7 +36,7 @@ class AdminManageCategoryView extends StatelessWidget {
                     GestureDetector(
                       onTap: controller.pickImage,
                       child: Obx(
-                            () => ClipRRect(
+                        () => ClipRRect(
                           borderRadius: BorderRadius.circular(12.r),
                           child: Container(
                             height: 100,
@@ -43,9 +44,9 @@ class AdminManageCategoryView extends StatelessWidget {
                             color: Colors.grey.shade200,
                             child: controller.imageBytes.value != null
                                 ? Image.memory(
-                              controller.imageBytes.value!,
-                              fit: BoxFit.cover,
-                            )
+                                    controller.imageBytes.value!,
+                                    fit: BoxFit.cover,
+                                  )
                                 : const Icon(Icons.add, size: 36),
                           ),
                         ),
@@ -66,7 +67,7 @@ class AdminManageCategoryView extends StatelessWidget {
                     SizedBox(
                       width: 180.w,
                       child: Obx(
-                            () => CommonButton(
+                        () => CommonButton(
                           title: controller.isLoading.value
                               ? "Please wait..."
                               : "Add Category",
@@ -83,10 +84,7 @@ class AdminManageCategoryView extends StatelessWidget {
               /// LIST TITLE
               Text(
                 "Category List",
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w700,
-                ),
+                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
               ),
 
               SizedBox(height: 16.h),
@@ -107,10 +105,12 @@ class AdminManageCategoryView extends StatelessWidget {
                   }
 
                   final categories = snapshot.data!.docs
-                      .map((doc) => CategoryModel.fromSnapshot(
-                    doc.id,
-                    doc.data() as Map<String, dynamic>,
-                  ))
+                      .map(
+                        (doc) => CategoryModel.fromSnapshot(
+                          doc.id,
+                          doc.data() as Map<String, dynamic>,
+                        ),
+                      )
                       .toList();
 
                   return Column(
@@ -120,7 +120,6 @@ class AdminManageCategoryView extends StatelessWidget {
                   );
                 },
               ),
-
             ],
           ),
         ),
@@ -129,10 +128,7 @@ class AdminManageCategoryView extends StatelessWidget {
   }
 
   /// CATEGORY ROW
-  Widget _categoryRow(
-      BuildContext context,
-      CategoryModel category,
-      ) {
+  Widget _categoryRow(BuildContext context, CategoryModel category) {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(14.w),
@@ -150,9 +146,9 @@ class AdminManageCategoryView extends StatelessWidget {
               category.imageUrl ?? '',
               fit: BoxFit.cover,
               webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
-              errorBuilder: (_, error, ___){
+              errorBuilder: (_, error, ___) {
                 print(error);
-                return  const Icon(Icons.broken_image);
+                return const Icon(Icons.broken_image);
               },
             ),
           ),
@@ -162,17 +158,13 @@ class AdminManageCategoryView extends StatelessWidget {
           Expanded(
             child: Text(
               category.name ?? '',
-              style: TextStyle(
-                fontSize: 15.sp,
-                fontWeight: FontWeight.w500,
-              ),
+              style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w500),
             ),
           ),
 
           IconButton(
             icon: const Icon(Icons.edit),
-            onPressed: () =>
-                _openEditDialog(context,category),
+            onPressed: () => _openEditDialog(context, category),
           ),
 
           IconButton(
@@ -186,10 +178,7 @@ class AdminManageCategoryView extends StatelessWidget {
   }
 
   /// EDIT DIALOG
-  void _openEditDialog(
-      BuildContext context,
-      CategoryModel category,
-      ) {
+  void _openEditDialog(BuildContext context, CategoryModel category) {
     controller.openEditCategory(category);
 
     showDialog(
@@ -205,7 +194,7 @@ class AdminManageCategoryView extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.all(20.w),
             child: Obx(
-                  () => Column(
+              () => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
@@ -229,14 +218,15 @@ class AdminManageCategoryView extends StatelessWidget {
                         color: Colors.grey.shade200,
                         child: controller.imageBytes.value != null
                             ? Image.memory(
-                          controller.imageBytes.value!,
-                          fit: BoxFit.cover,
-                        )
+                                controller.imageBytes.value!,
+                                fit: BoxFit.cover,
+                              )
                             : Image.network(
-                          webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
-                          controller.oldImageUrl.value,
-                          fit: BoxFit.cover,
-                        ),
+                                webHtmlElementStrategy:
+                                    WebHtmlElementStrategy.prefer,
+                                controller.oldImageUrl.value,
+                                fit: BoxFit.cover,
+                              ),
                       ),
                     ),
                   ),
@@ -286,10 +276,7 @@ class AdminManageCategoryView extends StatelessWidget {
   }
 
   /// CARD UI
-  Widget _sectionCard({
-    required String title,
-    required Widget child,
-  }) {
+  Widget _sectionCard({required String title, required Widget child}) {
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: _cardDecoration(),
@@ -298,10 +285,7 @@ class AdminManageCategoryView extends StatelessWidget {
         children: [
           Text(
             title,
-            style: TextStyle(
-              fontSize: 16.sp,
-              fontWeight: FontWeight.w700,
-            ),
+            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
           ),
           SizedBox(height: 20.h),
           child,
@@ -315,46 +299,8 @@ class AdminManageCategoryView extends StatelessWidget {
       color: AppColors.whiteColor,
       borderRadius: BorderRadius.circular(14.r),
       boxShadow: [
-        BoxShadow(
-          blurRadius: 16,
-          color: Colors.black.withOpacity(0.05),
-        ),
+        BoxShadow(blurRadius: 16, color: Colors.black.withOpacity(0.05)),
       ],
-    );
-  }
-}
-class CategoryModel {
-  final String id;
-  final String name;
-  final String imageUrl;
-   DateTime? createdAt;
-
-  CategoryModel({
-    required this.id,
-    required this.name,
-    required this.imageUrl,
-     this.createdAt,
-  });
-
-  factory CategoryModel.fromSnapshot(
-      String id,
-      Map<String, dynamic> data,
-      ) {
-    return CategoryModel(
-      id: id,
-      name: data['name'] ?? '',
-      imageUrl: data['image_url'] ?? '',
-      createdAt: data['created_at'] is Timestamp
-          ? (data['created_at'] as Timestamp).toDate()
-          : null,
-    );
-  }
-
-  factory CategoryModel.fromDoc(Map<String, dynamic> data, String id) {
-    return CategoryModel(
-      id: id,
-      name: data['name'] ?? '',
-      imageUrl: data['image_url'] ?? '', createdAt: (data['created_at'] as Timestamp).toDate(),
     );
   }
 }
