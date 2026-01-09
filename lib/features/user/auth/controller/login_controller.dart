@@ -21,23 +21,26 @@ class LoginController extends GetxController {
 
     // VALIDATIONS
     if (email.isEmpty) {
-      CommonToast.show("Please enter your email",type: ToastType.warning);
+      CommonToast.show("Please enter your email", type: ToastType.warning);
       return;
     }
 
     if (!_isEmailValid(email)) {
-      CommonToast.show("Please enter a valid email",type: ToastType.warning);
+      CommonToast.show("Please enter a valid email", type: ToastType.warning);
 
       return;
     }
 
     if (password.isEmpty) {
-      CommonToast.show("Please enter your password",type: ToastType.warning);
+      CommonToast.show("Please enter your password", type: ToastType.warning);
       return;
     }
 
     if (password.length < 6) {
-      CommonToast.show("Password must be at least 6 characters",type: ToastType.warning);
+      CommonToast.show(
+        "Password must be at least 6 characters",
+        type: ToastType.warning,
+      );
 
       return;
     }
@@ -49,12 +52,16 @@ class LoginController extends GetxController {
     CommonLoader.hide();
     if (user != null) {
       if ((user.uid ?? "").isNotEmpty) {
-        Get.offAll(()=>MainScreen());
+        Get.offAll(() => MainScreen());
         // _checkLatestSubscription();
       }
-    } else {
-      Get.snackbar("Login Failed", "Something went wrong. Please try again.");
     }
+    // else {
+    //   Get.snackbar("Login Failed", "Something went wrong. Please try again.");
+    // }
   }
 
+  void forgotPassword() {
+    // Au
+  }
 }

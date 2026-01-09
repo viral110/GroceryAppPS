@@ -8,6 +8,7 @@ import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_textfield.dart';
 import 'package:online_groceries_app/features/admin/settings/controller/manage_category_controller.dart';
+import 'package:online_groceries_app/models/category_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 class AdminManageCategoryView extends StatelessWidget {
@@ -35,7 +36,7 @@ class AdminManageCategoryView extends StatelessWidget {
                     GestureDetector(
                       onTap: controller.pickImage,
                       child: Obx(
-                            () => ClipRRect(
+                        () => ClipRRect(
                           borderRadius: BorderRadius.circular(12.r),
                           child: Container(
                             height: 100,
@@ -107,10 +108,12 @@ class AdminManageCategoryView extends StatelessWidget {
                   }
 
                   final categories = snapshot.data!.docs
-                      .map((doc) => CategoryModel.fromSnapshot(
-                    doc.id,
-                    doc.data() as Map<String, dynamic>,
-                  ))
+                      .map(
+                        (doc) => CategoryModel.fromSnapshot(
+                          doc.id,
+                          doc.data() as Map<String, dynamic>,
+                        ),
+                      )
                       .toList();
 
                   return Column(
@@ -187,10 +190,7 @@ class AdminManageCategoryView extends StatelessWidget {
   }
 
   /// EDIT DIALOG
-  void _openEditDialog(
-      BuildContext context,
-      CategoryModel category,
-      ) {
+  void _openEditDialog(BuildContext context, CategoryModel category) {
     controller.openEditCategory(category);
 
     showDialog(
@@ -206,7 +206,7 @@ class AdminManageCategoryView extends StatelessWidget {
           child: Padding(
             padding: EdgeInsets.all(20.w),
             child: Obx(
-                  () => Column(
+              () => Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Text(
@@ -325,41 +325,6 @@ class AdminManageCategoryView extends StatelessWidget {
           color: Colors.black.withOpacity(0.05),
         ),
       ],
-    );
-  }
-}
-class CategoryModel {
-  final String id;
-  final String name;
-  final String imageUrl;
-   DateTime? createdAt;
-
-  CategoryModel({
-    required this.id,
-    required this.name,
-    required this.imageUrl,
-     this.createdAt,
-  });
-
-  factory CategoryModel.fromSnapshot(
-      String id,
-      Map<String, dynamic> data,
-      ) {
-    return CategoryModel(
-      id: id,
-      name: data['name'] ?? '',
-      imageUrl: data['image_url'] ?? '',
-      createdAt: data['created_at'] is Timestamp
-          ? (data['created_at'] as Timestamp).toDate()
-          : null,
-    );
-  }
-
-  factory CategoryModel.fromDoc(Map<String, dynamic> data, String id) {
-    return CategoryModel(
-      id: id,
-      name: data['name'] ?? '',
-      imageUrl: data['image_url'] ?? '', createdAt: (data['created_at'] as Timestamp).toDate(),
     );
   }
 }

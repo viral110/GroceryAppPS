@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/features/user/about/view/about_view.dart';
+import 'package:online_groceries_app/features/user/auth/view/login_view.dart';
 import 'package:online_groceries_app/features/user/my_orders/view/my_order_view.dart';
 import 'package:online_groceries_app/features/user/notifications/view/notification_view.dart';
 import 'package:online_groceries_app/features/user/promo_code/view/promo_code_view.dart';
+import 'package:online_groceries_app/services/auth_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 import '../../help/view/help_view.dart';
@@ -27,24 +30,27 @@ class AccountView extends StatelessWidget {
               child: Row(
                 children: [
                   GestureDetector(
-                    onTap: (){
-                      Get.to(()=>MyDetailsView());
+                    onTap: () {
+                      Get.to(() => MyDetailsView());
                     },
                     child: CircleAvatar(
                       radius: 28,
                       backgroundColor: AppColors.primary,
-                      child: Text("R",style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.w900,
-                        color: AppColors.whiteColor
-                      ),),
+                      child: Text(
+                        "R",
+                        style: TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w900,
+                          color: AppColors.whiteColor,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
-                      children:  [
+                      children: [
                         Text(
                           "Ronak mehta",
                           style: TextStyle(
@@ -73,24 +79,24 @@ class AccountView extends StatelessWidget {
             Expanded(
               child: ListView(
                 children: [
-                  _menuItem(Icons.shopping_bag_outlined, "Orders",() {
-                    Get.to(()=>MyOrdersView());
-                  },),
-                  _menuItem(Icons.person_outline, "My Details",() {
-                    Get.to(()=>MyDetailsView());
-                  },),
-                  _menuItem(Icons.card_giftcard, "Promo Code",() {
-                    Get.to(()=>PromoCodeView());
-                  },),
-                  _menuItem(Icons.notifications_none, "Notifications",() {
-                    Get.to(()=>NotificationsView());
-                  },),
-                  _menuItem(Icons.help_outline, "Help",() {
-                    Get.to(()=>HelpView());
-                  },),
-                  _menuItem(Icons.info_outline, "About",() {
-                    Get.to(()=>AboutView());
-                  },),
+                  _menuItem(Icons.shopping_bag_outlined, "Orders", () {
+                    Get.to(() => MyOrdersView());
+                  }),
+                  _menuItem(Icons.person_outline, "My Details", () {
+                    Get.to(() => MyDetailsView());
+                  }),
+                  _menuItem(Icons.card_giftcard, "Promo Code", () {
+                    Get.to(() => PromoCodeView());
+                  }),
+                  _menuItem(Icons.notifications_none, "Notifications", () {
+                    Get.to(() => NotificationsView());
+                  }),
+                  _menuItem(Icons.help_outline, "Help", () {
+                    Get.to(() => HelpView());
+                  }),
+                  _menuItem(Icons.info_outline, "About", () {
+                    Get.to(() => AboutView());
+                  }),
                 ],
               ),
             ),
@@ -101,17 +107,28 @@ class AccountView extends StatelessWidget {
                 width: double.infinity,
                 height: 50.h,
                 child: ElevatedButton.icon(
-                  onPressed: () {},
-                  icon:  Align(
-                      child: Icon(Icons.logout, color: AppColors.primary)),
-                  iconAlignment:IconAlignment.start ,
+                  onPressed: () async {
+                    FocusManager.instance.primaryFocus?.unfocus();
+                    CommonLoader.show();
+                    await AuthServices().signOut();
+                    CommonLoader.hide();
+                    Get.offAll(() => LoginScreen());
+                  },
+                  icon: Align(
+                    child: Icon(Icons.logout, color: AppColors.whiteColor),
+                  ),
+                  iconAlignment: IconAlignment.start,
 
-                  label:  Text(
+                  label: Text(
                     "Log Out",
-                    style: TextStyle(color: AppColors.primary),
+                    style: TextStyle(
+                      color: AppColors.whiteColor,
+                      fontSize: 16,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary.withOpacity(0.2),
+                    backgroundColor: AppColors.primary.withOpacity(0.9),
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(14),
@@ -126,28 +143,31 @@ class AccountView extends StatelessWidget {
     );
   }
 
-  Widget _menuItem(IconData icon, String title,void Function()? onTap) {
+  Widget _menuItem(IconData icon, String title, void Function()? onTap) {
     return Column(
       children: [
         ListTile(
           leading: Icon(icon, color: AppColors.textColor),
           title: Text(
             title,
-            style: TextStyle(fontSize: 18.sp,color: AppColors.textColor,fontWeight: FontWeight.w600),
+            style: TextStyle(
+              fontSize: 18.sp,
+              color: AppColors.textColor,
+              fontWeight: FontWeight.w600,
+            ),
           ),
           trailing: const Icon(Icons.chevron_right),
           onTap: onTap,
         ),
-         Divider(height: 1,color: Color(0xffE2E2E2),),
+        Divider(height: 1, color: Color(0xffE2E2E2)),
       ],
     );
   }
+
   void showComingSoonPopup() {
     Get.dialog(
       Dialog(
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
@@ -196,10 +216,7 @@ class AccountView extends StatelessWidget {
               const SizedBox(height: 20),
 
               /// BUTTON
-              CommonButton(
-                title: "Okay",
-                onTap: () => Get.back(),
-              ),
+              CommonButton(title: "Okay", onTap: () => Get.back()),
             ],
           ),
         ),
@@ -207,5 +224,4 @@ class AccountView extends StatelessWidget {
       barrierDismissible: true,
     );
   }
-
 }

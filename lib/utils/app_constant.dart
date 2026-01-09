@@ -5,4 +5,5 @@ class AppConstantStrings {
   static const String storesCollection = "stores";
   static const String banners = "banners";
 
+  static const String rupeeSymbol = "\u{20B9}";
 }

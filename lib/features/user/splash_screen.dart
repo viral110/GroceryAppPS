@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
@@ -26,25 +28,26 @@ class _SplashScreenState extends State<SplashScreen> {
 
   Future<void> _navigate() async {
     await Future.delayed(const Duration(seconds: 3));
-
+    log("MOUTED:${mounted}");
     if (!mounted) return;
     final user = UserService.getUserFromHive();
-    if ((user.uid ?? "").isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (kIsWeb) {
-          Get.off(() => AdminDashboardView());
-        } else {
-          Get.off(() => MainScreen());
-        }
-      });
+    log("USER:$user");
+    if (user.uid.isNotEmpty) {
+      // WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (kIsWeb) {
+        Get.off(() => AdminDashboardView());
+      } else {
+        Get.off(() => MainScreen());
+      }
+      // });
     } else {
-      WidgetsBinding.instance.addPostFrameCallback((_) {
-        if (kIsWeb) {
-          Get.off(() => AdminLoginView());
-        } else {
-          Get.off(() => WelcomeView());
-        }
-      });
+      // WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (kIsWeb) {
+        Get.off(() => AdminLoginView());
+      } else {
+        Get.off(() => WelcomeView());
+      }
+      // });
     }
 
   }
@@ -53,9 +56,7 @@ class _SplashScreenState extends State<SplashScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: AppColors.primary,
-      body: Center(
-        child:  SvgPicture.asset("assets/svg/logo.svg"),
-      ),
+      body: Center(child: SvgPicture.asset("assets/svg/logo.svg")),
     );
   }
 }

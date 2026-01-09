@@ -3,9 +3,11 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 class ProductDetailView extends StatefulWidget {
+  // final ProductModel product;
   const ProductDetailView({super.key});
 
   @override
@@ -42,9 +44,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
             decoration: const BoxDecoration(
               color: Color(0xffF2F3F2),
 
-              borderRadius: BorderRadius.vertical(
-                bottom: Radius.circular(25),
-              ),
+              borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
             ),
             child: SafeArea(
               child: Column(
@@ -54,11 +54,14 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
                     children: [
                       GestureDetector(
-                          onTap: (){
-                            Get.back();
-                          },
-                          child: SvgPicture.asset("assets/svg/back_arrow_icon.svg")),
-                      SizedBox()
+                        onTap: () {
+                          Get.back();
+                        },
+                        child: SvgPicture.asset(
+                          "assets/svg/back_arrow_icon.svg",
+                        ),
+                      ),
+                      SizedBox(),
                     ],
                   ),
 
@@ -91,9 +94,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: List.generate(
                       imageList.length,
-                          (index) => AnimatedContainer(
+                      (index) => AnimatedContainer(
                         duration: const Duration(milliseconds: 300),
-                        margin:  EdgeInsets.symmetric(horizontal: 3.h),
+                        margin: EdgeInsets.symmetric(horizontal: 3.h),
                         height: 5.h,
                         width: _currentIndex == index ? 15.w : 5.w,
                         decoration: BoxDecoration(
@@ -116,7 +119,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  SizedBox(height: 20.h,),
+                  SizedBox(height: 20.h),
+
                   /// TITLE + FAVORITE
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -156,7 +160,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(20),
                           side: BorderSide(
-                            color: isSelected ? AppColors.primary : Colors.grey.shade300,
+                            color: isSelected
+                                ? AppColors.primary
+                                : Colors.grey.shade300,
                           ),
                         ),
                         onSelected: (_) {
@@ -223,14 +229,15 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     ],
                   ),
 
-
                   const Divider(height: 32),
 
                   /// PRODUCT DETAIL
                   ExpansionTile(
                     tilePadding: EdgeInsets.zero,
                     childrenPadding: EdgeInsets.all(0),
-                    shape: OutlineInputBorder(borderSide: BorderSide(color: Colors.transparent)),
+                    shape: OutlineInputBorder(
+                      borderSide: BorderSide(color: Colors.transparent),
+                    ),
                     title: const Text(
                       "Product Detail",
                       style: TextStyle(fontWeight: FontWeight.w600),
@@ -240,15 +247,15 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         padding: EdgeInsets.only(bottom: 12),
                         child: Text(
                           "Apples are nutritious. Apples may be good for weight loss. "
-                              "Apples may be good for your heart. As part of a healthy and varied diet.",
+                          "Apples may be good for your heart. As part of a healthy and varied diet.",
                           style: TextStyle(color: Colors.grey),
                         ),
                       ),
                     ],
                   ),
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
                   const Divider(),
-                  SizedBox(height: 10,),
+                  SizedBox(height: 10),
                   Row(
                     children: [
                       Text(
@@ -260,24 +267,20 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                         mainAxisAlignment: MainAxisAlignment.end,
                         children: List.generate(
                           5,
-                              (_) => const Icon(
+                          (_) => const Icon(
                             Icons.star,
                             size: 16,
                             color: Colors.orange,
                           ),
                         ),
                       ),
-                      SizedBox(width: 15.w,),
-                      Icon(Icons.keyboard_arrow_right_outlined)
+                      SizedBox(width: 15.w),
+                      Icon(Icons.keyboard_arrow_right_outlined),
                     ],
                   ),
-                  SizedBox(height: 25,),
+                  SizedBox(height: 25),
 
-
-                 CommonButton(title: "Add To Basket", onTap: () {
-
-                 },),
-
+                  CommonButton(title: "Add To Basket", onTap: () {}),
 
                   const SizedBox(height: 16),
                 ],
@@ -288,11 +291,8 @@ class _ProductDetailViewState extends State<ProductDetailView> {
       ),
     );
   }
-  Widget _qtyButton(IconData icon, {bool isAdd = false}) {
-    return Icon(
-      icon,
-      color: isAdd ? Colors.green : Colors.grey.shade600,
-    );
-  }
 
+  Widget _qtyButton(IconData icon, {bool isAdd = false}) {
+    return Icon(icon, color: isAdd ? Colors.green : Colors.grey.shade600);
+  }
 }
