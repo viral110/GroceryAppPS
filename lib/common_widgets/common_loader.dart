@@ -14,6 +14,7 @@ class CommonLoader {
       WillPopScope(
         onWillPop: () async => false,
         child: Scaffold(
+          backgroundColor: Colors.transparent,
           body: Center(
             child: Container(
               width: 120,

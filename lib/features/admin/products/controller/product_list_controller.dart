@@ -3,6 +3,7 @@ import 'package:firebase_storage/firebase_storage.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 
 class ProductListController extends GetxController {
   final products = <ProductModel>[].obs;
@@ -22,7 +23,7 @@ class ProductListController extends GetxController {
       isLoading.value = true;
 
       final snapshot = await _firestore
-          .collection('products')
+          .collection(AppConstantStrings.productsCollection)
           .get();
       products.value = snapshot.docs
           .map((doc) => ProductModel.fromDoc(doc))

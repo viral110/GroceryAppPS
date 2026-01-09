@@ -63,12 +63,40 @@ class AdminProductController extends GetxController {
   RxList<StoreModel> selectedStores = <StoreModel>[].obs;
   Future<void> fetchStores() async {
     final snapshot =
-    await FirebaseFirestore.instance.collection('stores').get();
+    await FirebaseFirestore.instance.collection(AppConstantStrings.storesCollection).get();
 
     stores.value = snapshot.docs
         .map((doc) => StoreModel.fromJson(doc.id, doc.data()))
         .toList();
+    if (isEdit.value && _editProductCache != null) {
+      _prefillStoreStocks(_editProductCache!);
+    }
   }
+
+  void _prefillStoreStocks(ProductModel product) {
+    selectedStores.clear();
+    storeStocks.clear();
+
+    for (final storeStock in product.storeStocks) {
+      final store = stores.firstWhereOrNull(
+            (s) => s.id == storeStock.storeId,
+      );
+
+      if (store != null) {
+        selectedStores.add(store);
+
+        storeStocks.add(
+          StoreStockModel(
+            storeId: store.id,
+            storeName: store.name,
+            stock: storeStock.stock,
+          ),
+        );
+      }
+    }
+  }
+
+  ProductModel? _editProductCache;
 
 
   @override
@@ -76,8 +104,8 @@ class AdminProductController extends GetxController {
     super.onInit();
     productImages.clear();
     productImagesBytes.clear();
-    fetchCategories();
     fetchStores();
+    fetchCategories();
   }
 
   Future<void> fetchCategories() async {
@@ -104,10 +132,16 @@ class AdminProductController extends GetxController {
     isEdit.value = true;
     productId = product.id;
 
+    /// 🔥 cache product (IMPORTANT)
+    _editProductCache = product;
+
+    /// BASIC FIELDS
     nameController.text = product.name;
     brandController.text = product.brand;
     priceController.text = product.price.toString();
     descriptionController.text = product.description;
+    kpsController.text = product.kps.toString();
+    discountController.text = product.discount.toString();
 
     selectedCategory.value = product.categoryName;
     selectedCategoryId.value = product.categoryId;
@@ -117,6 +151,11 @@ class AdminProductController extends GetxController {
 
     thumbnailUrl.value = product.thumbnail;
     productImageUrls.assignAll(product.images);
+
+    /// ✅ If stores already loaded → prefill now
+    if (stores.isNotEmpty) {
+      _prefillStoreStocks(product);
+    }
   }
 
   Future<void> pickThumbnail() async {
@@ -337,7 +376,7 @@ class AdminProductController extends GetxController {
 
     try {
       final doc = _firestore
-          .collection("products")
+          .collection(AppConstantStrings.productsCollection)
           .doc(isEdit.value ? productId : null);
 
       /// THUMBNAIL UPLOAD (ONLY IF CHANGED)
@@ -394,14 +433,16 @@ class AdminProductController extends GetxController {
         await doc.set(product.toJson());
       }
       Get.back();
+      clearForm();
+      Get.back();
+      Get.back();
       CommonToast.show(
         isEdit.value
             ? "Product updated successfully"
             : "Product added successfully",
         type: ToastType.success,
       );
-      clearForm();
-      Get.back();
+
     } catch (e) {
       CommonToast.show(e.toString(), type: ToastType.error);
     } finally {
@@ -425,6 +466,9 @@ class AdminProductController extends GetxController {
     descriptionController.clear();
     packagingController.clear();
     packagingList.clear();
+    kpsController.clear();
+    discountController.clear();
+    selectedStores.clear();
 
     selectedCategory.value = '';
     selectedCategoryId.value = '';
@@ -437,6 +481,7 @@ class AdminProductController extends GetxController {
     productImages.clear();
     productImagesBytes.clear();
     productImageUrls.clear();
+    selectedStores.clear();
 
     isEdit.value = false;
     productId = null;

@@ -149,6 +149,7 @@ class AdminManageCategoryView extends StatelessWidget {
             child: Image.network(
               category.imageUrl ?? '',
               fit: BoxFit.cover,
+              key: ValueKey(category.id),
               webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
               errorBuilder: (_, error, ___){
                 print(error);
@@ -236,6 +237,10 @@ class AdminManageCategoryView extends StatelessWidget {
                           webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                           controller.oldImageUrl.value,
                           fit: BoxFit.cover,
+                          errorBuilder: (_, error, ___){
+                            print(error);
+                            return  const Icon(Icons.broken_image);
+                          },
                         ),
                       ),
                     ),

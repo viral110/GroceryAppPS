@@ -38,7 +38,6 @@ class _SplashScreenState extends State<SplashScreen> {
         }
       });
     } else {
-
       WidgetsBinding.instance.addPostFrameCallback((_) {
         if (kIsWeb) {
           Get.off(() => AdminLoginView());

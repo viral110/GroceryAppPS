@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/features/admin/store_manage/models/store_model.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 
 class StoreController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -16,7 +17,7 @@ class StoreController extends GetxController {
 
   /// Fetch Stores
   void fetchStores() {
-    _firestore.collection('stores').orderBy('createdAt', descending: true).snapshots().listen((snapshot) {
+    _firestore.collection(AppConstantStrings.storesCollection).orderBy('createdAt', descending: true).snapshots().listen((snapshot) {
       stores.value = snapshot.docs
           .map((doc) => StoreModel.fromJson(doc.id, doc.data()))
           .toList();

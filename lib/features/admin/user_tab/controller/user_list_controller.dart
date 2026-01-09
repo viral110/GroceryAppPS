@@ -9,13 +9,18 @@ class UserListController extends GetxController {
   Stream<List<UserModel>> getUsers() {
     return FirebaseFirestore.instance
         .collection(AppConstantStrings.userCollection)
+        .where("isAdmin", isEqualTo: false) // 🔥 filter admins
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
-        return UserModel.fromJson(doc.data(),id: doc.id );
+        return UserModel.fromJson(
+          doc.data(),
+          id: doc.id,
+        );
       }).toList();
     });
   }
+
 
   List<UserModel> filterUsers(List<UserModel> users) {
     if (searchQuery.value.isEmpty) return users;
