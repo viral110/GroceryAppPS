@@ -1,0 +1,196 @@
+import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
+import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/common_widgets/common_textfield.dart';
+import 'package:online_groceries_app/features/admin/user_tab/controller/add_user_controller.dart';
+import 'package:online_groceries_app/utils/app_colors.dart';
+
+class AdminAddAdminView extends StatelessWidget {
+  const AdminAddAdminView({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final controller =Get.put(AddUserController());
+    return Scaffold(
+      backgroundColor: const Color(0xffF5F6FA),
+      appBar: const CommonAppBar(title: "Add Admin"),
+      body: SafeArea(
+        child: SingleChildScrollView(
+          padding: EdgeInsets.all(24.w),
+          child: Column(
+            children: [
+              /// BASIC DETAILS
+              _sectionCard(
+                title: "Basic Details",
+                child: Column(
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CommonTextField(
+                            label: "First Name",
+                            hint: "Enter first name",
+                            controller: controller.firstName,
+                          ),
+                        ),
+                        SizedBox(width: 16.w),
+                        Expanded(
+                          child: CommonTextField(
+                            label: "Last Name",
+                            hint: "Enter last name",
+                            controller: controller.lastName,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 25.h),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CommonTextField(
+                            label: "Mobile Number",
+                            hint: "Enter mobile number",
+                            keyboardType: TextInputType.phone,
+                            controller: controller.mobile,
+                          ),
+                        ),
+                        SizedBox(width: 16.w),
+                        Expanded(
+                          child: CommonTextField(
+                            label: "Email",
+                            hint: "Enter email",
+                            keyboardType: TextInputType.emailAddress,
+                            controller: controller.email,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: 25.h),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CommonTextField(
+                            label: "Password",
+                            hint: "Enter password",
+                            keyboardType: TextInputType.emailAddress,
+                            controller: controller.password,
+                          ),
+                        ),
+                        SizedBox(width: 16.w),
+                        Expanded(
+                          child: CommonTextField(
+                            label: "Credit",
+                            hint: "Enter Credit",
+                            keyboardType: TextInputType.phone,
+                            controller:controller.credit,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 24.h),
+
+              /// ADDRESS DETAILS
+              _sectionCard(
+                title: "Address Details",
+                child: Column(
+                  children: [
+                    CommonTextField(
+                      label: "Area",
+                      hint: "Enter area",
+                      controller: controller.area,
+                    ),
+                    SizedBox(height: 20.h),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: CommonTextField(
+                            label: "City",
+                            hint: "Enter city",
+                            controller: controller.city,
+                          ),
+                        ),
+                        SizedBox(width: 16.w),
+                        Expanded(
+                          child: CommonTextField(
+                            label: "State",
+                            hint: "Enter state",
+                            controller: controller.state,
+                          ),
+                        ),
+                        SizedBox(width: 16.w),
+                        Expanded(
+                          child: CommonTextField(
+                            label: "Pincode",
+                            hint: "Enter pincode",
+                            keyboardType: TextInputType.number,
+                            controller: controller.pincode,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+
+              SizedBox(height: 32.h),
+
+              /// SAVE BUTTON
+              SizedBox(
+                width: 220.w,
+                child: CommonButton(
+                  title: "Save Admin",
+                  onTap: () {
+                    controller.saveUser();
+                  },
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _sectionCard({
+    required String title,
+    required Widget child,
+  }) {
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(20.w),
+      decoration: BoxDecoration(
+        color: AppColors.whiteColor,
+        borderRadius: BorderRadius.circular(14),
+        boxShadow: [
+          BoxShadow(
+            blurRadius: 18,
+            color: Colors.black.withOpacity(0.05),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: TextStyle(
+              fontSize: 20.sp,
+              fontWeight: FontWeight.w700,
+              color: AppColors.textColor,
+            ),
+          ),
+          SizedBox(height: 20.h),
+          child,
+        ],
+      ),
+    );
+  }
+}
