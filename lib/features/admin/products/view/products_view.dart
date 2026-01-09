@@ -30,7 +30,7 @@ class AdminProductsView extends StatelessWidget {
               ),
             ),
             SizedBox(
-              width: 160,
+              width: 160.w,
               child: CommonButton(
                 title: "Add Product",
                 onTap: () {
@@ -95,9 +95,9 @@ class AdminProductsView extends StatelessWidget {
 
   // ---------------- PRODUCT ROW ----------------
   Widget _productRow(ProductModel product) {
-    final status = product.stock > 0 ? "In Stock" : "Out of Stock";
+    // final status = product.stock > 0 ? "In Stock" : "Out of Stock";
     final statusColor =
-    status == "In Stock" ? Colors.green : Colors.red;
+    "In Stock" == "In Stock" ? Colors.green : Colors.red;
 
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
@@ -110,7 +110,7 @@ class AdminProductsView extends StatelessWidget {
           Expanded(child: Text("₹${product.price}",style: TextStyle(fontSize: 17.sp))),
           Expanded(
             child: Text(
-              status,
+              'In Stock',
               style: TextStyle(
                 color: statusColor,
                 fontWeight: FontWeight.w600,

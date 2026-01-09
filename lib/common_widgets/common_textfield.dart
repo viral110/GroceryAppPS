@@ -11,6 +11,7 @@ class CommonTextField extends StatelessWidget {
   final VoidCallback? onToggle;
   final TextInputType keyboardType;
   final int? maxLines ;
+  final void Function(String)? onChanged;
 
   const CommonTextField({
     super.key,
@@ -21,6 +22,7 @@ class CommonTextField extends StatelessWidget {
     this.obscureText = false,
     this.onToggle,
     this.keyboardType = TextInputType.text, this.maxLines,
+    this.onChanged
   });
 
   @override
@@ -47,6 +49,7 @@ class CommonTextField extends StatelessWidget {
           obscureText: isPassword ? obscureText : false,
           cursorColor: AppColors.textColor,
           maxLines:maxLines ,
+          onChanged:onChanged ,
           style: TextStyle(
             fontSize: 18.sp,
             color: Color(0xff181725)

@@ -103,7 +103,7 @@ class AdminAddProductView extends StatelessWidget {
                               height: 150.h,
                               fit: BoxFit.cover,
                               errorBuilder: (_, __, ___) => Container(
-                                height:  150.h,
+                                height: 150.h,
                                 width: 150.h,
                                 decoration: BoxDecoration(
                                   color: Colors.grey.shade200,
@@ -148,14 +148,14 @@ class AdminAddProductView extends StatelessWidget {
                               child: kIsWeb
                                   ? Image.memory(
                                       controller.productImagesBytes[index],
-                                      width:  150.h,
-                                      height:  150.h,
+                                      width: 150.h,
+                                      height: 150.h,
                                       fit: BoxFit.cover,
                                     )
                                   : Image.file(
                                       controller.productImages[index],
                                       width: 150.h,
-                                      height:  150.h,
+                                      height: 150.h,
                                       fit: BoxFit.cover,
                                     ),
                             ),
@@ -298,40 +298,158 @@ class AdminAddProductView extends StatelessWidget {
                       ),
                     ],
                   ),
+                  SizedBox(height: 16.h),
+                  CommonTextField(
+                    label: "Price",
+                    hint: "Enter price",
+                    keyboardType: TextInputType.number,
+                    controller: controller.priceController,
+                  ),
                 ],
+              ),
+            ),
+            SizedBox(height: 24.h),
+            _sectionCard(
+              title: "Available Stores",
+              child: Obx(
+                () => Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 10.w,
+                      runSpacing: 10.h,
+                      children: controller.stores.map((store) {
+                        final isSelected = controller.selectedStores.any(
+                          (e) => e.id == store.id,
+                        );
+
+                        return FilterChip(
+                          label: Text(
+                            store.name,
+                            style: TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                          selected: isSelected,
+                          selectedColor: AppColors.primary.withOpacity(0.25),
+                          checkmarkColor: AppColors.primary,
+                          onSelected: (value) {
+                            if (value) {
+                              controller.selectedStores.add(store);
+                              controller.storeStocks.add(
+                                StoreStockModel(
+                                  storeId: store.id,
+                                  storeName: store.name,
+                                  stock: 0,
+                                ),
+                              );
+                            } else {
+                              controller.selectedStores.removeWhere(
+                                (e) => e.id == store.id,
+                              );
+                              controller.storeStocks.removeWhere(
+                                (e) => e.storeId == store.id,
+                              );
+                            }
+                          },
+                        );
+                      }).toList(),
+                    ),
+                  SizedBox(height: 30.h,),
+                  Column(
+                        children: controller.storeStocks.map((storeStock) {
+                          return Container(
+                            margin: EdgeInsets.only(bottom: 12.h),
+                            padding: EdgeInsets.all(14.w),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(12),
+                              border: Border.all(color: Colors.grey.shade300),
+                            ),
+                            child: Row(
+                              children: [
+                                /// Store Name
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        storeStock.storeName,
+                                        style: TextStyle(
+                                          fontSize: 15.sp,
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        "Available stock for this store",
+                                        style: TextStyle(
+                                          fontSize: 12.sp,
+                                          color: Colors.grey,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                /// Stock Field
+                                SizedBox(
+                                  width: 120.w,
+                                  child: TextFormField(
+                                    initialValue:
+                                    storeStock.stock == 0 ? "" : storeStock.stock.toString(),
+                                    keyboardType: TextInputType.number,
+                                    decoration: InputDecoration(
+                                      hintText: "Qty",
+                                      contentPadding: EdgeInsets.symmetric(
+                                        horizontal: 12.w,
+                                        vertical: 10.h,
+                                      ),
+                                      border: OutlineInputBorder(
+                                        borderRadius: BorderRadius.circular(10),
+                                      ),
+                                    ),
+                                    onChanged: (v) {
+                                      storeStock.stock = int.tryParse(v) ?? 0;
+                                    },
+                                  ),
+                                ),
+                              ],
+                            ),
+                          );
+                        }).toList(),
+                      ),
+
+                  ],
+                ),
               ),
             ),
 
             SizedBox(height: 24.h),
-
             _sectionCard(
-              title: "Price & Stock",
+              title: "KPS & Discount",
               child: Row(
                 children: [
                   Expanded(
                     child: CommonTextField(
-                      label: "Price",
-                      hint: "Enter price",
+                      label: "KPS",
+                      hint: "Enter KPS",
                       keyboardType: TextInputType.number,
-                      controller: controller.priceController,
+                      controller: controller.kpsController,
                     ),
                   ),
                   SizedBox(width: 16.w),
                   Expanded(
                     child: CommonTextField(
-                      label: "Stock",
-                      hint: "Enter stock",
+                      label: "Discount (%)",
+                      hint: "Enter discount",
                       keyboardType: TextInputType.number,
-                      controller: controller.stockController,
+                      controller: controller.discountController,
                     ),
                   ),
                 ],
               ),
             ),
-
             SizedBox(height: 24.h),
 
-            /// ================= PACKAGING =================
             _sectionCard(
               title: "Packaging Options",
               child: Column(
@@ -343,12 +461,17 @@ class AdminAddProductView extends StatelessWidget {
                       children: controller.packagingList
                           .map(
                             (e) => Chip(
-                              backgroundColor: AppColors.primary.withOpacity(0.3),
-                              label: Text(e,style: TextStyle(
-                                fontSize: 16.sp,
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w800
-                              ),),
+                              backgroundColor: AppColors.primary.withOpacity(
+                                0.3,
+                              ),
+                              label: Text(
+                                e,
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  color: AppColors.primary,
+                                  fontWeight: FontWeight.w800,
+                                ),
+                              ),
                               onDeleted: () =>
                                   controller.packagingList.remove(e),
                             ),
@@ -366,13 +489,17 @@ class AdminAddProductView extends StatelessWidget {
                           controller: controller.packagingController,
                         ),
                       ),
-                      SizedBox(width: 30.w,),
+                      SizedBox(width: 30.w),
                       SizedBox(
                         width: 100.w,
-                        child: CommonButton(title: "+", onTap: () {
-                          controller.addPackaging();
-                        },fontSize: 30.sp,),
-                      )
+                        child: CommonButton(
+                          title: "+",
+                          onTap: () {
+                            controller.addPackaging();
+                          },
+                          fontSize: 30.sp,
+                        ),
+                      ),
                     ],
                   ),
                 ],
@@ -419,7 +546,7 @@ class AdminAddProductView extends StatelessWidget {
         child: Image.memory(
           controller.thumbnailBytes.value!,
           width: 150.h,
-          height:150.h,
+          height: 150.h,
           fit: BoxFit.cover,
         ),
       );

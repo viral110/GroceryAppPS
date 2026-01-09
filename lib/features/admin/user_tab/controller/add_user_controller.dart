@@ -174,6 +174,7 @@ class AddUserController extends GetxController {
         createdAt: DateTime.now(),
         fcmToken: "",
         updateAt: DateTime.now(),
+        isAdmin: false
       );
 
       final success = await AuthServices().addUser(

@@ -7,6 +7,7 @@ import 'package:online_groceries_app/features/admin/dashboard/view/dashboard_tab
 import 'package:online_groceries_app/features/admin/orders/view/orders_view.dart';
 import 'package:online_groceries_app/features/admin/products/view/products_view.dart';
 import 'package:online_groceries_app/features/admin/settings/view/admin_settings_view.dart';
+import 'package:online_groceries_app/features/admin/store_manage/view/store_manage_view.dart';
 import 'package:online_groceries_app/features/admin/user_tab/view/user_list_view.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
@@ -68,15 +69,21 @@ class AdminDashboardView extends StatelessWidget {
                   "Products",
                   AdminTab.products,
                   controller,
-                ),_sideItem(
+                ),
+                _sideItem(
+                  "Store Manage",
+                  AdminTab.store,
+                  controller,
+                ),
+                _sideItem(
                   "Settings",
                   AdminTab.settings,
                   controller,
                 ),
 
-                const Spacer(),
+                // const Spacer(),
 
-                _logoutItem(),
+                // _logoutItem(),
               ],
             ),
           ),
@@ -95,6 +102,8 @@ class AdminDashboardView extends StatelessWidget {
                     return const AdminOrdersView();
                   case AdminTab.products:
                     return  AdminProductsView();
+                    case AdminTab.store:
+                    return  StoreManageView();
                   case AdminTab.settings:
                     return const AdminSettingsView();
                 }

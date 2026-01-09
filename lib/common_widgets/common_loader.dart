@@ -13,37 +13,39 @@ class CommonLoader {
     Get.dialog(
       WillPopScope(
         onWillPop: () async => false,
-        child: Center(
-          child: Container(
-            width: 120,
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: AppColors.whiteColor,
-              borderRadius: BorderRadius.circular(16),
-              boxShadow: [
-                BoxShadow(
-                  blurRadius: 20,
-                  color: Colors.black.withOpacity(0.1),
-                ),
-              ],
-            ),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                const CircularProgressIndicator(
-                  strokeWidth: 3,
-                  color: AppColors.primary,
-                ),
-                const SizedBox(height: 16),
-                Text(
-                  message,
-                  textAlign: TextAlign.center,
-                  style: const TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w500,
+        child: Scaffold(
+          body: Center(
+            child: Container(
+              width: 120,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: AppColors.whiteColor,
+                borderRadius: BorderRadius.circular(16),
+                boxShadow: [
+                  BoxShadow(
+                    blurRadius: 20,
+                    color: Colors.black.withOpacity(0.1),
                   ),
-                ),
-              ],
+                ],
+              ),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const CircularProgressIndicator(
+                    strokeWidth: 3,
+                    color: AppColors.primary,
+                  ),
+                  const SizedBox(height: 16),
+                  Text(
+                    message,
+                    textAlign: TextAlign.center,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                ],
+              ),
             ),
           ),
         ),

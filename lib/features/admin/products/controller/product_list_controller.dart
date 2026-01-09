@@ -27,7 +27,9 @@ class ProductListController extends GetxController {
       products.value = snapshot.docs
           .map((doc) => ProductModel.fromDoc(doc))
           .toList();
-    } catch (e) {
+    } catch (e,s) {
+      print(e);
+      print(s);
       CommonToast.show(
         "Failed to load products",
         type: ToastType.error,
