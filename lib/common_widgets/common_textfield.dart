@@ -12,7 +12,6 @@ class CommonTextField extends StatelessWidget {
   final TextInputType keyboardType;
   final int? maxLines;
   final bool isReadOnly;
-  final int? maxLines ;
   final void Function(String)? onChanged;
 
   const CommonTextField({
@@ -24,9 +23,7 @@ class CommonTextField extends StatelessWidget {
     this.obscureText = false,
     this.onToggle,
     this.keyboardType = TextInputType.text, this.maxLines,
-    this.onChanged
-    this.keyboardType = TextInputType.text,
-    this.maxLines,
+    this.onChanged,
     this.isReadOnly = false,
   });
 
@@ -56,12 +53,7 @@ class CommonTextField extends StatelessWidget {
           maxLines: maxLines,
           readOnly: isReadOnly,
           style: TextStyle(fontSize: 18.sp, color: Color(0xff181725)),
-          maxLines:maxLines ,
           onChanged:onChanged ,
-          style: TextStyle(
-            fontSize: 18.sp,
-            color: Color(0xff181725)
-          ),
           decoration: InputDecoration(
             hintText: hint,
             hintStyle: TextStyle(fontSize: 18.sp, color: Colors.grey.shade400),
