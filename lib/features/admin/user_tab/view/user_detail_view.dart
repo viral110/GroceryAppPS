@@ -1,15 +1,8 @@
-import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
-import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
-import 'package:online_groceries_app/common_widgets/common_button.dart';
-import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/admin/user_tab/view/widgets/details_tab.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
-import 'package:online_groceries_app/utils/app_constant.dart';
-
-import '../../../../common_widgets/common_loader.dart';
 import '../../../../models/user_model.dart';
 
 

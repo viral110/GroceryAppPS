@@ -6,6 +6,7 @@ import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_textfield.dart';
 import 'package:online_groceries_app/features/admin/store_manage/controller/store_manage_controller.dart';
 import 'package:online_groceries_app/features/admin/store_manage/models/store_model.dart';
+import 'package:online_groceries_app/features/admin/store_manage/view/store_product_view.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 class StoreManageView extends StatelessWidget {
@@ -70,6 +71,9 @@ class StoreManageView extends StatelessWidget {
                         ],
                       ),
                       child: ListTile(
+                        onTap: (){
+                          Get.to(() => StoreProductView(store: store));
+                        },
                         leading: CircleAvatar(
                           backgroundColor: AppColors.primary.withOpacity(0.1),
                           child: const Icon(Icons.store, color: AppColors.primary),

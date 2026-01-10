@@ -5,10 +5,12 @@ class ProductModel {
   final String id;
   final String name;
 
+  /// CATEGORY
   final String categoryId;
   final int kps;
   final int discount;
   final String categoryName;
+
   final String brand;
   final String priceUnit;
   final double price;
@@ -19,6 +21,8 @@ class ProductModel {
   final List<StoreStockModel> storeStocks;
 
   final DateTime createdAt;
+  final List<String>? storeIds;
+
 
   ProductModel( {
     required this.id,
@@ -34,8 +38,10 @@ class ProductModel {
     required this.packaging,
     required this.storeStocks,
     required this.createdAt,
-    required this.kps
-    , required this.discount,
+    required this.kps,
+    required this.discount,
+
+    this.storeIds,
   });
 
   /// ================= TO FIRESTORE =================
@@ -54,6 +60,11 @@ class ProductModel {
       "discount": discount,
       "kps": kps,
 
+      "store_stock": storeStocks.map((e) => e.toJson()).toList(),
+
+      "discount": discount,
+      "kps": kps,
+      "store_ids": storeStocks.map((e) => e.storeId).toSet().toList(),
       "store_stock": storeStocks.map((e) => e.toJson()).toList(),
 
       "created_at": Timestamp.fromDate(createdAt),
@@ -78,13 +89,11 @@ class ProductModel {
       packaging: List<String>.from(data['packaging'] ?? []),
       discount: data['discount'] ?? 0,
       kps:data['kps'] ?? 0 ,
-
+      storeIds: List<String>.from(data['store_ids'] ?? []),
       /// ✅ FULL STORE REBUILD
       storeStocks: (data['store_stock'] as List? ?? [])
           .map((e) => StoreStockModel.fromJson(e))
           .toList(),
-
-
 
       createdAt: data['created_at'] is Timestamp
           ? (data['created_at'] as Timestamp).toDate()

@@ -13,14 +13,10 @@ class UserListController extends GetxController {
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {
-        return UserModel.fromJson(
-          doc.data(),
-          id: doc.id,
-        );
+        return UserModel.fromJson(doc.data(),id: doc.id );
       }).toList();
     });
   }
-
 
   List<UserModel> filterUsers(List<UserModel> users) {
     if (searchQuery.value.isEmpty) return users;

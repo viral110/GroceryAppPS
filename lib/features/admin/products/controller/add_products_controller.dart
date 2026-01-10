@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_storage/firebase_storage.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_image_compress/flutter_image_compress.dart';
 import 'package:get/get.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:online_groceries_app/common_widgets/common_loader.dart';
@@ -163,11 +164,43 @@ class AdminProductController extends GetxController {
     final XFile? image = await picker.pickImage(source: ImageSource.gallery);
     if (image == null) return;
 
+    // ---------------- WEB ----------------
     if (kIsWeb) {
-      thumbnailBytes.value = await image.readAsBytes();
+      final bytes = await image.readAsBytes();
+
+      // ❌ Max 100 KB validation
+      if (bytes.lengthInBytes > 200 * 1024) {
+        CommonToast.show("Thumbnail must be under 100 KB");
+        return;
+      }
+
+      thumbnailBytes.value = bytes;
       thumbnailFile.value = null;
-    } else {
-      thumbnailFile.value = File(image.path);
+    }
+
+    // ---------------- MOBILE ----------------
+    else {
+      final file = File(image.path);
+      final fileSize = await file.length();
+
+      // ❌ Max 100 KB validation
+      if (fileSize > 200 * 1024) {
+        CommonToast.show("Thumbnail must be under 100 KB");
+        return;
+      }
+
+      // 🔽 Compress thumbnail
+      final compressedThumb = await FlutterImageCompress.compressAndGetFile(
+        file.absolute.path,
+        '${file.parent.path}/thumb_${file.uri.pathSegments.last}',
+        quality: 55,
+        minWidth: 300,
+        minHeight: 300,
+      );
+
+      if (compressedThumb == null) return;
+
+      thumbnailFile.value = File(compressedThumb.path);
       thumbnailBytes.value = null;
     }
   }
@@ -208,19 +241,47 @@ class AdminProductController extends GetxController {
     for (int i = 0; i < images.length && i < remaining; i++) {
       final img = images[i];
 
+      // ---------------- WEB ----------------
       if (kIsWeb) {
         final bytes = await img.readAsBytes();
 
-        // ❌ duplicate bytes check
+        // ❌ Max 500 KB validation
+        if (bytes.lengthInBytes > 800 * 1024) {
+          CommonToast.show("Image must be under 500 KB");
+          continue;
+        }
+
+        // ❌ Duplicate check
         if (!productImagesBytes.any((e) => e.length == bytes.length)) {
           productImagesBytes.add(bytes);
         }
-      } else {
+      }
+
+      // ---------------- MOBILE ----------------
+      else {
         final file = File(img.path);
 
-        // ❌ duplicate file check
-        if (!productImages.any((e) => e.path == file.path)) {
-          productImages.add(file);
+        // ❌ Max 500 KB validation
+        final fileSize = await file.length();
+        if (fileSize > 800 * 1024) {
+          CommonToast.show("Image must be under 500 KB",type: ToastType.warning);
+          continue;
+        }
+
+        // 🔽 Compress image
+        final compressedFile = await FlutterImageCompress.compressAndGetFile(
+          file.absolute.path,
+          '${file.parent.path}/compressed_${file.uri.pathSegments.last}',
+          quality: 75, // controls size (~250KB)
+          minWidth: 1024,
+          minHeight: 1024,
+        );
+
+        if (compressedFile == null) continue;
+
+        // ❌ Duplicate check
+        if (!productImages.any((e) => e.path == compressedFile.path)) {
+          productImages.add(File(compressedFile.path));
         }
       }
     }
