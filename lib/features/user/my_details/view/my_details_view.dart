@@ -3,11 +3,8 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
-import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/common_widgets/common_textfield.dart';
-import 'package:online_groceries_app/common_widgets/common_tost.dart';
-import 'package:online_groceries_app/services/user_services.dart';
-import 'package:online_groceries_app/utils/app_colors.dart';
+import 'package:online_groceries_app/features/user/my_details/controller/my_details_controller.dart';
 
 class MyDetailsView extends StatefulWidget {
   const MyDetailsView({super.key});
@@ -17,34 +14,7 @@ class MyDetailsView extends StatefulWidget {
 }
 
 class _MyDetailsViewState extends State<MyDetailsView> {
-  final firstNameController = TextEditingController();
-  final lastNameController = TextEditingController();
-  final emailController = TextEditingController();
-  final mobileController = TextEditingController();
-
-  final areaController = TextEditingController();
-  final cityController = TextEditingController();
-  final stateController = TextEditingController();
-  final pincodeController = TextEditingController();
-  @override
-  void initState() {
-    super.initState();
-    _loadUserData();
-  }
-
-  void _loadUserData() {
-    final user = UserService.getUserFromHive();
-
-    firstNameController.text = user.firstName ?? '';
-    lastNameController.text = user.lastName ?? '';
-    emailController.text = user.email ?? '';
-    mobileController.text = user.mobileNumber ?? '';
-
-    areaController.text = user.area ?? '';
-    cityController.text = user.city ?? '';
-    stateController.text = user.state ?? '';
-    pincodeController.text = user.pincode ?? '';
-  }
+  MyDetailsController controller = Get.put(MyDetailsController());
 
   @override
   Widget build(BuildContext context) {
@@ -62,7 +32,7 @@ class _MyDetailsViewState extends State<MyDetailsView> {
               CommonTextField(
                 label: "First Name",
                 hint: "Enter first name",
-                controller: firstNameController,
+                controller: controller.firstNameController,
               ),
 
               const SizedBox(height: 16),
@@ -71,7 +41,7 @@ class _MyDetailsViewState extends State<MyDetailsView> {
               CommonTextField(
                 label: "Last Name",
                 hint: "Enter last name",
-                controller: lastNameController,
+                controller: controller.lastNameController,
               ),
 
               const SizedBox(height: 16),
@@ -80,7 +50,7 @@ class _MyDetailsViewState extends State<MyDetailsView> {
               CommonTextField(
                 label: "Email",
                 hint: "Enter your email",
-                controller: emailController,
+                controller: controller.emailController,
                 keyboardType: TextInputType.emailAddress,
                 isReadOnly: true,
               ),
@@ -91,7 +61,7 @@ class _MyDetailsViewState extends State<MyDetailsView> {
               CommonTextField(
                 label: "Mobile Number",
                 hint: "Enter mobile number",
-                controller: mobileController,
+                controller: controller.mobileController,
                 keyboardType: TextInputType.phone,
                 isReadOnly: true,
               ),
@@ -110,7 +80,7 @@ class _MyDetailsViewState extends State<MyDetailsView> {
               CommonTextField(
                 label: "Area",
                 hint: "Enter area",
-                controller: areaController,
+                controller: controller.areaController,
               ),
 
               const SizedBox(height: 16),
@@ -119,7 +89,7 @@ class _MyDetailsViewState extends State<MyDetailsView> {
               CommonTextField(
                 label: "City",
                 hint: "Enter city",
-                controller: cityController,
+                controller: controller.cityController,
               ),
 
               const SizedBox(height: 16),
@@ -128,7 +98,7 @@ class _MyDetailsViewState extends State<MyDetailsView> {
               CommonTextField(
                 label: "State",
                 hint: "Enter state",
-                controller: stateController,
+                controller: controller.stateController,
               ),
 
               const SizedBox(height: 16),
@@ -137,40 +107,14 @@ class _MyDetailsViewState extends State<MyDetailsView> {
               CommonTextField(
                 label: "Pincode",
                 hint: "Enter pincode",
-                controller: pincodeController,
+                controller: controller.pincodeController,
                 keyboardType: TextInputType.number,
               ),
 
               SizedBox(height: 30.h),
 
               /// UPDATE BUTTON
-              CommonButton(
-                title: "Update",
-                onTap: () async {
-                  FocusManager.instance.primaryFocus?.unfocus();
-                  CommonLoader.show();
-
-                  final user = UserService.getUserFromHive();
-
-                  user.firstName = firstNameController.text.trim();
-                  user.lastName = lastNameController.text.trim();
-
-                  user.area = areaController.text.trim();
-                  user.city = cityController.text.trim();
-                  user.state = stateController.text.trim();
-                  user.pincode = pincodeController.text.trim();
-
-                  await UserService().updateUser(user);
-
-                  CommonLoader.hide();
-
-                  Get.back(closeOverlays: true);
-                  CommonToast.show(
-                    "Details updated successfully",
-                    type: ToastType.success,
-                  );
-                },
-              ),
+              CommonButton(title: "Update", onTap: controller.updateProfile),
 
               const SizedBox(height: 30),
             ],

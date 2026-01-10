@@ -1,7 +1,9 @@
+import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
@@ -107,24 +109,90 @@ class GroceryHomeScreen extends StatelessWidget {
               const SizedBox(height: 16),
 
               /// 🥕 Banner
-              SizedBox(
-                height: 130.h,
-                child: PageView.builder(
-                  itemCount: controller.banners.length,
-                  onPageChanged: controller.onPageChanged,
-                  itemBuilder: (context, index) {
-                    return Container(
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(16),
-                        image: DecorationImage(
-                          image: AssetImage(controller.banners[index]),
-                          fit: BoxFit.cover,
-                        ),
+              Obx(() {
+                if (controller.isBannerLoading.value) {
+                  return const SizedBox(height: 160);
+                }
+
+                if (controller.banners.isEmpty) {
+                  return const SizedBox.shrink(); // 👈 no data → nothing shown
+                }
+                return Column(
+                  children: [
+                    CarouselSlider.builder(
+                      itemCount: controller.banners.length,
+                      itemBuilder: (context, index, realIndex) {
+                        final banner = controller.banners[index];
+                        return ClipRRect(
+                          borderRadius: BorderRadius.circular(16),
+                          child: Image.network(
+                            banner.image,
+                            fit: BoxFit.cover,
+                            width: double.infinity,
+                          ),
+                        );
+                      },
+                      options: CarouselOptions(
+                        height: 160,
+                        autoPlay: true,
+                        autoPlayInterval: const Duration(seconds: 3),
+                        autoPlayAnimationDuration: const Duration(seconds: 1),
+                        viewportFraction: 0.92,
+                        enlargeCenterPage: true,
+                        onPageChanged: (index, _) {
+                          controller.currentIndex.value = index;
+                        },
                       ),
-                    );
-                  },
-                ),
-              ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: List.generate(
+                        controller.banners.length,
+                        (index) => Obx(() {
+                          final isActive =
+                              controller.currentIndex.value == index;
+
+                          return AnimatedContainer(
+                            duration: const Duration(milliseconds: 450),
+                            curve: Curves.easeInOut,
+                            margin: const EdgeInsets.symmetric(horizontal: 4),
+                            width: isActive ? 18 : 6,
+                            height: 6,
+                            decoration: BoxDecoration(
+                              color: isActive
+                                  ? AppColors.primary
+                                  : Colors.grey.shade400.withOpacity(0.5),
+                              borderRadius: BorderRadius.circular(20),
+                            ),
+                          );
+                        }),
+                      ),
+                    ),
+                  ],
+                );
+                // return SizedBox(
+                //   height: 130.h,
+                //   child: PageView.builder(
+                //     itemCount: controller.banners.length,
+                //     onPageChanged: controller.onPageChanged,
+                //     itemBuilder: (context, index) {
+                //       final banner = controller.banners[index];
+                //       return Container(
+                //         decoration: BoxDecoration(
+                //           borderRadius: BorderRadius.circular(16),
+                //           image: DecorationImage(
+                //             image: NetworkImage(banner.image),
+                //             fit: BoxFit.cover,
+                //           ),
+                //         ),
+                //       );
+                //     },
+                //   ),
+                // );
+              }),
 
               const SizedBox(height: 20),
 

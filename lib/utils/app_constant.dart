@@ -4,6 +4,8 @@ class AppConstantStrings {
   static const String productsCollection = "products";
   static const String storesCollection = "stores";
   static const String banners = "banners";
+  static const String appInfoCollection = "app_info";
+  static const String feedbacksCollection = "feedbacks";
 
   static const String rupeeSymbol = "\u{20B9}";
 }
