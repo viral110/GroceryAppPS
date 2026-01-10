@@ -8,7 +8,6 @@ import 'package:online_groceries_app/features/user/help/view/feedback_view.dart'
 
 import '../../../../utils/app_colors.dart';
 
-
 class HelpView extends StatelessWidget {
   const HelpView({super.key});
 
@@ -19,26 +18,26 @@ class HelpView extends StatelessWidget {
       appBar: CommonAppBar(title: "Help"),
       body: Column(
         children: [
-          _helpTile(Icons.help_outline, "FAQs",() {
-            Get.to(()=>FaqsView());
-          },),
-          _helpTile(Icons.support_agent, "Customer Support",() {
-            Get.to(()=>CustomerSupport());
-          },),
-          _helpTile(Icons.call, "Contact Us",() {
-            Get.to(()=>ContactusView());
-          },),
-          _helpTile(Icons.feedback_outlined, "Send Feedback",() {
-            Get.to(()=>FeedbackView());
-          },),
+          // _helpTile(Icons.help_outline, "FAQs",() {
+          //   Get.to(()=>FaqsView());
+          // },),
+          _helpTile(Icons.support_agent, "Customer Support", () {
+            Get.to(() => CustomerSupport());
+          }),
+          // _helpTile(Icons.call, "Contact Us",() {
+          //   Get.to(()=>ContactusView());
+          // },),
+          _helpTile(Icons.feedback_outlined, "Send Feedback", () {
+            Get.to(() => FeedbackView());
+          }),
         ],
       ),
     );
   }
 
-  Widget _helpTile(IconData icon, String title,void Function()? onTap) {
+  Widget _helpTile(IconData icon, String title, void Function()? onTap) {
     return GestureDetector(
-      onTap:onTap ,
+      onTap: onTap,
       child: Container(
         margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 6),
         decoration: BoxDecoration(

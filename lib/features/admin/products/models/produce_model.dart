@@ -5,10 +5,12 @@ class ProductModel {
   final String id;
   final String name;
 
+  /// CATEGORY
   final String categoryId;
   final int kps;
   final int discount;
   final String categoryName;
+
   final String brand;
   final String priceUnit;
   final double price;
@@ -16,6 +18,8 @@ class ProductModel {
   final String thumbnail;
   final List<String> images;
   final List<String> packaging;
+  final List<StoreStockModel> storeStocks;
+
   final List<StoreStockModel> storeStocks;
   final DateTime createdAt;
   final List<String>? storeIds;
@@ -35,6 +39,8 @@ class ProductModel {
     required this.packaging,
     required this.storeStocks,
     required this.createdAt,
+    required this.kps
+    , required this.discount,
     required this.kps,
     required this.discount,
     this.storeIds,
@@ -53,6 +59,11 @@ class ProductModel {
       "thumbnail": thumbnail,
       "images": images,
       "packaging": packaging,
+      "discount": discount,
+      "kps": kps,
+
+      "store_stock": storeStocks.map((e) => e.toJson()).toList(),
+
       "discount": discount,
       "kps": kps,
       "store_ids": storeStocks.map((e) => e.storeId).toSet().toList(),
@@ -81,6 +92,16 @@ class ProductModel {
       discount: data['discount'] ?? 0,
       kps:data['kps'] ?? 0 ,
       storeIds: List<String>.from(data['store_ids'] ?? []),
+      /// ✅ FULL STORE REBUILD
+      storeStocks: (data['store_stock'] as List? ?? [])
+          .map((e) => StoreStockModel.fromJson(e))
+          .toList(),
+
+
+
+      discount: data['discount'] ?? 0,
+      kps:data['kps'] ?? 0 ,
+
       /// ✅ FULL STORE REBUILD
       storeStocks: (data['store_stock'] as List? ?? [])
           .map((e) => StoreStockModel.fromJson(e))
