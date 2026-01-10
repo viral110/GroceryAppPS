@@ -18,6 +18,7 @@ class UserModel {
   DateTime? updateAt;
   String? fcmToken;
   bool isNotification;
+  bool isAdmin;
 
 
   UserModel({
@@ -36,7 +37,7 @@ class UserModel {
     this.fcmToken,
     this.updateAt,
     this.isNotification = true,
-
+    this.isAdmin = false,
   });
 
   /// Convert Firestore doc to model
@@ -57,6 +58,7 @@ class UserModel {
       updateAt: checkObjectForDateTime(map['update_at']),
       fcmToken: map['fcm_token'],
       isNotification: map['isNotification'] ?? false,
+      isAdmin: map['isAdmin'] ?? false,
 
     );
   }
@@ -79,6 +81,7 @@ class UserModel {
       'update_at': updateAt?.toIso8601String(),
       'fcm_token': fcmToken,
       'isNotification': isNotification,
+      'isAdmin': isAdmin,
     };
   }
 

@@ -44,9 +44,9 @@ class AdminManageCategoryView extends StatelessWidget {
                             color: Colors.grey.shade200,
                             child: controller.imageBytes.value != null
                                 ? Image.memory(
-                                    controller.imageBytes.value!,
-                                    fit: BoxFit.cover,
-                                  )
+                              controller.imageBytes.value!,
+                              fit: BoxFit.cover,
+                            )
                                 : const Icon(Icons.add, size: 36),
                           ),
                         ),
@@ -67,7 +67,7 @@ class AdminManageCategoryView extends StatelessWidget {
                     SizedBox(
                       width: 180.w,
                       child: Obx(
-                        () => CommonButton(
+                            () => CommonButton(
                           title: controller.isLoading.value
                               ? "Please wait..."
                               : "Add Category",
@@ -84,7 +84,10 @@ class AdminManageCategoryView extends StatelessWidget {
               /// LIST TITLE
               Text(
                 "Category List",
-                style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
+                style: TextStyle(
+                  fontSize: 18.sp,
+                  fontWeight: FontWeight.w700,
+                ),
               ),
 
               SizedBox(height: 16.h),
@@ -120,6 +123,7 @@ class AdminManageCategoryView extends StatelessWidget {
                   );
                 },
               ),
+
             ],
           ),
         ),
@@ -128,7 +132,10 @@ class AdminManageCategoryView extends StatelessWidget {
   }
 
   /// CATEGORY ROW
-  Widget _categoryRow(BuildContext context, CategoryModel category) {
+  Widget _categoryRow(
+      BuildContext context,
+      CategoryModel category,
+      ) {
     return Container(
       margin: EdgeInsets.only(bottom: 12.h),
       padding: EdgeInsets.all(14.w),
@@ -145,10 +152,11 @@ class AdminManageCategoryView extends StatelessWidget {
             child: Image.network(
               category.imageUrl ?? '',
               fit: BoxFit.cover,
+              key: ValueKey(category.id),
               webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
-              errorBuilder: (_, error, ___) {
+              errorBuilder: (_, error, ___){
                 print(error);
-                return const Icon(Icons.broken_image);
+                return  const Icon(Icons.broken_image);
               },
             ),
           ),
@@ -158,13 +166,17 @@ class AdminManageCategoryView extends StatelessWidget {
           Expanded(
             child: Text(
               category.name ?? '',
-              style: TextStyle(fontSize: 15.sp, fontWeight: FontWeight.w500),
+              style: TextStyle(
+                fontSize: 15.sp,
+                fontWeight: FontWeight.w500,
+              ),
             ),
           ),
 
           IconButton(
             icon: const Icon(Icons.edit),
-            onPressed: () => _openEditDialog(context, category),
+            onPressed: () =>
+                _openEditDialog(context,category),
           ),
 
           IconButton(
@@ -218,15 +230,18 @@ class AdminManageCategoryView extends StatelessWidget {
                         color: Colors.grey.shade200,
                         child: controller.imageBytes.value != null
                             ? Image.memory(
-                                controller.imageBytes.value!,
-                                fit: BoxFit.cover,
-                              )
+                          controller.imageBytes.value!,
+                          fit: BoxFit.cover,
+                        )
                             : Image.network(
-                                webHtmlElementStrategy:
-                                    WebHtmlElementStrategy.prefer,
-                                controller.oldImageUrl.value,
-                                fit: BoxFit.cover,
-                              ),
+                          webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+                          controller.oldImageUrl.value,
+                          fit: BoxFit.cover,
+                          errorBuilder: (_, error, ___){
+                            print(error);
+                            return  const Icon(Icons.broken_image);
+                          },
+                        ),
                       ),
                     ),
                   ),
@@ -276,7 +291,10 @@ class AdminManageCategoryView extends StatelessWidget {
   }
 
   /// CARD UI
-  Widget _sectionCard({required String title, required Widget child}) {
+  Widget _sectionCard({
+    required String title,
+    required Widget child,
+  }) {
     return Container(
       padding: EdgeInsets.all(20.w),
       decoration: _cardDecoration(),
@@ -285,7 +303,10 @@ class AdminManageCategoryView extends StatelessWidget {
         children: [
           Text(
             title,
-            style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w700),
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w700,
+            ),
           ),
           SizedBox(height: 20.h),
           child,
@@ -299,7 +320,10 @@ class AdminManageCategoryView extends StatelessWidget {
       color: AppColors.whiteColor,
       borderRadius: BorderRadius.circular(14.r),
       boxShadow: [
-        BoxShadow(blurRadius: 16, color: Colors.black.withOpacity(0.05)),
+        BoxShadow(
+          blurRadius: 16,
+          color: Colors.black.withOpacity(0.05),
+        ),
       ],
     );
   }
