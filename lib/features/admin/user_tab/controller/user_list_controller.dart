@@ -9,7 +9,7 @@ class UserListController extends GetxController {
   Stream<List<UserModel>> getUsers() {
     return FirebaseFirestore.instance
         .collection(AppConstantStrings.userCollection)
-        .where("isAdmin", isEqualTo: false) // 🔥 filter admins
+        .where("isAdmin", isEqualTo: false)
         .snapshots()
         .map((snapshot) {
       return snapshot.docs.map((doc) {

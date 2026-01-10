@@ -6,6 +6,8 @@ import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/models/user_model.dart';
 import 'package:online_groceries_app/services/auth_services.dart';
 
+import '../../store_manage/models/store_model.dart';
+
 class AddUserController extends GetxController {
   final formKey = GlobalKey<FormState>();
 
@@ -22,7 +24,7 @@ class AddUserController extends GetxController {
 
   final isLoading = false.obs;
 
-
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   /// VALIDATION CHECK
   bool validateForm() {
@@ -76,7 +78,10 @@ class AddUserController extends GetxController {
       );
       return false;
     }
-
+    if (selectedStoreId.value.isEmpty) {
+      CommonToast.show("Please select a store",  type: ToastType.warning,);
+      return false;
+    }
     /// PASSWORD
     if (password.text.trim().isEmpty) {
       CommonToast.show(
@@ -153,7 +158,35 @@ class AddUserController extends GetxController {
 
     return true;
   }
+  final stores = <StoreModel>[].obs;
+  final selectedStoreId = ''.obs;
 
+  @override
+  void onInit() {
+    super.onInit();
+    fetchStores();
+  }
+
+  Future<void> fetchStores() async {
+    final snapshot = await _firestore
+        .collection('stores')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    stores.assignAll(
+      snapshot.docs.map(
+            (doc) => StoreModel.fromJson(doc.id, doc.data()),
+      ),
+    );
+
+
+  }
+
+  StoreModel? get selectedStore {
+    return stores.firstWhereOrNull(
+          (e) => e.id == selectedStoreId.value,
+    );
+  }
   /// SAVE ADMIN
   Future<void> saveUser() async {
     if (!validateForm()) return;
@@ -173,6 +206,7 @@ class AddUserController extends GetxController {
         pincode:  pincode.text.trim(),
         createdAt: DateTime.now(),
         fcmToken: "",
+        storeId: selectedStoreId.value,
         updateAt: DateTime.now(),
         isAdmin: false
       );

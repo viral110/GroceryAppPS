@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 import '../../product_detail/view/product_detail_view.dart';
@@ -25,15 +26,30 @@ class GroceryHomeScreen extends StatelessWidget {
                 child: SvgPicture.asset("assets/svg/logo_2.svg", height: 27.h),
               ),
               SizedBox(height: 8.h),
+
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
-                  Icon(Icons.location_on, size: 18, color: Color(0xff4C4F4D)),
-                  SizedBox(width: 4),
-                  Obx(
-                    () => DropdownButtonHideUnderline(
+                  const Icon(
+                    Icons.location_on,
+                    size: 18,
+                    color: Color(0xff4C4F4D),
+                  ),
+                  const SizedBox(width: 4),
+
+                  Obx(() {
+                    if (controller.stores.isEmpty) {
+                      return const Text(
+                        "Loading...",
+                        style: TextStyle(fontWeight: FontWeight.w600),
+                      );
+                    }
+
+                    return DropdownButtonHideUnderline(
                       child: DropdownButton<String>(
-                        value: controller.selectedLocation.value,
+                        value: controller.selectedStoreId.value.isEmpty
+                            ? null
+                            : controller.selectedStoreId.value,
                         icon: const SizedBox(),
                         dropdownColor: Colors.white,
                         borderRadius: BorderRadius.circular(15),
@@ -41,52 +57,28 @@ class GroceryHomeScreen extends StatelessWidget {
                           fontWeight: FontWeight.w600,
                           color: Colors.black,
                         ),
-                        items: const [
-                          DropdownMenuItem(
-                            value: "Gotri, Vadodara",
-                            child: Text("Gotri, Vadodara"),
-                          ),
-                          DropdownMenuItem(
-                            value: "Alkapuri, Vadodara",
-                            child: Text("Alkapuri, Vadodara"),
-                          ),
-                          DropdownMenuItem(
-                            value: "Manjalpur, Vadodara",
-                            child: Text("Manjalpur, Vadodara"),
-                          ),
-                          DropdownMenuItem(
-                            value: "Karelibaug, Vadodara",
-                            child: Text("Karelibaug, Vadodara"),
-                          ),
-                          DropdownMenuItem(
-                            value: "Akota, Vadodara",
-                            child: Text("Akota, Vadodara"),
-                          ),
-                          DropdownMenuItem(
-                            value: "Nizampura, Vadodara",
-                            child: Text("Nizampura, Vadodara"),
-                          ),
-                          DropdownMenuItem(
-                            value: "Waghodia Road, Vadodara",
-                            child: Text("Waghodia Road, Vadodara"),
-                          ),
-                          DropdownMenuItem(
-                            value: "Fatehgunj, Vadodara",
-                            child: Text("Fatehgunj, Vadodara"),
-                          ),
-                          DropdownMenuItem(
-                            value: "Sayajigunj, Vadodara",
-                            child: Text("Sayajigunj, Vadodara"),
-                          ),
-                        ],
+                        items: controller.stores.map((store) {
+                          return DropdownMenuItem<String>(
+                            value: store.id,
+                            child: Text(
+                              store.address, // 👈 shows Firestore address
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          );
+                        }).toList(),
+
                         onChanged: (value) {
-                          controller.selectedLocation.value = value!;
-                        },
+                          controller.selectedStoreId.value = value!;
+                          final user =UserService.getUserFromHive();
+                          user.storeId = controller.selectedStoreId.value;
+                          UserService().updateUser(user);
+                          },
                       ),
-                    ),
-                  ),
+                    );
+                  }),
                 ],
               ),
+
               SizedBox(height: 12),
 
               /// 🔍 Search

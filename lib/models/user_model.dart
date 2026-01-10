@@ -3,6 +3,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class UserModel {
   String uid;
+  String storeId;
   String? firstName;
   String? lastName;
   String? email;
@@ -23,6 +24,7 @@ class UserModel {
 
   UserModel({
     this.uid = "",
+    this.storeId = "",
     this.firstName,
     this.lastName,
     this.email,
@@ -44,6 +46,7 @@ class UserModel {
   factory UserModel.fromJson(Map map, {String? id}) {
     return UserModel(
       uid: id ?? '',
+      storeId: map['store_id']??"",
       firstName: map['first_name'],
       lastName: map['last_name'],
       email: map['email'],
@@ -69,6 +72,7 @@ class UserModel {
       if (setInHive) "uid": uid,
       'first_name': firstName,
       'last_name': lastName,
+     'store_id': storeId ??"",
       'email': email,
       'mobile_number': mobileNumber,
       'credit': credit,

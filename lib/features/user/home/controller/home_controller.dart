@@ -1,6 +1,10 @@
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import 'package:online_groceries_app/services/user_services.dart';
+
+import '../../../admin/store_manage/models/store_model.dart';
 
 class HomeController extends GetxController{
   final currentIndex = 0.obs;
@@ -25,5 +29,34 @@ class HomeController extends GetxController{
       "color":Color(0xff53B175)
     },
   ];
+
+  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
+
+  final stores = <StoreModel>[].obs;
+  final selectedStoreId = ''.obs;
+
+  @override
+  void onInit() {
+    super.onInit();
+    fetchStores();
+  }
+
+  Future<void> fetchStores() async {
+    final snapshot = await _firestore
+        .collection('stores')
+        .orderBy('createdAt', descending: true)
+        .get();
+
+    stores.assignAll(
+      snapshot.docs.map(
+            (doc) => StoreModel.fromJson(doc.id, doc.data()),
+      ),
+    );
+
+    // ✅ default selected store
+    if (stores.isNotEmpty) {
+      selectedStoreId.value = UserService.getUserFromHive().storeId.isNotEmpty ?UserService.getUserFromHive().storeId :"";
+    }
+  }
 
 }

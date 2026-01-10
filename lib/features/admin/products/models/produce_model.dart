@@ -17,8 +17,9 @@ class ProductModel {
   final List<String> images;
   final List<String> packaging;
   final List<StoreStockModel> storeStocks;
-
   final DateTime createdAt;
+  final List<String>? storeIds;
+
 
   ProductModel( {
     required this.id,
@@ -34,8 +35,9 @@ class ProductModel {
     required this.packaging,
     required this.storeStocks,
     required this.createdAt,
-    required this.kps
-    , required this.discount,
+    required this.kps,
+    required this.discount,
+    this.storeIds,
   });
 
   /// ================= TO FIRESTORE =================
@@ -53,7 +55,7 @@ class ProductModel {
       "packaging": packaging,
       "discount": discount,
       "kps": kps,
-
+      "store_ids": storeStocks.map((e) => e.storeId).toSet().toList(),
       "store_stock": storeStocks.map((e) => e.toJson()).toList(),
 
       "created_at": Timestamp.fromDate(createdAt),
@@ -78,7 +80,7 @@ class ProductModel {
       packaging: List<String>.from(data['packaging'] ?? []),
       discount: data['discount'] ?? 0,
       kps:data['kps'] ?? 0 ,
-
+      storeIds: List<String>.from(data['store_ids'] ?? []),
       /// ✅ FULL STORE REBUILD
       storeStocks: (data['store_stock'] as List? ?? [])
           .map((e) => StoreStockModel.fromJson(e))

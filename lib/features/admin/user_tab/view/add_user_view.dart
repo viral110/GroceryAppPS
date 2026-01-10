@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/common_widgets/common_drop_down.dart';
 import 'package:online_groceries_app/common_widgets/common_textfield.dart';
 import 'package:online_groceries_app/features/admin/user_tab/controller/add_user_controller.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
@@ -72,13 +73,26 @@ class AdminAddAdminView extends StatelessWidget {
                     Row(
                       children: [
                         Expanded(
-                          child: CommonTextField(
-                            label: "Password",
-                            hint: "Enter password",
-                            keyboardType: TextInputType.emailAddress,
-                            controller: controller.password,
+                          child: Obx(
+                                () => CommonDropdownField<String>(
+                              label: "Store",
+                              hint: "Select store",
+                              value: controller.selectedStoreId.value.isEmpty
+                                  ? null
+                                  : controller.selectedStoreId.value,
+                              items: controller.stores
+                                  .map(
+                                    (store) => DropdownMenuItem<String>(
+                                  value: store.id,
+                                  child: Text("${store.name} • ${store.address}"),
+                                ),
+                              )
+                                  .toList(),
+                              onChanged: (v) => controller.selectedStoreId.value = v!,
+                            ),
                           ),
                         ),
+
                         SizedBox(width: 16.w),
                         Expanded(
                           child: CommonTextField(
@@ -89,6 +103,13 @@ class AdminAddAdminView extends StatelessWidget {
                           ),
                         ),
                       ],
+                    ),
+                    SizedBox(height: 25.h),
+                    CommonTextField(
+                      label: "Password",
+                      hint: "Enter password",
+                      keyboardType: TextInputType.emailAddress,
+                      controller: controller.password,
                     ),
                   ],
                 ),
