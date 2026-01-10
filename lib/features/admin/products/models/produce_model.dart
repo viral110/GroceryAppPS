@@ -20,7 +20,6 @@ class ProductModel {
   final List<String> packaging;
   final List<StoreStockModel> storeStocks;
 
-  final List<StoreStockModel> storeStocks;
   final DateTime createdAt;
   final List<String>? storeIds;
 
@@ -39,10 +38,9 @@ class ProductModel {
     required this.packaging,
     required this.storeStocks,
     required this.createdAt,
-    required this.kps
-    , required this.discount,
     required this.kps,
     required this.discount,
+
     this.storeIds,
   });
 
@@ -96,18 +94,6 @@ class ProductModel {
       storeStocks: (data['store_stock'] as List? ?? [])
           .map((e) => StoreStockModel.fromJson(e))
           .toList(),
-
-
-
-      discount: data['discount'] ?? 0,
-      kps:data['kps'] ?? 0 ,
-
-      /// ✅ FULL STORE REBUILD
-      storeStocks: (data['store_stock'] as List? ?? [])
-          .map((e) => StoreStockModel.fromJson(e))
-          .toList(),
-
-
 
       createdAt: data['created_at'] is Timestamp
           ? (data['created_at'] as Timestamp).toDate()
