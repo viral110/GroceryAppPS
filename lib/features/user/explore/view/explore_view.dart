@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/features/user/explore/controller/explore_controller.dart';
+import 'package:online_groceries_app/features/user/explore/filter_bottom_sheet.dart';
 import 'package:online_groceries_app/features/user/explore/view/subcategory_view.dart';
 import 'package:online_groceries_app/features/user/product_detail/view/product_detail_view.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
@@ -87,7 +88,7 @@ class ExploreView extends StatelessWidget {
                       final item = controller.searchedProducts[index];
                       return GestureDetector(
                         onTap: () {
-                          Get.to(() => ProductDetailView());
+                          Get.to(() => ProductDetailView(product: item));
                         },
                         child: Container(
                           padding: const EdgeInsets.all(12),
@@ -232,164 +233,4 @@ class ExploreView extends StatelessWidget {
       ),
     );
   }
-}
-
-class FilterBottomSheet extends StatelessWidget {
-  FilterBottomSheet({super.key});
-
-  final controller = Get.put(FilterController());
-
-  @override
-  Widget build(BuildContext context) {
-    return SafeArea(
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          SizedBox(height: 40.h),
-
-          /// HEADER
-          Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                GestureDetector(
-                  onTap: Get.back,
-                  child: const Icon(Icons.close, size: 25),
-                ),
-                const Text(
-                  "Filters",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700),
-                ),
-                const SizedBox(width: 24),
-              ],
-            ),
-          ),
-
-          const SizedBox(height: 16),
-
-          Expanded(
-            child: Container(
-              padding: const EdgeInsets.all(16),
-              decoration: BoxDecoration(
-                color: const Color(0xffF2F3F2),
-                borderRadius: BorderRadius.vertical(top: Radius.circular(30)),
-              ),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  /// CATEGORIES
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          "Categories",
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        _checkTile("Eggs", controller.eggs),
-                        _checkTile("Noodles & Pasta", controller.noodles),
-                        _checkTile("Chips & Crisps", controller.chips),
-                        _checkTile("Fast Food", controller.fastFood),
-
-                        const SizedBox(height: 20),
-
-                        /// BRAND
-                        Text(
-                          "Brand",
-                          style: TextStyle(
-                            fontSize: 18.sp,
-                            fontWeight: FontWeight.w600,
-                          ),
-                        ),
-
-                        const SizedBox(height: 10),
-
-                        _checkTile(
-                          "Individual Collection",
-                          controller.individual,
-                        ),
-                        _checkTile("Cocola", controller.cocola),
-                        _checkTile("Ifad", controller.ifad),
-                        _checkTile("Kazi Farmas", controller.kaziFarmas),
-                      ],
-                    ),
-                  ),
-
-                  CommonButton(
-                    title: "Apply Filter",
-                    onTap: () {
-                      Get.back();
-                    },
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  /// CHECKBOX TILE (UNCHANGED LOGIC)
-  Widget _checkTile(String title, RxBool value) {
-    return Obx(() {
-      final isChecked = value.value;
-
-      return InkWell(
-        onTap: () => value.value = !isChecked,
-        borderRadius: BorderRadius.circular(8),
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Row(
-            children: [
-              Container(
-                height: 22,
-                width: 22,
-                decoration: BoxDecoration(
-                  color: isChecked ? AppColors.primary : Colors.transparent,
-                  borderRadius: BorderRadius.circular(6),
-                  border: Border.all(
-                    color: isChecked ? AppColors.primary : Colors.grey.shade400,
-                    width: 2,
-                  ),
-                ),
-                child: isChecked
-                    ? const Icon(Icons.check, size: 14, color: Colors.white)
-                    : null,
-              ),
-              const SizedBox(width: 12),
-              Text(
-                title,
-                style: TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w500,
-                  color: isChecked ? AppColors.primary : Colors.black87,
-                ),
-              ),
-            ],
-          ),
-        ),
-      );
-    });
-  }
-}
-
-class FilterController extends GetxController {
-  RxBool eggs = true.obs;
-  RxBool noodles = false.obs;
-  RxBool chips = false.obs;
-  RxBool fastFood = false.obs;
-
-  // Brands
-  RxBool individual = false.obs;
-  RxBool cocola = true.obs;
-  RxBool ifad = false.obs;
-  RxBool kaziFarmas = false.obs;
 }

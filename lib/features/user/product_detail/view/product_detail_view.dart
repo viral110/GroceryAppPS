@@ -4,37 +4,24 @@ import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
+import 'package:online_groceries_app/features/user/favourite/controller/favourite_controller.dart';
+import 'package:online_groceries_app/features/user/product_detail/controller/product_detai_controller.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 class ProductDetailView extends StatefulWidget {
-  // final ProductModel product;
-  const ProductDetailView({super.key});
+  final ProductModel product;
+  const ProductDetailView({super.key, required this.product});
 
   @override
   State<ProductDetailView> createState() => _ProductDetailViewState();
 }
 
 class _ProductDetailViewState extends State<ProductDetailView> {
-  final PageController _pageController = PageController();
-  int _currentIndex = 0;
-  int quantity = 1;
-
-  final List<Map<String, dynamic>> weightOptions = [
-    {"label": "250 gm", "multiplier": 0.25},
-    {"label": "500 gm", "multiplier": 0.5},
-    {"label": "1 Kg", "multiplier": 1.0},
-  ];
-
-  int selectedWeightIndex = 2; // default 1 Kg
-  double basePricePerKg = 4.99;
-
-  final List<String> imageList = [
-    "assets/png/apple_image.png",
-    "assets/png/apple_image.png",
-    "assets/png/apple_image.png",
-  ];
   @override
   Widget build(BuildContext context) {
+    final controller = Get.put(ProductDetailController(widget.product));
+    final favouriteController = Get.put(FavouriteController());
+
     return Scaffold(
       body: Column(
         children: [
@@ -47,69 +34,9 @@ class _ProductDetailViewState extends State<ProductDetailView> {
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
             ),
             child: SafeArea(
-              child: Column(
-                children: [
-                  /// 🔙 Top Row
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      GestureDetector(
-                        onTap: () {
-                          Get.back();
-                        },
-                        child: SvgPicture.asset(
-                          "assets/svg/back_arrow_icon.svg",
-                        ),
-                      ),
-                      SizedBox(),
-                    ],
-                  ),
-
-                  const SizedBox(height: 20),
-
-                  /// 🖼 Image Slider
-                  SizedBox(
-                    height: 220.h,
-                    child: PageView.builder(
-                      controller: _pageController,
-                      itemCount: imageList.length,
-                      onPageChanged: (index) {
-                        setState(() {
-                          _currentIndex = index;
-                        });
-                      },
-                      itemBuilder: (context, index) {
-                        return Image.asset(
-                          imageList[index],
-                          fit: BoxFit.contain,
-                        );
-                      },
-                    ),
-                  ),
-
-                  SizedBox(height: 20.h),
-
-                  /// ⚪ Dot Indicator
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: List.generate(
-                      imageList.length,
-                      (index) => AnimatedContainer(
-                        duration: const Duration(milliseconds: 300),
-                        margin: EdgeInsets.symmetric(horizontal: 3.h),
-                        height: 5.h,
-                        width: _currentIndex == index ? 15.w : 5.w,
-                        decoration: BoxDecoration(
-                          color: _currentIndex == index
-                              ? AppColors.primary
-                              : Color(0xffB3B3B3),
-                          borderRadius: BorderRadius.circular(10),
-                        ),
-                      ),
-                    ),
-                  ),
-                ],
-              ),
+              child: Obx(() {
+                return _buildImageSlider(controller);
+              }),
             ),
           ),
 
@@ -124,111 +51,135 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                   /// TITLE + FAVORITE
                   Row(
                     mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: const [
+                    children: [
                       Text(
-                        "Naturel Red Apple",
+                        widget.product.name, // "Naturel Red Apple",
                         style: TextStyle(
                           fontSize: 22,
                           fontWeight: FontWeight.w700,
                         ),
                       ),
-                      Icon(Icons.favorite_border),
+                      Obx(() {
+                        final isFav = favouriteController.isFavourite(
+                          widget.product.id,
+                        );
+                        return GestureDetector(
+                          onTap: () {
+                            favouriteController.toggleFavourite(widget.product);
+                          },
+                          child: Icon(
+                            isFav ? Icons.favorite : Icons.favorite_border,
+                            color: isFav ? Colors.red : Colors.grey,
+                            size: 28,
+                          ),
+                        );
+                      }),
                     ],
                   ),
 
                   const SizedBox(height: 4),
 
-                  const Text(
-                    "1kg, Price",
+                  Text(
+                    "${widget.product.priceUnit}, Price", // "1kg, Price",
                     style: TextStyle(color: Colors.grey),
                   ),
                   const SizedBox(height: 16),
 
                   /// WEIGHT CHIPS
-                  Wrap(
-                    spacing: 10,
-                    children: List.generate(weightOptions.length, (index) {
-                      final isSelected = selectedWeightIndex == index;
-                      return ChoiceChip(
-                        label: Text(weightOptions[index]['label']),
-                        selected: isSelected,
-                        selectedColor: AppColors.primary.withOpacity(0.15),
-                        labelStyle: TextStyle(
-                          color: isSelected ? AppColors.primary : Colors.black,
-                          fontWeight: FontWeight.w600,
-                        ),
-                        shape: RoundedRectangleBorder(
-                          borderRadius: BorderRadius.circular(20),
-                          side: BorderSide(
+                  Obx(
+                    () => Wrap(
+                      spacing: 10,
+                      children: List.generate(controller.sortedPackaging.length, (
+                        index,
+                      ) {
+                        final isSelected =
+                            controller.selectedWeightIndex.value == index;
+                        return ChoiceChip(
+                          label: Text(controller.sortedPackaging[index]),
+                          selected: isSelected,
+                          selectedColor: AppColors.primary.withOpacity(0.15),
+                          labelStyle: TextStyle(
                             color: isSelected
                                 ? AppColors.primary
-                                : Colors.grey.shade300,
+                                : Colors.black,
+                            fontWeight: FontWeight.w600,
                           ),
-                        ),
-                        onSelected: (_) {
-                          setState(() {
-                            selectedWeightIndex = index;
-                            quantity = 1; // reset quantity on change (optional)
-                          });
-                        },
-                      );
-                    }),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(20),
+                            side: BorderSide(
+                              color: isSelected
+                                  ? AppColors.primary
+                                  : Colors.grey.shade300,
+                            ),
+                          ),
+                          onSelected: (_) => controller.selectWeight(index),
+                          // onSelected: (_) {
+                          //   setState(() {
+                          //     selectedWeightIndex = index;
+                          //     quantity = 1; // reset quantity on change (optional)
+                          //   });
+                          // },
+                        );
+                      }),
+                    ),
                   ),
-
                   const SizedBox(height: 16),
 
                   /// QUANTITY + PRICE
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Row(
-                        children: [
-                          GestureDetector(
-                            onTap: () {
-                              if (quantity > 1) {
-                                setState(() {
-                                  quantity--;
-                                });
-                              }
-                            },
-                            child: _qtyButton(Icons.remove),
-                          ),
-                          const SizedBox(width: 12),
-                          Container(
-                            height: 36,
-                            width: 36,
-                            decoration: BoxDecoration(
-                              border: Border.all(color: Colors.grey.shade300),
-                              borderRadius: BorderRadius.circular(12),
+                  Obx(
+                    () => Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        Row(
+                          children: [
+                            GestureDetector(
+                              // onTap: () {
+                              //   if (quantity > 1) {
+                              //     setState(() {
+                              //       quantity--;
+                              //     });
+                              //   }
+                              // },
+                              onTap: controller.decrementQuantity,
+                              child: _qtyButton(Icons.remove),
                             ),
-                            child: Center(
-                              child: Text(
-                                quantity.toString(),
-                                style: const TextStyle(fontSize: 16),
+                            const SizedBox(width: 12),
+                            Container(
+                              height: 36,
+                              width: 36,
+                              decoration: BoxDecoration(
+                                border: Border.all(color: Colors.grey.shade300),
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Center(
+                                child: Text(
+                                  controller.quantity.value.toString(),
+                                  style: const TextStyle(fontSize: 16),
+                                ),
                               ),
                             ),
-                          ),
-                          const SizedBox(width: 12),
-                          GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                quantity++;
-                              });
-                            },
-                            child: _qtyButton(Icons.add, isAdd: true),
-                          ),
-                        ],
-                      ),
-                      Text(
-                        "₹${(basePricePerKg * weightOptions[selectedWeightIndex]['multiplier'] * quantity).toStringAsFixed(2)}",
-                        style: const TextStyle(
-                          fontSize: 22,
-                          fontWeight: FontWeight.w800,
+                            const SizedBox(width: 12),
+                            GestureDetector(
+                              // onTap: () {
+                              //   setState(() {
+                              //     quantity++;
+                              //   });
+                              // },
+                              onTap: controller.incrementQuantity,
+                              child: _qtyButton(Icons.add, isAdd: true),
+                            ),
+                          ],
                         ),
-                      ),
-                    ],
+                        Text(
+                          "₹${controller.totalPrice.value.toStringAsFixed(2)}", // "₹${(basePricePerKg * weightOptions[selectedWeightIndex]['multiplier'] * quantity).toStringAsFixed(2)}",
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w800,
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
-
                   const Divider(height: 32),
 
                   /// PRODUCT DETAIL
@@ -242,12 +193,13 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                       "Product Detail",
                       style: TextStyle(fontWeight: FontWeight.w600),
                     ),
-                    children: const [
+                    children: [
                       Padding(
                         padding: EdgeInsets.only(bottom: 12),
                         child: Text(
-                          "Apples are nutritious. Apples may be good for weight loss. "
-                          "Apples may be good for your heart. As part of a healthy and varied diet.",
+                          widget.product.description,
+                          // "Apples are nutritious. Apples may be good for weight loss. "
+                          // "Apples may be good for your heart. As part of a healthy and varied diet.",
                           style: TextStyle(color: Colors.grey),
                         ),
                       ),
@@ -289,6 +241,71 @@ class _ProductDetailViewState extends State<ProductDetailView> {
           ),
         ],
       ),
+    );
+  }
+
+  Widget _buildImageSlider(ProductDetailController controller) {
+    return Column(
+      children: [
+        /// 🔙 Top Row
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            GestureDetector(
+              onTap: () {
+                Get.back();
+              },
+              child: SvgPicture.asset("assets/svg/back_arrow_icon.svg"),
+            ),
+            SizedBox(),
+          ],
+        ),
+
+        const SizedBox(height: 20),
+
+        /// 🖼 Image Slider
+        SizedBox(
+          height: 220.h,
+          child: PageView.builder(
+            controller: controller.pageController,
+            itemCount: widget.product.images.length,
+            onPageChanged: (index) {
+              controller.currentIndex.value = index;
+              // setState(() {
+              //   _currentIndex = index;
+              // });
+            },
+            itemBuilder: (context, index) {
+              return Image.network(
+                widget.product.images[index],
+                fit: BoxFit.contain,
+              );
+            },
+          ),
+        ),
+
+        SizedBox(height: 20.h),
+
+        /// ⚪ Dot Indicator
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: List.generate(
+            widget.product.images.length,
+            (index) => AnimatedContainer(
+              duration: const Duration(milliseconds: 300),
+              margin: EdgeInsets.symmetric(horizontal: 3.h),
+              height: 5.h,
+              width: controller.currentIndex.value == index ? 15.w : 5.w,
+              decoration: BoxDecoration(
+                color: controller.currentIndex.value == index
+                    ? AppColors.primary
+                    : Color(0xffB3B3B3),
+                borderRadius: BorderRadius.circular(10),
+              ),
+            ),
+          ),
+        ),
+      ],
     );
   }
 

@@ -5,6 +5,7 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
+import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
@@ -28,7 +29,6 @@ class GroceryHomeScreen extends StatelessWidget {
                 child: SvgPicture.asset("assets/svg/logo_2.svg", height: 27.h),
               ),
               SizedBox(height: 8.h),
-
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
@@ -70,11 +70,13 @@ class GroceryHomeScreen extends StatelessWidget {
                         }).toList(),
 
                         onChanged: (value) {
-                          controller.selectedStoreId.value = value!;
-                          final user =UserService.getUserFromHive();
-                          user.storeId = controller.selectedStoreId.value;
-                          UserService().updateUser(user);
-                          },
+                          if (value == null) return;
+                          controller.onStoreChanged(value);
+                          // controller.selectedStoreId.value = value!;
+                          // final user = UserService.getUserFromHive();
+                          // user.storeId = controller.selectedStoreId.value;
+                          // UserService().updateUser(user);
+                        },
                       ),
                     );
                   }),
@@ -165,77 +167,67 @@ class GroceryHomeScreen extends StatelessWidget {
                     ),
                   ],
                 );
-                // return SizedBox(
-                //   height: 130.h,
-                //   child: PageView.builder(
-                //     itemCount: controller.banners.length,
-                //     onPageChanged: controller.onPageChanged,
-                //     itemBuilder: (context, index) {
-                //       final banner = controller.banners[index];
-                //       return Container(
-                //         decoration: BoxDecoration(
-                //           borderRadius: BorderRadius.circular(16),
-                //           image: DecorationImage(
-                //             image: NetworkImage(banner.image),
-                //             fit: BoxFit.cover,
-                //           ),
-                //         ),
-                //       );
-                //     },
-                //   ),
-                // );
               }),
 
               const SizedBox(height: 20),
 
-              /// ⭐ Exclusive Offer
-              _sectionHeader("Exclusive Offer"),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 248.h,
-                child: ListView.builder(
-                  itemCount: 4,
-                  shrinkWrap: true,
-                  physics: AlwaysScrollableScrollPhysics(),
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: EdgeInsets.only(right: 20.w),
-                      child: ProductCard(
-                        title: "Organic Bananas",
-                        weight: "7pcs, Priceg",
-                        price: "₹ 4.99",
-                      ),
-                    );
-                  },
-                ),
-              ),
+              /// ⭐ Exclusive Offers
+              Obx(() {
+                if (controller.exclusiveOffers.isEmpty) {
+                  return const Text("NO Exclusive PRODUCT FOUND");
+                }
 
+                return Column(
+                  children: [
+                    _sectionHeader("Exclusive Offer"),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 248.h,
+                      child: ListView.builder(
+                        scrollDirection: Axis.horizontal,
+                        itemCount: controller.exclusiveOffers.length,
+                        itemBuilder: (_, index) {
+                          final product = controller.exclusiveOffers[index];
+                          return Padding(
+                            padding: EdgeInsets.only(right: 20.w),
+                            child: ProductCard(product: product),
+                          );
+                        },
+                      ),
+                    ),
+                  ],
+                );
+              }),
               const SizedBox(height: 20),
+              Obx(() {
+                if (controller.bestSelling.isEmpty) {
+                  return Text("NO BEST SELLING PRODUCT FOUND");
+                }
 
-              /// 🔥 Best Selling
-              _sectionHeader("Best Selling"),
-              const SizedBox(height: 12),
-              SizedBox(
-                height: 248.h,
-                child: ListView.builder(
-                  itemCount: 4,
-                  shrinkWrap: true,
-                  physics: AlwaysScrollableScrollPhysics(),
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: EdgeInsets.only(right: 20.w),
-                      child: ProductCard(
-                        title: "Organic Bananas",
-                        weight: "7pcs, Priceg",
-                        price: "₹ 4.99",
+                return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    _sectionHeader("Best Selling"),
+                    const SizedBox(height: 12),
+                    SizedBox(
+                      height: 248.h,
+                      child: ListView.builder(
+                        itemCount: controller.bestSelling.length,
+                        shrinkWrap: true,
+                        physics: AlwaysScrollableScrollPhysics(),
+                        scrollDirection: Axis.horizontal,
+                        itemBuilder: (context, index) {
+                          final product = controller.bestSelling[index];
+                          return Padding(
+                            padding: EdgeInsets.only(right: 20.w),
+                            child: ProductCard(product: product),
+                          );
+                        },
                       ),
-                    );
-                  },
-                ),
-              ),
-
+                    ),
+                  ],
+                );
+              }),
               const SizedBox(height: 20),
 
               /// 🛒 Groceries
@@ -259,26 +251,29 @@ class GroceryHomeScreen extends StatelessWidget {
               ),
 
               const SizedBox(height: 16),
+              Obx(() {
+                if (controller.randomProducts.isEmpty) {
+                  return Text("NO PRODUCT FOUND");
+                }
 
-              SizedBox(
-                height: 248.h,
-                child: ListView.builder(
-                  itemCount: 4,
-                  shrinkWrap: true,
-                  physics: AlwaysScrollableScrollPhysics(),
-                  scrollDirection: Axis.horizontal,
-                  itemBuilder: (context, index) {
-                    return Padding(
-                      padding: EdgeInsets.only(right: 20.w),
-                      child: ProductCard(
-                        title: "Organic Bananas",
-                        weight: "7pcs, Priceg",
-                        price: "₹ 4.99",
-                      ),
-                    );
-                  },
-                ),
-              ),
+                return SizedBox(
+                  height: 248.h,
+                  child: ListView.builder(
+                    itemCount: controller.randomProducts.length,
+                    shrinkWrap: true,
+                    physics: AlwaysScrollableScrollPhysics(),
+                    scrollDirection: Axis.horizontal,
+                    itemBuilder: (context, index) {
+                      final product = controller.randomProducts[index];
+                      return Padding(
+                        padding: EdgeInsets.only(right: 20.w),
+                        child: ProductCard(product: product),
+                      );
+                    },
+                  ),
+                );
+              }),
+
               const SizedBox(height: 30),
             ],
           ),
@@ -343,22 +338,17 @@ class GroceryHomeScreen extends StatelessWidget {
 
 /// 🧺 PRODUCT CARD
 class ProductCard extends StatelessWidget {
-  final String title;
-  final String weight;
-  final String price;
+  final ProductModel product;
 
-  const ProductCard({
-    super.key,
-    required this.title,
-    required this.weight,
-    required this.price,
-  });
+  const ProductCard({super.key, required this.product});
 
   @override
   Widget build(BuildContext context) {
+    final discountedPrice =
+        product.price - (product.price * product.discount / 100);
     return GestureDetector(
       onTap: () {
-        Get.to(() => ProductDetailView());
+        Get.to(() => ProductDetailView(product: product));
       },
       child: Container(
         width: 174.w,
@@ -371,31 +361,60 @@ class ProductCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
+            /// 🖼 PRODUCT IMAGE
+            ClipRRect(
+              borderRadius: BorderRadius.circular(12),
+              child: Image.network(
+                product.thumbnail,
+                fit: BoxFit.contain,
+                errorBuilder: (_, __, ___) => Container(
+                  color: Colors.grey.shade200,
+                  child: Icon(
+                    Icons.image_not_supported,
+                    color: Colors.grey,
+                    size: 40,
+                  ),
+                ),
+              ),
+            ),
+
+            SizedBox(height: 10.h),
             Text(
-              title,
+              product.name,
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16.sp),
             ),
             const SizedBox(height: 4),
-            Text(weight, style: const TextStyle(color: Color(0xff7C7C7C))),
+            Text(
+              product.priceUnit,
+              style: const TextStyle(color: Color(0xff7C7C7C)),
+            ),
             const SizedBox(height: 10),
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
                 Text(
-                  price,
+                  "₹${discountedPrice.toStringAsFixed(0)}",
                   style: TextStyle(
                     fontWeight: FontWeight.w600,
                     fontSize: 18.sp,
                   ),
                 ),
-                Container(
-                  height: 45.h,
-                  width: 45.h,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(15),
+                GestureDetector(
+                  onTap: () {
+                    final CartController cartController =
+                        Get.find<CartController>();
+
+                    cartController.addToCart(product);
+                  },
+                  child: Container(
+                    height: 45.h,
+                    width: 45.h,
+                    decoration: BoxDecoration(
+                      color: AppColors.primary,
+                      borderRadius: BorderRadius.circular(15),
+                    ),
+                    child: const Icon(Icons.add, color: Colors.white, size: 20),
                   ),
-                  child: const Icon(Icons.add, color: Colors.white, size: 20),
                 ),
               ],
             ),
@@ -405,3 +424,21 @@ class ProductCard extends StatelessWidget {
     );
   }
 }
+
+var p = ProductModel(
+  id: "prod_002",
+  name: "Red Apple",
+  description: "Crisp and juicy red apples, perfect for snacking and desserts.",
+  price: 120.0,
+  priceUnit: "Kg",
+  categoryId: "fruits",
+  images: ["https://via.placeholder.com/300x300.png?text=Apple+1"],
+  packaging: ["500g", "1kg", "250g"],
+  createdAt: DateTime.now(),
+  categoryName: '',
+  brand: '',
+  thumbnail: '',
+  storeStocks: [],
+  kps: 10,
+  discount: 12,
+);

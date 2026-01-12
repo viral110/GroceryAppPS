@@ -8,8 +8,6 @@ import 'package:online_groceries_app/utils/app_colors.dart';
 
 import '../../../../common_widgets/common_app_bar.dart';
 
-
-
 /// ================= VIEW =================
 class MyCartView extends StatelessWidget {
   MyCartView({super.key});
@@ -20,23 +18,40 @@ class MyCartView extends StatelessWidget {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: CommonAppBar(title: "My Cart",showBack: false,),
+      appBar: CommonAppBar(title: "My Cart", showBack: false),
       body: Column(
         children: [
           /// CART LIST
           Expanded(
-            child: Obx(
-                  () => ListView.separated(
+            child: Obx(() {
+              if (controller.cartItems.isEmpty) {
+                return const Center(
+                  child: Text(
+                    "Your cart is empty",
+                    style: TextStyle(fontSize: 16, color: Colors.grey),
+                  ),
+                );
+              }
+
+              if (controller.isLoading.value) {
+                return Center(child: CircularProgressIndicator());
+              }
+
+              return ListView.separated(
                 padding: const EdgeInsets.all(16),
                 itemCount: controller.cartItems.length,
-                separatorBuilder: (_, __) =>
-                const Divider(height: 36),
+                separatorBuilder: (_, __) => const Divider(height: 36),
                 itemBuilder: (context, index) {
                   final item = controller.cartItems[index];
                   return Row(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Image.asset(item.image, height: 55.h),
+                      Image.network(
+                        item.product.thumbnail,
+                        height: 55.h,
+                        errorBuilder: (_, __, ___) =>
+                            const Icon(Icons.image_not_supported),
+                      ),
 
                       SizedBox(width: 12.w),
 
@@ -46,19 +61,17 @@ class MyCartView extends StatelessWidget {
                           children: [
                             /// TITLE + REMOVE
                             Row(
-                              mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Text(
-                                  item.title,
+                                  item.product.name,
                                   style: TextStyle(
                                     fontWeight: FontWeight.w600,
                                     fontSize: 16.sp,
                                   ),
                                 ),
                                 GestureDetector(
-                                  onTap: () =>
-                                      controller.removeItem(index),
+                                  onTap: () => controller.removeItem(index),
                                   child: const Icon(
                                     Icons.close,
                                     color: Colors.grey,
@@ -71,7 +84,7 @@ class MyCartView extends StatelessWidget {
 
                             /// SUBTITLE
                             Text(
-                              item.subtitle,
+                              item.product.priceUnit,
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 12,
@@ -82,37 +95,25 @@ class MyCartView extends StatelessWidget {
 
                             /// QTY + PRICE
                             Row(
-                              mainAxisAlignment:
-                              MainAxisAlignment.spaceBetween,
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
                                 Row(
                                   children: [
                                     GestureDetector(
-                                      onTap: () =>
-                                          controller.decrement(index),
-                                      child:
-                                      _qtyButton(Icons.remove),
+                                      onTap: () => controller.decrement(index),
+                                      child: _qtyButton(Icons.remove),
                                     ),
                                     const SizedBox(width: 10),
-                                    Obx(
-                                          () => Text(
-                                        controller.quantities[index]
-                                            .toString(),
-                                      ),
-                                    ),
+                                    Text(item.quantity.toString()),
                                     const SizedBox(width: 10),
                                     GestureDetector(
-                                      onTap: () =>
-                                          controller.increment(index),
-                                      child: _qtyButton(
-                                        Icons.add,
-                                        isAdd: true,
-                                      ),
+                                      onTap: () => controller.increment(index),
+                                      child: _qtyButton(Icons.add, isAdd: true),
                                     ),
                                   ],
                                 ),
                                 Text(
-                                  item.price,
+                                  "₹${item.totalPrice.toStringAsFixed(2)}",
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -125,8 +126,8 @@ class MyCartView extends StatelessWidget {
                     ],
                   );
                 },
-              ),
-            ),
+              );
+            }),
           ),
 
           /// BOTTOM BUTTON
@@ -141,8 +142,7 @@ class MyCartView extends StatelessWidget {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (_) =>
-                    const CheckoutBottomSheet(),
+                    builder: (_) => const CheckoutBottomSheet(),
                   );
                 },
                 style: ElevatedButton.styleFrom(
@@ -152,8 +152,7 @@ class MyCartView extends StatelessWidget {
                   ),
                 ),
                 child: Row(
-                  mainAxisAlignment:
-                  MainAxisAlignment.spaceAround,
+                  mainAxisAlignment: MainAxisAlignment.spaceAround,
                   children: [
                     const SizedBox(width: 30),
                     Text(
@@ -171,14 +170,15 @@ class MyCartView extends StatelessWidget {
                       ),
                       decoration: BoxDecoration(
                         color: AppColors.whiteColor.withOpacity(0.2),
-                        borderRadius:
-                        BorderRadius.circular(8),
+                        borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Text(
-                        "₹12.96",
-                        style: TextStyle(
-                          color: Colors.white,
-                          fontSize: 12.sp,
+                      child: Obx(
+                        () => Text(
+                          "₹${controller.totalPrice.toStringAsFixed(2)}",
+                          style: TextStyle(
+                            color: Colors.white,
+                            fontSize: 12.sp,
+                          ),
                         ),
                       ),
                     ),
@@ -193,10 +193,7 @@ class MyCartView extends StatelessWidget {
   }
 
   /// QTY BUTTON (UNCHANGED UI)
-  static Widget _qtyButton(
-      IconData icon, {
-        bool isAdd = false,
-      }) {
+  static Widget _qtyButton(IconData icon, {bool isAdd = false}) {
     return Container(
       height: 36,
       width: 36,
@@ -204,27 +201,7 @@ class MyCartView extends StatelessWidget {
         border: Border.all(color: Colors.grey.shade300),
         borderRadius: BorderRadius.circular(12),
       ),
-      child: Icon(
-        icon,
-        color: isAdd ? Colors.green : Colors.grey.shade600,
-      ),
+      child: Icon(icon, color: isAdd ? Colors.green : Colors.grey.shade600),
     );
   }
 }
-
-/// ================= MODEL =================
-class CartItem {
-  final String title;
-  final String subtitle;
-  final String price;
-  final String image;
-
-  CartItem({
-    required this.title,
-    required this.subtitle,
-    required this.price,
-    required this.image,
-  });
-}
-
-

@@ -6,6 +6,11 @@ class AppConstantStrings {
   static const String banners = "banners";
   static const String appInfoCollection = "app_info";
   static const String feedbacksCollection = "feedbacks";
+  static const String favouritesCollection = "favourites";
+  static const String cartCollection = "cart";
 
   static const String rupeeSymbol = "\u{20B9}";
+
+  static const int minDiscount = 5;
+  static const int maxDiscount = 10;
 }
