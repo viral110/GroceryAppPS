@@ -357,7 +357,7 @@ class OrderController extends GetxController {
         'update_at': FieldValue.serverTimestamp(),
       });
     });
-    user.spentCredit = ((user.spentCredit ?? 0) + creditToUse).toInt();
+    user.usedCredits = ((user.usedCredits ?? 0) + creditToUse).toInt();
     await UserService.setUserInHive(user);
   }
 }

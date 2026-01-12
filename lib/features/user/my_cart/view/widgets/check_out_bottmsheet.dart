@@ -226,7 +226,7 @@ class CheckoutBottomSheet extends StatelessWidget {
   double _getAvailableCredit() {
     final user = UserService.getUserFromHive();
     final totalCredit = user.credit ?? 0;
-    final spentCredit = user.spentCredit ?? 0;
+    final spentCredit = user.usedCredits ?? 0;
     return (totalCredit - spentCredit).toDouble();
   }
 
