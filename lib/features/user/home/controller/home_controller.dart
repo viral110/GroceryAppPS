@@ -4,6 +4,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/features/admin/settings/controller/add_banner_controller.dart';
+import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
+import 'package:online_groceries_app/services/product_pricing_extension.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import '../../../admin/store_manage/models/store_model.dart';
@@ -60,27 +62,27 @@ class HomeController extends GetxController {
   final stores = <StoreModel>[].obs;
   final selectedStoreId = ''.obs;
 
-
-
   Future<void> fetchStores() async {
     final snapshot = await _firestore
-        .collection('stores')
+        .collection(AppConstantStrings.storesCollection)
         .orderBy('createdAt', descending: true)
         .get();
 
     stores.assignAll(
-      snapshot.docs.map(
-            (doc) => StoreModel.fromJson(doc.id, doc.data()),
-      ),
+      snapshot.docs.map((doc) => StoreModel.fromJson(doc.id, doc.data())),
     );
 
     // ✅ default selected store
     if (stores.isNotEmpty) {
-      selectedStoreId.value = UserService.getUserFromHive().storeId.isNotEmpty ?UserService.getUserFromHive().storeId :"";
+      selectedStoreId.value = UserService.getUserFromHive().storeId.isNotEmpty
+          ? UserService.getUserFromHive().storeId
+          : "";
+      log("✅ SELECTED STORE ID: ${selectedStoreId.value}");
+
+      /// 👇 fetch products AFTER store selected
+      await fetchProducts();
     }
   }
-
-
 
   /// PRODUCTS
   final allProducts = <ProductModel>[].obs;
@@ -132,8 +134,28 @@ class HomeController extends GetxController {
 
     final user = UserService.getUserFromHive();
     user.storeId = storeId;
-    UserService().updateUser(user);
+    await UserService().updateUser(user);
 
     await fetchProducts(); // 🔥 reload products
+  }
+
+  /// ✅ SINGLE SOURCE OF ADD TO CART
+  Future<void> addProductToCart(ProductModel product) async {
+    final cartController = Get.find<CartController>();
+
+    final packaging = product.defaultPackaging;
+    log("PACKING $packaging");
+    final multiplier = product.multiplierFor(packaging);
+    log("MULTIPLIER $multiplier");
+    final unitPrice = product.unitPriceFor(packaging);
+    log("UNIT PRICE $unitPrice");
+
+    await cartController.addToCart(
+      product: product,
+      packaging: packaging,
+      multiplier: multiplier,
+      unitPrice: unitPrice,
+      quantity: 1,
+    );
   }
 }

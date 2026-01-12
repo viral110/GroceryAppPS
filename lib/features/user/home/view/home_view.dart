@@ -70,9 +70,9 @@ class GroceryHomeScreen extends StatelessWidget {
                           );
                         }).toList(),
 
-                        onChanged: (value) {
+                        onChanged: (value) async {
                           if (value == null) return;
-                          controller.onStoreChanged(value);
+                          await controller.onStoreChanged(value);
                           // controller.selectedStoreId.value = value!;
                           // final user = UserService.getUserFromHive();
                           // user.storeId = controller.selectedStoreId.value;
@@ -84,10 +84,11 @@ class GroceryHomeScreen extends StatelessWidget {
                 ],
               ),
               SizedBox(height: 12),
+
               /// 🔍 Search
               TextField(
                 readOnly: true,
-                onTap: (){
+                onTap: () {
                   Get.find<BottomNavController>().changeTab(1);
                 },
                 decoration: InputDecoration(
@@ -395,19 +396,38 @@ class ProductCard extends StatelessWidget {
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
-                Text(
-                  "₹${discountedPrice.toStringAsFixed(0)}",
-                  style: TextStyle(
-                    fontWeight: FontWeight.w600,
-                    fontSize: 18.sp,
-                  ),
-                ),
-                GestureDetector(
-                  onTap: () {
-                    final CartController cartController =
-                        Get.find<CartController>();
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // Discounted Price
+                    Text(
+                      "₹${discountedPrice.toStringAsFixed(2)}",
+                      style: TextStyle(
+                        fontWeight: FontWeight.w600,
+                        fontSize: 18.sp,
+                      ),
+                    ),
 
-                    cartController.addToCart(product);
+                    // Original Price (only if discount exists)
+                    if (product.discount > 0)
+                      Text(
+                        "₹${product.price.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          fontWeight: FontWeight.w400,
+                          fontSize: 14.sp,
+                          color: Colors.grey.shade600,
+                          decoration: TextDecoration.lineThrough,
+                        ),
+                      ),
+                  ],
+                ),
+
+                GestureDetector(
+                  onTap: () async {
+                    final homeController = Get.find<HomeController>();
+                    await homeController.addProductToCart(product);
+
+                    Get.find<BottomNavController>().changeTab(2);
                   },
                   child: Container(
                     height: 45.h,
@@ -427,21 +447,3 @@ class ProductCard extends StatelessWidget {
     );
   }
 }
-
-var p = ProductModel(
-  id: "prod_002",
-  name: "Red Apple",
-  description: "Crisp and juicy red apples, perfect for snacking and desserts.",
-  price: 120.0,
-  priceUnit: "Kg",
-  categoryId: "fruits",
-  images: ["https://via.placeholder.com/300x300.png?text=Apple+1"],
-  packaging: ["500g", "1kg", "250g"],
-  createdAt: DateTime.now(),
-  categoryName: '',
-  brand: '',
-  thumbnail: '',
-  storeStocks: [],
-  kps: 10,
-  discount: 12,
-);

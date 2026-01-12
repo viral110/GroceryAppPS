@@ -1,40 +1,66 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
+import 'package:online_groceries_app/features/user/promo_code/controller/promo_code_controller.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 import '../../../../common_widgets/common_app_bar.dart';
 
-
 class PromoCodeView extends StatelessWidget {
-  const PromoCodeView({super.key});
+  PromoCodeView({super.key});
 
+  final PromoCodeController promoController = Get.put(PromoCodeController());
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: Colors.grey.shade50,
       appBar: CommonAppBar(title: "Promo Code"),
-      body: SafeArea(child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Column(
-          children: [
-            CouponCard(
-              title: "Flat 20% OFF",
-              description: "On orders above ₹499",
-              code: "SAVE20",
-              expiry: "31 Jan 2026",
-              discountText: "20%\nOFF",
+      body: Obx(() {
+        if (promoController.isLoading.value) {
+          return SizedBox.shrink();
+        }
+
+        if (promoController.promoCodes.isEmpty) {
+          return const Center(child: Text("No promo codes available"));
+        }
+
+        return ListView.builder(
+          padding: const EdgeInsets.all(16),
+          itemCount: promoController.promoCodes.length,
+          itemBuilder: (context, index) {
+            final promo = promoController.promoCodes[index];
+            return CouponCard(
+              title: promoController.getDiscountTitle(promo),
+              description: promoController.getDescription(promo),
+              code: promo.code,
+              expiry:
+                  "${promo.endDate.day}/${promo.endDate.month}/${promo.endDate.year}",
+              discountText: promoController.getDiscountBadge(promo),
               onApply: () {
-                print("Coupon Applied");
+                Clipboard.setData(ClipboardData(text: promo.code));
+                log("Applied ${promo.code}");
               },
-            ),
-          ],
-        ),
-      )),
+            );
+            //  CouponCard(
+            //               title: "${promo.discountValue}% OFF",
+            //               description: "On orders above ₹${promo.minOrderAmount}",
+            //               code: promo.code,
+            //               expiry:
+            //                   "${promo.endDate.day}/${promo.endDate.month}/${promo.endDate.year}",
+            //               discountText: "${promo.discountValue}%\nOFF",
+            //               onApply: () {
+            //                 log("Applied ${promo.code}");
+            //               },
+            //             );
+          },
+        );
+      }),
     );
   }
 }
-
 
 class CouponCard extends StatelessWidget {
   final String title;
@@ -61,7 +87,7 @@ class CouponCard extends StatelessWidget {
         /// Main Card
         Container(
           margin: const EdgeInsets.only(bottom: 16),
-          height: 130,
+          height: 150,
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(16),
@@ -70,7 +96,7 @@ class CouponCard extends StatelessWidget {
                 color: Colors.black.withOpacity(0.06),
                 blurRadius: 10,
                 offset: const Offset(0, 4),
-              )
+              ),
             ],
           ),
           child: Row(
@@ -78,8 +104,8 @@ class CouponCard extends StatelessWidget {
               /// Discount Section
               Container(
                 width: 90,
-                decoration:  BoxDecoration(
-                  color:AppColors.primary,
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.horizontal(
                     left: Radius.circular(16),
                   ),
@@ -101,9 +127,7 @@ class CouponCard extends StatelessWidget {
               SizedBox(
                 width: 1,
                 height: double.infinity,
-                child: CustomPaint(
-                  painter: _DashedLinePainter(),
-                ),
+                child: CustomPaint(painter: _DashedLinePainter()),
               ),
 
               /// Coupon Details
@@ -123,10 +147,7 @@ class CouponCard extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         description,
-                        style: TextStyle(
-                          fontSize: 13.sp,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 13.sp, color: Colors.grey),
                       ),
                       const Spacer(),
 
@@ -135,10 +156,11 @@ class CouponCard extends StatelessWidget {
                         children: [
                           Container(
                             padding: const EdgeInsets.symmetric(
-                                horizontal: 10, vertical: 6),
+                              horizontal: 10,
+                              vertical: 6,
+                            ),
                             decoration: BoxDecoration(
-                              border: Border.all(
-                                  color: AppColors.primary),
+                              border: Border.all(color: AppColors.primary),
                               borderRadius: BorderRadius.circular(6),
                             ),
                             child: Text(
@@ -154,7 +176,9 @@ class CouponCard extends StatelessWidget {
                             onTap: onApply,
                             child: Container(
                               padding: const EdgeInsets.symmetric(
-                                  horizontal: 14, vertical: 6),
+                                horizontal: 14,
+                                vertical: 6,
+                              ),
                               decoration: BoxDecoration(
                                 color: AppColors.primary,
                                 borderRadius: BorderRadius.circular(6),
@@ -167,17 +191,14 @@ class CouponCard extends StatelessWidget {
                                 ),
                               ),
                             ),
-                          )
+                          ),
                         ],
                       ),
 
                       const SizedBox(height: 6),
                       Text(
                         "Valid until $expiry",
-                        style: TextStyle(
-                          fontSize: 11.sp,
-                          color: Colors.grey,
-                        ),
+                        style: TextStyle(fontSize: 11.sp, color: Colors.grey),
                       ),
                     ],
                   ),
@@ -188,18 +209,10 @@ class CouponCard extends StatelessWidget {
         ),
 
         /// Left Cut
-        Positioned(
-          left: -8,
-          top: 52,
-          child: _cutCircle(),
-        ),
+        Positioned(left: -8, top: 52, child: _cutCircle()),
 
         /// Right Cut
-        Positioned(
-          right: -8,
-          top: 52,
-          child: _cutCircle(),
-        ),
+        Positioned(right: -8, top: 52, child: _cutCircle()),
       ],
     );
   }
@@ -215,6 +228,7 @@ class CouponCard extends StatelessWidget {
     );
   }
 }
+
 class _DashedLinePainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
@@ -227,11 +241,7 @@ class _DashedLinePainter extends CustomPainter {
     double startY = 0;
 
     while (startY < size.height) {
-      canvas.drawLine(
-        Offset(0, startY),
-        Offset(0, startY + dashHeight),
-        paint,
-      );
+      canvas.drawLine(Offset(0, startY), Offset(0, startY + dashHeight), paint);
       startY += dashHeight + dashSpace;
     }
   }

@@ -2,6 +2,8 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
+import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
+import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
@@ -23,7 +25,7 @@ class FavouriteController extends GetxController {
     }
   }
 
-  /// ================= LOAD FAVOURITES =================
+  /// ================= LOAD =================
   Future<void> loadFavourites() async {
     try {
       favouriteProducts.clear();
@@ -35,11 +37,9 @@ class FavouriteController extends GetxController {
           .get();
 
       for (final doc in favSnap.docs) {
-        final productId = doc.id;
-
         final productDoc = await _firestore
             .collection(AppConstantStrings.productsCollection)
-            .doc(productId)
+            .doc(doc.id)
             .get();
 
         if (productDoc.exists) {
@@ -62,9 +62,13 @@ class FavouriteController extends GetxController {
           .collection(AppConstantStrings.favouritesCollection)
           .doc(product.id)
           .set({'product_id': product.id, 'added_at': Timestamp.now()});
+      Future.delayed(Duration(milliseconds: 500));
+      // favouriteProducts.add(product);
+      await loadFavourites();
 
-      favouriteProducts.add(product);
+      Get.back();
 
+      Get.find<BottomNavController>().changeTab(3);
       CommonToast.show(
         '${product.name} added to favourites',
         type: ToastType.success,
@@ -94,11 +98,9 @@ class FavouriteController extends GetxController {
 
   /// ================= TOGGLE =================
   void toggleFavourite(ProductModel product) {
-    if (isFavourite(product.id)) {
-      removeFromFavourites(product.id);
-    } else {
-      addToFavourites(product);
-    }
+    isFavourite(product.id)
+        ? removeFromFavourites(product.id)
+        : addToFavourites(product);
   }
 
   /// ================= CHECK =================
@@ -108,7 +110,6 @@ class FavouriteController extends GetxController {
 
   /// ================= ADD ALL TO CART =================
   Future<void> addAllToCart() async {
-    isLoading.value = true;
     if (favouriteProducts.isEmpty) {
       CommonToast.show(
         "You don't have any favourite products",
@@ -117,15 +118,13 @@ class FavouriteController extends GetxController {
       return;
     }
 
-    final cartController = Get.find<CartController>();
-    final List<ProductModel> productsToMove = List<ProductModel>.from(
-      favouriteProducts,
-    );
-    for (final product in productsToMove) {
-      // 1️⃣ Add to cart
-      await cartController.addToCart(product);
+    isLoading.value = true;
 
-      // 2️⃣ Remove from favourites (Firestore + local)
+    final homeController = Get.find<HomeController>();
+    // final products = List<ProductModel>.from(favouriteProducts);
+    for (final product in favouriteProducts) {
+      await homeController.addProductToCart(product);
+
       await _firestore
           .collection(AppConstantStrings.userCollection)
           .doc(_userId)
@@ -134,9 +133,9 @@ class FavouriteController extends GetxController {
           .delete();
     }
 
-    // 3️⃣ Clear local list
     favouriteProducts.clear();
     isLoading.value = false;
+
     CommonToast.show(
       'All favourite items added to cart',
       type: ToastType.success,

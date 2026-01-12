@@ -4,28 +4,42 @@ import 'package:online_groceries_app/features/admin/products/models/produce_mode
 class CartItem {
   final ProductModel product;
   int quantity;
+  String packaging;
+  double multiplier; // e.g. 0.25, 1
+  double unitPrice; // price for selected packaging (1 qty)
 
-  CartItem({required this.product, this.quantity = 1});
+  CartItem({
+    required this.product,
+    this.quantity = 1,
+    required this.packaging,
+    required this.multiplier,
+    required this.unitPrice,
+  });
 
-  double get discountedPrice =>
-      product.price - (product.price * product.discount / 100);
+  // double get discountedPrice =>
+  //     product.price - (product.price * product.discount / 100);
 
-  double get totalPrice => discountedPrice * quantity;
+  double get totalPrice => unitPrice * quantity;
 
   Map<String, dynamic> toJson() {
     return {
       'product_id': product.id,
-      'name': product.name,
-      'price': product.price,
-      'discount': product.discount,
-      'thumbnail': product.thumbnail,
-      'price_unit': product.priceUnit,
+      'packaging': packaging,
+      'multiplier': multiplier,
+      'unit_price': unitPrice,
       'quantity': quantity,
+
       "createdAt": FieldValue.serverTimestamp(),
     };
   }
 
-  factory CartItem.fromJson(Map<String, dynamic> json, ProductModel product) {
-    return CartItem(product: product, quantity: json['quantity'] ?? 1);
+  factory CartItem.fromJson(ProductModel product, Map<String, dynamic> json) {
+    return CartItem(
+      product: product,
+      quantity: json['quantity'] ?? 1,
+      packaging: json['packaging'] ?? "1kg",
+      multiplier: json['multiplier'] ?? 1.0,
+      unitPrice: json['unit_price'] ?? 1.0,
+    );
   }
 }

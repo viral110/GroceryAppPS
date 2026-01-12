@@ -1,9 +1,10 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+
 class OrderModel {
   final String? orderId;
   final String? userId;
   final String? storeId;
-  final String? orderStatus;
+  final String? orderStatus; // "Pending","Ongoing","Completed","Cancelled",
   final String? paymentStatus;
   final String? paymentMethod;
   final String? appliedPromoCode;
@@ -15,6 +16,7 @@ class OrderModel {
   final DeliveryAddressModel? deliveryAddress;
   final DateTime? createdAt;
   final DateTime? updatedAt;
+
   OrderModel({
     this.orderId,
     this.userId,
@@ -32,8 +34,10 @@ class OrderModel {
     this.createdAt,
     this.updatedAt,
   });
+
   factory OrderModel.fromMap(Map<String, dynamic>? map) {
     if (map == null) return OrderModel();
+
     return OrderModel(
       orderId: map['order_id'],
       userId: map['user_id'],
@@ -43,9 +47,9 @@ class OrderModel {
       paymentMethod: map['payment_method'],
       appliedPromoCode: map['applied_promo_code'],
       items:
-      (map['items'] as List?)
-          ?.map((e) => OrderItemModel.fromMap(e))
-          .toList() ??
+          (map['items'] as List?)
+              ?.map((e) => OrderItemModel.fromMap(e))
+              .toList() ??
           [],
       subtotal: (map['subtotal'] as num?)?.toDouble() ?? 0,
       deliveryCharge: (map['delivery_charge'] as num?)?.toDouble() ?? 0,
@@ -58,6 +62,7 @@ class OrderModel {
       updatedAt: (map['updated_at'] as Timestamp?)?.toDate(),
     );
   }
+
   Map<String, dynamic> toMap() {
     return {
       if (orderId != null) 'order_id': orderId,
@@ -78,6 +83,7 @@ class OrderModel {
     };
   }
 }
+
 class OrderItemModel {
   final String? productId;
   final String? productName;
@@ -88,6 +94,7 @@ class OrderItemModel {
   // final bool isPromo;
   // final double? promoPrice;
   final String? image;
+
   OrderItemModel({
     this.productId,
     this.productName,
@@ -99,8 +106,10 @@ class OrderItemModel {
     // this.promoPrice,
     this.image,
   });
+
   factory OrderItemModel.fromMap(Map<String, dynamic>? map) {
     if (map == null) return OrderItemModel();
+
     return OrderItemModel(
       productId: map['product_id'],
       productName: map['product_name'],
@@ -113,6 +122,7 @@ class OrderItemModel {
       image: map['image'],
     );
   }
+
   Map<String, dynamic> toMap() {
     return {
       if (productId != null) 'product_id': productId,
@@ -127,12 +137,14 @@ class OrderItemModel {
     };
   }
 }
+
 class DeliveryAddressModel {
   final String? name;
   final String? phone;
   final String? addressLine;
   final String? city;
   final String? pincode;
+
   DeliveryAddressModel({
     this.name,
     this.phone,
@@ -140,8 +152,10 @@ class DeliveryAddressModel {
     this.city,
     this.pincode,
   });
+
   factory DeliveryAddressModel.fromMap(Map<String, dynamic>? map) {
     if (map == null) return DeliveryAddressModel();
+
     return DeliveryAddressModel(
       name: map['name'],
       phone: map['phone'],
@@ -150,6 +164,7 @@ class DeliveryAddressModel {
       pincode: map['pincode'],
     );
   }
+
   Map<String, dynamic> toMap() {
     return {
       if (name != null) 'name': name,
