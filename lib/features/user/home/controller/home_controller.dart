@@ -1,18 +1,14 @@
 import 'dart:developer';
-import 'dart:developer';
 import 'dart:ui';
-
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/features/admin/settings/controller/add_banner_controller.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 import 'package:online_groceries_app/services/user_services.dart';
-
 import '../../../admin/store_manage/models/store_model.dart';
 
 class HomeController extends GetxController {
   final currentIndex = 0.obs;
-  var selectedLocation = "Manjalpur, Vadodara".obs;
 
   var banners = <BannerModel>[].obs;
   var isBannerLoading = false.obs;
