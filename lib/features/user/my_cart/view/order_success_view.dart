@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 class OrderSuccessView extends StatelessWidget {
@@ -14,52 +15,61 @@ class OrderSuccessView extends StatelessWidget {
         height: Get.height,
         width: Get.width,
         decoration: BoxDecoration(
-          image: DecorationImage(image: AssetImage("assets/png/success_bg.png"),fit: BoxFit.fill),
+          image: DecorationImage(
+            image: AssetImage("assets/png/success_bg.png"),
+            fit: BoxFit.fill,
+          ),
         ),
         child: Column(
           children: [
-            SizedBox(height: 115.h,),
-            Image.asset("assets/png/success_image.png",height: 240.h,width: 270.w,),
-            SizedBox(height: 66.h,),
+            SizedBox(height: 115.h),
+            Image.asset(
+              "assets/png/success_image.png",
+              height: 240.h,
+              width: 270.w,
+            ),
+            SizedBox(height: 66.h),
 
-            Text("Your Order has been\naccepted",
+            Text(
+              "Your Order has been\naccepted",
               textAlign: TextAlign.center,
-              style: TextStyle(
-              fontSize: 28.sp,
-              fontWeight: FontWeight.w600,
-
-            ),),
-            SizedBox(height: 20.sp,),
-            Text("Your items has been placcd and is on\nit’s way to being processed",
+              style: TextStyle(fontSize: 28.sp, fontWeight: FontWeight.w600),
+            ),
+            SizedBox(height: 20.sp),
+            Text(
+              "Your items has been placcd and is on\nit's way to being processed",
               textAlign: TextAlign.center,
-              style: TextStyle(
-              fontSize: 16.sp,
-              color: AppColors.grayTextColor
-            ),),
-            SizedBox(height: 134.h,),
-            CommonButton(title: "Track Order", onTap: () {
-
-            },
-            margin: EdgeInsets.symmetric(horizontal: 20),
+              style: TextStyle(fontSize: 16.sp, color: AppColors.grayTextColor),
+            ),
+            SizedBox(height: 134.h),
+            CommonButton(
+              title: "Track Order",
+              onTap: () {
+                Get.find<BottomNavController>().currentIndex.value = 0;
+                Get.to(() => MainScreen());
+              },
+              margin: EdgeInsets.symmetric(horizontal: 20),
             ),
             CommonButton(
               margin: EdgeInsets.symmetric(horizontal: 20),
 
-              title: "Back to home", onTap: () {
-              showDialog(
-                context: context,
-                barrierDismissible: false,
-                builder: (_) => const OrderFailedDialog(),
-              );
-
-            },backgroundColor: Colors.transparent,textColor: Colors.black,),
+              title: "Back to home",
+              onTap: () {
+                showDialog(
+                  context: context,
+                  barrierDismissible: false,
+                  builder: (_) => const OrderFailedDialog(),
+                );
+              },
+              backgroundColor: Colors.transparent,
+              textColor: Colors.black,
+            ),
           ],
         ),
       ),
     );
   }
 }
-
 
 class OrderFailedDialog extends StatelessWidget {
   const OrderFailedDialog({super.key});
@@ -68,9 +78,7 @@ class OrderFailedDialog extends StatelessWidget {
   Widget build(BuildContext context) {
     return Dialog(
       backgroundColor: Colors.white,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(20),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
       insetPadding: const EdgeInsets.symmetric(horizontal: 24),
       child: Padding(
         padding: const EdgeInsets.fromLTRB(20, 16, 20, 24),
@@ -109,10 +117,7 @@ class OrderFailedDialog extends StatelessWidget {
             /// TITLE
             const Text(
               "Oops! Order Failed",
-              style: TextStyle(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-              ),
+              style: TextStyle(fontSize: 20, fontWeight: FontWeight.w700),
             ),
 
             const SizedBox(height: 8),
@@ -121,17 +126,13 @@ class OrderFailedDialog extends StatelessWidget {
             const Text(
               "Something went terribly wrong.",
               textAlign: TextAlign.center,
-              style: TextStyle(
-                color: Colors.grey,
-              ),
+              style: TextStyle(color: Colors.grey),
             ),
 
             SizedBox(height: 60.h),
 
             /// TRY AGAIN BUTTON
-           CommonButton(title: "Please Try Again", onTap: () {
-
-           },),
+            CommonButton(title: "Please Try Again", onTap: () {}),
 
             const SizedBox(height: 16),
 
@@ -140,11 +141,11 @@ class OrderFailedDialog extends StatelessWidget {
                 Navigator.pop(context);
                 // navigate to home
               },
-              child:  Text(
+              child: Text(
                 "Back to home",
                 style: TextStyle(
                   fontWeight: FontWeight.w900,
-                  color: Colors.black
+                  color: Colors.black,
                 ),
               ),
             ),
@@ -154,6 +155,3 @@ class OrderFailedDialog extends StatelessWidget {
     );
   }
 }
-
-
-

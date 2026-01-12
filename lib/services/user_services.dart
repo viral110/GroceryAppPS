@@ -38,6 +38,22 @@ class UserService {
     }
   }
 
+  static Future<void> refreshUserFromFirestore() async {
+    final currentUser = getUserFromHive();
+    if (currentUser.uid.isEmpty) return;
+
+    final doc = await FirebaseFirestore.instance
+        .collection(AppConstantStrings.userCollection)
+        .doc(currentUser.uid)
+        .get();
+
+    if (doc.exists) {
+      final updatedUser = UserModel.fromJson(doc.data()!, id: doc.id);
+      await setUserInHive(updatedUser);
+      log("User data refreshed from Firestore: ${updatedUser.toJson()}");
+    }
+  }
+
   //======== Firebase ============
   Future<UserModel> getUserFromDbById(String userId) async {
     DocumentSnapshot<Map<String, dynamic>> data = await firestore

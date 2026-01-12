@@ -1,36 +1,42 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
+import 'package:online_groceries_app/features/user/my_cart/controller/order_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/view/order_success_view.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 
 class CheckoutBottomSheet extends StatelessWidget {
+  // final String totalPrice;
   const CheckoutBottomSheet({super.key});
 
   @override
   Widget build(BuildContext context) {
-    final controller =Get.put(CartController());
+    final cartController = Get.find<CartController>();
+    final orderController = Get.find<OrderController>();
+
     return Container(
       decoration: const BoxDecoration(
         color: Colors.white,
-        borderRadius:
-        BorderRadius.vertical(top: Radius.circular(20)),
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
       child: SafeArea(
         top: false,
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment:
-          CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.start,
 
           children: [
             Padding(
               padding: const EdgeInsets.all(20),
               child: Row(
-                mainAxisAlignment:
-                MainAxisAlignment.spaceBetween,
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
 
                 children: [
                   Text(
@@ -43,8 +49,7 @@ class CheckoutBottomSheet extends StatelessWidget {
                   ),
                   GestureDetector(
                     onTap: () => Navigator.pop(context),
-                    child:
-                    const Icon(Icons.close, size: 25),
+                    child: const Icon(Icons.close, size: 25),
                   ),
                 ],
               ),
@@ -56,11 +61,13 @@ class CheckoutBottomSheet extends StatelessWidget {
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  Obx(() => _rowItem(
-                    title: "Delivery",
-                    value: controller.selectedPaymentMethod.value,
-                    onTap: () => showDeliveryMethodSheet(context),
-                  )),
+                  Obx(
+                    () => _rowItem(
+                      title: "Delivery",
+                      value: orderController.selectedPaymentMethod.value,
+                      onTap: () => showDeliveryMethodSheet(context),
+                    ),
+                  ),
 
                   const Divider(height: 35),
 
@@ -69,65 +76,142 @@ class CheckoutBottomSheet extends StatelessWidget {
                     value: "Pick discount",
                     onTap: () => showPromoCodeSheet(context),
                   ),
+                  Obx(() {
+                    if (!orderController.isPromoApplied.value) {
+                      return const SizedBox();
+                    }
+
+                    return Padding(
+                      padding: const EdgeInsets.only(top: 10),
+                      child: Column(
+                        children: [
+                          _rowItem(
+                            title: "Promo Applied",
+                            value: orderController.appliedPromoCode.value,
+                          ),
+                          const SizedBox(height: 6),
+                          _rowItem(
+                            title: "Discount",
+                            value:
+                                "- ${AppConstantStrings.rupeeSymbol} ${orderController.promoDiscount.value.toStringAsFixed(2)}",
+                          ),
+                        ],
+                      ),
+                    );
+                  }),
+
                   const Divider(height: 35),
                   _rowItem(
                     title: "Total Cost",
-                    value: "₹13.97",
+                    value:
+                        "${AppConstantStrings.rupeeSymbol} ${orderController.finalPayable.toStringAsFixed(2)}",
+
+                    // "${AppConstantStrings.rupeeSymbol} ${cartController.totalPrice.toStringAsFixed(2)}",
                     isBold: true,
                   ),
 
                   const Divider(height: 35),
-                   RichText(
-                      textAlign: TextAlign.left,
-                      text: TextSpan(
-                          text: "By placing an order you agree to our\n",
+                  RichText(
+                    textAlign: TextAlign.left,
+                    text: TextSpan(
+                      text: "By placing an order you agree to our\n",
+                      style: TextStyle(
+                        fontSize: 14.sp,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xff7C7C7C),
+                      ),
+                      children: [
+                        TextSpan(
+                          text: "Terms",
                           style: TextStyle(
-                              fontSize: 14.sp,
-                              fontWeight: FontWeight.w600,
-                              color: Color(0xff7C7C7C)
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textColor,
                           ),
-                          children: [
-                            TextSpan(
-                                text: "Terms",
-                                style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textColor
-                                )
-                            ),
-                            TextSpan(
-                                text: " And ",
-                                style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: Color(0xff7C7C7C)
-                                )
-                            ),
-                            TextSpan(
-                                text: "Conditions",
-                                style: TextStyle(
-                                    fontSize: 14.sp,
-                                    fontWeight: FontWeight.w600,
-                                    color: AppColors.textColor
-                                )
-                            ),
-                          ]
-                      ),),
+                        ),
+                        TextSpan(
+                          text: " And ",
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: Color(0xff7C7C7C),
+                          ),
+                        ),
+                        TextSpan(
+                          text: "Conditions",
+                          style: TextStyle(
+                            fontSize: 14.sp,
+                            fontWeight: FontWeight.w600,
+                            color: AppColors.textColor,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
 
                   const SizedBox(height: 4),
                   Text(
-                    "• Your available credit is ₹12,000",
+                    "• Your available credit is ${AppConstantStrings.rupeeSymbol} ${_getAvailableCredit().toStringAsFixed(2)}",
                     style: TextStyle(
                       fontSize: 15.sp,
                       fontWeight: FontWeight.w500,
-                      color: Color(0xff7C7C7C),
+                      color: const Color(0xff7C7C7C),
                     ),
                   ),
+
                   const SizedBox(height: 10),
                   CommonButton(
                     title: "Place Order",
-                    onTap: () {
-                      Get.to(() => OrderSuccessView());
+                    onTap: () async {
+                      final selectedMethod =
+                          orderController.selectedPaymentMethod.value;
+
+                      log("Selected Method: $selectedMethod");
+                      if (selectedMethod.isEmpty ||
+                          selectedMethod == "Select Method") {
+                        // No method selected
+                        CommonToast.show(
+                          "Please select a payment method",
+                          type: ToastType.error,
+                        );
+
+                        return;
+                      }
+
+                      if (selectedMethod == "Cash on Delivery") {
+                        await orderController.placeOrder(paymentMethod: "COD");
+
+                        await orderController.onOrderSuccess();
+                        // Handle COD order
+                        Get.back(); // optional: close bottom sheet
+                        Get.to(() => OrderSuccessView());
+                      } else if (selectedMethod == "Online Payment") {
+                        // Trigger your online payment flow
+                        CommonToast.show(
+                          "Proceeding to online payment...",
+                          type: ToastType.success,
+                        );
+                      } else if (selectedMethod == "Pay on Credit") {
+                        try {
+                          await orderController.payUsingCredit(
+                            orderController.finalPayable,
+                          );
+
+                          await orderController.placeOrder(
+                            paymentMethod: "Credit",
+                          );
+                          await orderController.onOrderSuccess();
+
+                          Get.back(); // close checkout
+                          Get.to(() => OrderSuccessView());
+                        } catch (e) {
+                          log("Credit Payment Error: ${e.toString()}");
+                          CommonToast.show(
+                            e.toString().replaceAll("Exception:", "").trim(),
+                            type: ToastType.error,
+                          );
+                        }
+                      }
                     },
                   ),
                 ],
@@ -137,6 +221,13 @@ class CheckoutBottomSheet extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  double _getAvailableCredit() {
+    final user = UserService.getUserFromHive();
+    final totalCredit = user.credit ?? 0;
+    final spentCredit = user.spentCredit ?? 0;
+    return (totalCredit - spentCredit).toDouble();
   }
 
   static Widget _rowItem({
@@ -166,8 +257,7 @@ class CheckoutBottomSheet extends StatelessWidget {
                   Text(
                     value ?? "",
                     style: TextStyle(
-                      fontWeight:
-                      isBold ? FontWeight.w700 : FontWeight.w600,
+                      fontWeight: isBold ? FontWeight.w700 : FontWeight.w600,
                       fontSize: 16.sp,
                     ),
                   ),
@@ -185,8 +275,7 @@ class CheckoutBottomSheet extends StatelessWidget {
   }
 
   void showDeliveryMethodSheet(BuildContext context) {
-    final controller = Get.find<CartController>();
-
+    final orderController = Get.find<OrderController>();
 
     Get.bottomSheet(
       Container(
@@ -201,25 +290,28 @@ class CheckoutBottomSheet extends StatelessWidget {
           children: [
             Text(
               "Select Payment Method",
-              style: TextStyle(
-                fontSize: 18.sp,
-                fontWeight: FontWeight.w600,
-              ),
+              style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w600),
             ),
             const SizedBox(height: 10),
 
-            Obx(() => _deliveryRadioTile(
-              title: "Cash on Delivery",
-              controller: controller,
-            )),
-            Obx(() => _deliveryRadioTile(
-              title: "Online Payment",
-              controller: controller,
-            )),
-            Obx(() => _deliveryRadioTile(
-              title: "Pay on Credit",
-              controller: controller,
-            )),
+            Obx(
+              () => _deliveryRadioTile(
+                title: "Cash on Delivery",
+                orderController: orderController,
+              ),
+            ),
+            Obx(
+              () => _deliveryRadioTile(
+                title: "Online Payment",
+                orderController: orderController,
+              ),
+            ),
+            Obx(
+              () => _deliveryRadioTile(
+                title: "Pay on Credit",
+                orderController: orderController,
+              ),
+            ),
 
             const SizedBox(height: 10),
           ],
@@ -228,9 +320,10 @@ class CheckoutBottomSheet extends StatelessWidget {
     );
   }
 
-
   void showPromoCodeSheet(BuildContext context) {
-    final controller = Get.find<CartController>();
+    // final controller = Get.find<CartController>();
+
+    final orderController = Get.find<OrderController>();
     final promoController = TextEditingController();
 
     Get.bottomSheet(
@@ -252,26 +345,41 @@ class CheckoutBottomSheet extends StatelessWidget {
             TextField(
               controller: promoController,
               cursorColor: AppColors.primary,
-              decoration:  InputDecoration(
+              decoration: InputDecoration(
                 hintText: "Enter promo code",
 
-                border: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
+                border: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary),
+                ),
 
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
-                disabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
-                enabledBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
-                errorBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
+                focusedBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary),
+                ),
+                disabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary),
+                ),
+                enabledBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary),
+                ),
+                errorBorder: OutlineInputBorder(
+                  borderSide: BorderSide(color: AppColors.primary),
+                ),
               ),
             ),
             const SizedBox(height: 20),
             CommonButton(
               title: "Apply",
-              onTap: () {
-                if (promoController.text == "SAVE10") {
-                  controller.discount.value = 10;
-                  Get.back();
-                } else {
-                  Get.snackbar("Invalid", "Promo code not valid");
+              onTap: () async {
+                if (promoController.text.trim().isEmpty) return;
+
+                FocusScope.of(context).unfocus();
+
+                await orderController.applyPromo(promoController.text.trim());
+
+                log("IS APPLIED: ${orderController.isPromoApplied.value}");
+                if (orderController.isPromoApplied.value) {
+                  log("IS APPLIED: ${orderController.isPromoApplied.value}");
+                  Get.close(1); // close promo sheet
                 }
               },
             ),
@@ -280,31 +388,27 @@ class CheckoutBottomSheet extends StatelessWidget {
       ),
     );
   }
+
   Widget _deliveryRadioTile({
     required String title,
-    required CartController controller,
+    required OrderController orderController,
   }) {
     return ListTile(
       contentPadding: EdgeInsets.zero,
-      title: Text(
-        title,
-        style: const TextStyle(fontWeight: FontWeight.w500),
-      ),
+      title: Text(title, style: const TextStyle(fontWeight: FontWeight.w500)),
       trailing: Radio<String>(
         value: title,
-        groupValue: controller.selectedPaymentMethod.value,
+        groupValue: orderController.selectedPaymentMethod.value,
         activeColor: AppColors.primary,
         onChanged: (value) {
-          controller.selectedPaymentMethod.value = value!;
+          orderController.selectedPaymentMethod.value = value!;
           Get.back(); // close sheet after selection
         },
       ),
       onTap: () {
-        controller.selectedPaymentMethod.value = title;
+        orderController.selectedPaymentMethod.value = title;
         Get.back();
       },
     );
   }
-
-
 }

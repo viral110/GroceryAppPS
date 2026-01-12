@@ -3,8 +3,12 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
+import 'package:online_groceries_app/features/user/my_cart/controller/order_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/view/widgets/check_out_bottmsheet.dart';
+import 'package:online_groceries_app/services/product_pricing_extension.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 
 import '../../../../common_widgets/common_app_bar.dart';
 
@@ -13,6 +17,7 @@ class MyCartView extends StatelessWidget {
   MyCartView({super.key});
 
   final CartController controller = Get.put(CartController());
+  final orderController = Get.put(OrderController(), permanent: false);
 
   @override
   Widget build(BuildContext context) {
@@ -84,7 +89,8 @@ class MyCartView extends StatelessWidget {
 
                             /// SUBTITLE
                             Text(
-                              item.product.priceUnit,
+                              // item.product.priceUnit,
+                              item.packaging, // ✅ actual selected unit
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 12,
@@ -113,7 +119,7 @@ class MyCartView extends StatelessWidget {
                                   ],
                                 ),
                                 Text(
-                                  "₹${item.totalPrice.toStringAsFixed(2)}",
+                                  "${AppConstantStrings.rupeeSymbol} ${item.totalPrice.toStringAsFixed(2)}",
                                   style: const TextStyle(
                                     fontWeight: FontWeight.bold,
                                   ),
@@ -138,12 +144,21 @@ class MyCartView extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
+                  final orderController = Get.find<OrderController>();
+                  orderController.initCheckout(
+                    total: controller.subtotal,
+                    uid: UserService.getUserFromHive().uid,
+                  );
+
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
                     builder: (_) => const CheckoutBottomSheet(),
-                  );
+                  ).then((_) {
+                    orderController.selectedPaymentMethod.value =
+                        "Select Method";
+                  });
                 },
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primary,
@@ -172,15 +187,28 @@ class MyCartView extends StatelessWidget {
                         color: AppColors.whiteColor.withOpacity(0.2),
                         borderRadius: BorderRadius.circular(8),
                       ),
-                      child: Obx(
-                        () => Text(
-                          "₹${controller.totalPrice.toStringAsFixed(2)}",
+                      child: Obx(() {
+                        final total = orderController.isPromoApplied.value
+                            ? orderController.finalPayable
+                            : controller.subtotal;
+
+                        return Text(
+                          "₹${total.toStringAsFixed(2)}",
                           style: TextStyle(
                             color: Colors.white,
                             fontSize: 12.sp,
                           ),
-                        ),
-                      ),
+                        );
+                      }),
+                      // child: Obx(
+                      //   () => Text(
+                      // "₹${controller.totalPrice.toStringAsFixed(2)}",
+                      // style: TextStyle(
+                      //   color: Colors.white,
+                      //   fontSize: 12.sp,
+                      // ),
+                      //   ),
+                      // ),
                     ),
                   ],
                 ),

@@ -4,7 +4,9 @@ import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
+import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
 import 'package:online_groceries_app/features/user/favourite/controller/favourite_controller.dart';
+import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/features/user/product_detail/controller/product_detai_controller.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
@@ -211,7 +213,24 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                   ),
                   SizedBox(height: 25),
 
-                  CommonButton(title: "Add To Basket", onTap: () {}),
+                  CommonButton(
+                    title: "Add To Basket",
+                    onTap: () {
+                      final cartController = Get.find<CartController>();
+
+                      cartController.addToCart(
+                        product: widget.product,
+                        packaging: controller.selectedPackaging,
+                        multiplier: controller.multiplier,
+                        unitPrice: controller.unitPrice,
+                        quantity: controller.quantity.value,
+                      );
+
+                      Get.back();
+
+                      Get.find<BottomNavController>().changeTab(2);
+                    },
+                  ),
 
                   const SizedBox(height: 16),
                 ],

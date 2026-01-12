@@ -11,8 +11,6 @@ class CartController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
   var cartItems = <CartItem>[].obs;
-  RxString selectedPaymentMethod = "Select Method".obs;
-  RxDouble discount = 0.0.obs;
 
   String? get _userId => UserService.getUserFromHive().uid;
   RxBool isLoading = false.obs;
@@ -38,18 +36,17 @@ class CartController extends GetxController {
           .get();
 
       for (final doc in cartSnap.docs) {
-        final String productId = doc.id;
-        final int quantity = doc['quantity'];
+        final data = doc.data();
 
-        // Fetch product details
         final productDoc = await _firestore
             .collection(AppConstantStrings.productsCollection)
-            .doc(productId)
+            .doc(data['product_id'])
             .get();
 
         if (productDoc.exists) {
           final product = ProductModel.fromDoc(productDoc);
-          cartItems.add(CartItem(product: product, quantity: quantity));
+
+          cartItems.add(CartItem.fromJson(product, data));
         }
       }
     } catch (e) {
@@ -59,51 +56,63 @@ class CartController extends GetxController {
     }
   }
 
+  // CartController
+  double get subtotal {
+    double total = 0;
+    for (final item in cartItems) {
+      total += item.totalPrice;
+    }
+    return total;
+  }
+
   /// ================= ADD TO CART =================
-  Future<void> addToCart(ProductModel product, {int qty = 1}) async {
+  Future<void> addToCart({
+    required ProductModel product,
+    required String packaging,
+    required double multiplier,
+    required double unitPrice,
+    int quantity = 1,
+  }) async {
     try {
       isLoading.value = true;
       final index = cartItems.indexWhere(
-        (item) => item.product.id == product.id,
+        (item) => item.product.id == product.id && item.packaging == packaging,
       );
 
       if (index != -1) {
-        cartItems[index].quantity += qty;
+        cartItems[index].quantity += quantity;
         cartItems.refresh();
+
+        await _firestore
+            .collection(AppConstantStrings.userCollection)
+            .doc(_userId)
+            .collection(AppConstantStrings.cartCollection)
+            .doc(cartItems[index].product.id + packaging)
+            .update({'quantity': cartItems[index].quantity});
       } else {
-        cartItems.add(CartItem(product: product, quantity: qty));
+        final cartItem = CartItem(
+          product: product,
+          packaging: packaging,
+          multiplier: multiplier,
+          unitPrice: unitPrice,
+          quantity: quantity,
+        );
+        cartItems.add(cartItem);
+        await _firestore
+            .collection(AppConstantStrings.userCollection)
+            .doc(_userId)
+            .collection(AppConstantStrings.cartCollection)
+            .doc(product.id + packaging) // UNIQUE PER WEIGHT
+            .set(cartItem.toJson());
       }
 
-      await _saveCartItem(product.id, qty);
+      // await _saveCartItem(product.id, qty);
 
       CommonToast.show("Added to Cart", type: ToastType.success);
     } catch (e) {
       CommonToast.show("Failed to add to cart", type: ToastType.error);
     } finally {
       isLoading.value = false;
-    }
-  }
-
-  /// ================= FIRESTORE SAVE =================
-  Future<void> _saveCartItem(String productId, int qty) async {
-    if (_userId == null) return;
-
-    final ref = _firestore
-        .collection(AppConstantStrings.userCollection)
-        .doc(_userId)
-        .collection(AppConstantStrings.cartCollection)
-        .doc(productId);
-
-    final snap = await ref.get();
-
-    if (snap.exists) {
-      await ref.update({'quantity': FieldValue.increment(qty)});
-    } else {
-      await ref.set({
-        'product_id': productId,
-        'quantity': qty,
-        'added_at': Timestamp.now(),
-      });
     }
   }
 
@@ -124,17 +133,32 @@ class CartController extends GetxController {
     }
   }
 
-  void _updateQuantity(CartItem item) {
-    _firestore
+  Future<void> _updateQuantity(CartItem item) async {
+    final docId = item.product.id + item.packaging;
+    await _firestore
         .collection(AppConstantStrings.userCollection)
         .doc(_userId)
         .collection(AppConstantStrings.cartCollection)
-        .doc(item.product.id)
+        .doc(docId)
         .update({'quantity': item.quantity});
   }
 
   /// ================= REMOVE =================
   void removeItem(int index) {
+    final item = cartItems[index];
+    final docId = item.product.id + item.packaging;
+
+    cartItems.removeAt(index);
+
+    _firestore
+        .collection(AppConstantStrings.userCollection)
+        .doc(_userId)
+        .collection(AppConstantStrings.cartCollection)
+        .doc(docId)
+        .delete();
+  }
+
+  void oldremoveItem(int index) {
     final productId = cartItems[index].product.id;
     cartItems.removeAt(index);
 
@@ -146,16 +170,15 @@ class CartController extends GetxController {
         .delete();
   }
 
-  /// ================= TOTAL =================
-  double get totalPrice {
-    double total = 0;
-    for (final item in cartItems) {
-      total += item.totalPrice;
-    }
-
-    if (discount.value > 0) total -= discount.value;
-    return total;
-  }
+  // /// ================= TOTAL =================
+  // double get totalPrice {
+  //   double total = 0;
+  //   for (final item in cartItems) {
+  //     total += item.totalPrice;
+  //   }
+  //   // if (discount.value > 0) total -= discount.value;
+  //   return total;
+  // }
 
   /// ================= CLEAR =================
   // Future<void> clearCart() async {
