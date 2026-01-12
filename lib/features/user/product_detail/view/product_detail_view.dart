@@ -196,38 +196,17 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     children: [
                       Padding(
                         padding: EdgeInsets.only(bottom: 12),
-                        child: Text(
-                          widget.product.description,
-                          // "Apples are nutritious. Apples may be good for weight loss. "
-                          // "Apples may be good for your heart. As part of a healthy and varied diet.",
-                          style: TextStyle(color: Colors.grey),
-                        ),
-                      ),
-                    ],
-                  ),
-                  SizedBox(height: 10),
-                  const Divider(),
-                  SizedBox(height: 10),
-                  Row(
-                    children: [
-                      Text(
-                        "Review",
-                        style: TextStyle(fontWeight: FontWeight.w600),
-                      ),
-                      Spacer(),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.end,
-                        children: List.generate(
-                          5,
-                          (_) => const Icon(
-                            Icons.star,
-                            size: 16,
-                            color: Colors.orange,
+                        child: Align(
+                          alignment: Alignment.centerLeft,
+                          child: Text(
+                            textAlign: TextAlign.start,
+                            widget.product.description,
+                            // "Apples are nutritious. Apples may be good for weight loss. "
+                            // "Apples may be good for your heart. As part of a healthy and varied diet.",
+                            style: TextStyle(color: Colors.grey),
                           ),
                         ),
                       ),
-                      SizedBox(width: 15.w),
-                      Icon(Icons.keyboard_arrow_right_outlined),
                     ],
                   ),
                   SizedBox(height: 25),
@@ -247,7 +226,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   Widget _buildImageSlider(ProductDetailController controller) {
     return Column(
       children: [
-        /// 🔙 Top Row
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [

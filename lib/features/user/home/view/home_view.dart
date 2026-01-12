@@ -4,6 +4,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
+import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
 import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/services/user_services.dart';
@@ -82,11 +83,13 @@ class GroceryHomeScreen extends StatelessWidget {
                   }),
                 ],
               ),
-
               SizedBox(height: 12),
-
               /// 🔍 Search
               TextField(
+                readOnly: true,
+                onTap: (){
+                  Get.find<BottomNavController>().changeTab(1);
+                },
                 decoration: InputDecoration(
                   hintText: "Search Store",
                   prefixIcon: const Icon(Icons.search),

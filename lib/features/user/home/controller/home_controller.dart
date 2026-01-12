@@ -1,14 +1,10 @@
 import 'dart:developer';
-import 'dart:developer';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/features/admin/settings/controller/add_banner_controller.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
-import 'package:online_groceries_app/services/user_services.dart';
-
-import '../../../admin/store_manage/models/store_model.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import '../../../admin/store_manage/models/store_model.dart';
 
@@ -85,10 +81,6 @@ class HomeController extends GetxController {
   }
 
 
-  final FirebaseFirestore _firestore = FirebaseFirestore.instance;
-
-  final stores = <StoreModel>[].obs;
-  final selectedStoreId = ''.obs;
 
   /// PRODUCTS
   final allProducts = <ProductModel>[].obs;
@@ -133,29 +125,6 @@ class HomeController extends GetxController {
     // /// 🎲 Random 10 Products
     products.shuffle();
     randomProducts.assignAll(products.take(10).toList());
-  }
-
-  Future<void> fetchStores() async {
-    final snapshot = await _firestore
-        .collection(AppConstantStrings.storesCollection)
-        .orderBy('createdAt', descending: true)
-        .get();
-
-    stores.assignAll(
-      snapshot.docs.map((doc) => StoreModel.fromJson(doc.id, doc.data())),
-    );
-
-    // ✅ default selected store
-    if (stores.isNotEmpty) {
-      selectedStoreId.value = UserService.getUserFromHive().storeId.isNotEmpty
-          ? UserService.getUserFromHive().storeId
-          : "";
-
-      log("✅ SELECTED STORE ID: ${selectedStoreId.value}");
-
-      /// 👇 fetch products AFTER store selected
-      await fetchProducts();
-    }
   }
 
   Future<void> onStoreChanged(String storeId) async {
