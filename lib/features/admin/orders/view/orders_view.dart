@@ -1,30 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:intl/intl.dart';
+import 'package:online_groceries_app/features/admin/orders/controller/admin_orderview_controller.dart';
+
+import '../../../../models/order_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
-class AdminOrdersView extends StatefulWidget {
-  const AdminOrdersView({super.key});
+class AdminOrdersView extends StatelessWidget {
+  AdminOrdersView({super.key});
 
-  @override
-  State<AdminOrdersView> createState() => _AdminOrdersViewState();
-}
-
-class _AdminOrdersViewState extends State<AdminOrdersView> {
-  int selectedTab = 0;
-  final List<String> orderStatusList = [
-    "Pending",
-    "Ongoing",
-    "Completed",
-    "Cancelled",
-  ];
-
-  final tabs = [
-    "All",
-    "New Requests",
-    "Ongoing",
-    "Completed",
-    "Cancelled",
-  ];
+  final controller = Get.put(AdminOrdersController());
 
   @override
   Widget build(BuildContext context) {
@@ -43,91 +30,118 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
                 color: AppColors.textColor,
               ),
             ),
-            Row(
-              children: [
-                _searchBox(),
-              ],
+            SizedBox(
+              width: 400.w,
+              child: TextField(
+                onChanged: controller.updateSearch, // 🔥 CONNECT
+                decoration: InputDecoration(
+                  hintText: "Search order (ID / User)",
+                  prefixIcon: const Icon(Icons.search),
+                  filled: true,
+                  fillColor: AppColors.whiteColor,
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: BorderSide.none,
+                  ),
+                ),
+              ),
             ),
+
           ],
         ),
 
         SizedBox(height: 20.h),
 
-        /// TABS
-        Row(
+        /// 🔥 TABS (GetX)
+        Obx(() => Row(
           children: List.generate(
-            tabs.length,
+            controller.tabs.length,
                 (index) => _tabItem(
-              tabs[index],
-              isActive: selectedTab == index,
-              onTap: () {
-                setState(() {
-                  selectedTab = index;
+              controller.tabs[index],
+              isActive: controller.selectedTab.value == index,
+              onTap: () => controller.changeTab(index),
+            ),
+          ),
+        )),
+
+        SizedBox(height: 16.h),
+
+        _tableHeader(),
+        SizedBox(height: 8.h),
+
+        /// 🔥 FIRESTORE DATA
+        Expanded(
+          child: Obx(
+                () => StreamBuilder<QuerySnapshot>(
+              stream: controller.ordersQuery.snapshots(),
+              builder: (context, snapshot) {
+
+                // 1️⃣ Loader
+                if (snapshot.connectionState == ConnectionState.waiting) {
+                  return const Center(child: CircularProgressIndicator());
+                }
+
+                // 2️⃣ Error
+                if (snapshot.hasError) {
+                  return Center(
+                    child: Text("Error: ${snapshot.error}"),
+                  );
+                }
+
+                // 3️⃣ Docs extract
+                final docs = snapshot.data?.docs ?? [];
+
+                if (docs.isEmpty) {
+                  return const Center(child: Text("No orders found"));
+                }
+
+                // 🔥 SEARCH + LIST must be reactive
+                return Obx(() {
+                  final query = controller.searchQuery.value;
+
+                  final orders = docs
+                      .map((e) =>
+                      OrderModel.fromMap(e.data() as Map<String, dynamic>))
+                      .where((order) {
+                    if (query.isEmpty) return true;
+
+                    final orderId = order.orderId?.toLowerCase() ?? '';
+                    final userName =
+                        order.deliveryAddress?.name?.toLowerCase() ?? '';
+
+                    return orderId.contains(query) ||
+                        userName.contains(query);
+                  })
+                      .toList();
+
+                  if (orders.isEmpty) {
+                    return const Center(child: Text("No matching orders"));
+                  }
+
+                  return ListView.builder(
+                    itemCount: orders.length,
+                    itemBuilder: (_, index) => _orderRow(orders[index]),
+                  );
                 });
               },
             ),
           ),
         ),
-
-        SizedBox(height: 16.h),
-
-        /// TABLE HEADER
-        _tableHeader(),
-
-        SizedBox(height: 8.h),
-
-        /// TABLE DATA
-        ..._ordersByTab(),
       ],
     );
   }
 
-  // ---------------- DATA BY TAB (UI ONLY) ----------------
-
-  List<Widget> _ordersByTab() {
-    switch (selectedTab) {
-      case 1:
-        return [
-          _orderRow("Pending", "Rice 5kg, Oil 1L"),
-        ];
-      case 2:
-        return [
-          _orderRow("Ongoing", "Milk 2L, Bread ×2"),
-        ];
-      case 3:
-        return [
-          _orderRow("Completed", "Apple 1kg, Banana 1kg"),
-        ];
-      case 4:
-        return [
-          _orderRow("Cancelled", "Sugar 2kg"),
-        ];
-      default:
-        return [
-          _orderRow("Pending", "Rice 5kg, Oil 1L"),
-          _orderRow("Ongoing", "Milk 2L, Bread ×2"),
-          _orderRow("Completed", "Apple 1kg, Banana 1kg"),
-          _orderRow("Cancelled", "Sugar 2kg"),
-        ];
-    }
-  }
-
-  // ---------------- UI WIDGETS ----------------
-
-  Widget _tabItem(
-      String title, {
-        required bool isActive,
-        required VoidCallback onTap,
-      }) {
+  /// ---------------- TAB ITEM ----------------
+  Widget _tabItem(String title,
+      {required bool isActive, required VoidCallback onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: EdgeInsets.only(right: 8.w),
         padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         decoration: BoxDecoration(
-          color: isActive
-              ? AppColors.primary.withOpacity(0.1)
-              : Colors.transparent,
+          color:
+          isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isActive ? AppColors.primary : Colors.grey.shade300,
@@ -138,21 +152,20 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
           style: TextStyle(
             fontSize: 13.sp,
             fontWeight: FontWeight.w500,
-            color: isActive
-                ? AppColors.primary
-                : AppColors.textColor,
+            color: isActive ? AppColors.primary : AppColors.textColor,
           ),
         ),
       ),
     );
   }
 
+  /// ---------------- TABLE HEADER ----------------
   Widget _tableHeader() {
     return Container(
       padding: EdgeInsets.all(14.w),
       decoration: _cardDecoration(),
-      child: Row(
-        children: const [
+      child: const Row(
+        children: [
           Expanded(child: Text("Order ID", style: TextStyle(fontWeight: FontWeight.w600))),
           Expanded(child: Text("Customer", style: TextStyle(fontWeight: FontWeight.w600))),
           Expanded(child: Text("Date", style: TextStyle(fontWeight: FontWeight.w600))),
@@ -165,18 +178,16 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
     );
   }
 
-  Widget _orderRow(String status, String items) {
-    Color statusColor;
-    switch (status) {
-      case "Completed":
-        statusColor = Colors.green;
-        break;
-      case "Cancelled":
-        statusColor = Colors.red;
-        break;
-      default:
-        statusColor = AppColors.primary;
-    }
+  /// ---------------- ORDER ROW ----------------
+  Widget _orderRow(OrderModel order) {
+    final itemsText =
+    order.items.map((e) => "${e.productName} ×${e.quantity}").join(", ");
+
+    Color statusColor = order.orderStatus == "Completed"
+        ? Colors.green
+        : order.orderStatus == "Cancelled"
+        ? Colors.red
+        : AppColors.primary;
 
     return Container(
       margin: EdgeInsets.only(top: 8.h),
@@ -184,180 +195,100 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
       decoration: _cardDecoration(),
       child: Row(
         children: [
-          const Expanded(child: Text("#ORD-1023")),
-          const Expanded(child: Text("Amit Patel")),
-          const Expanded(child: Text("15 Jan 2026")),
-          Expanded(child: Text(items)),
-          const Expanded(child: Text("₹ 1,250")),
+          Expanded(child: Padding(
+            padding:  EdgeInsets.only(left: 10),
+            child: Text("#${order.orderId}"),
+          )),
+          Expanded(child: Padding(
+            padding:  EdgeInsets.only(left: 10),
+            child: Text(order.deliveryAddress?.name ?? "User"),
+          )),
+          Expanded(
+            child: Padding(
+              padding:  EdgeInsets.only(left: 10),
+              child: Text(
+                DateFormat('dd MMM yyyy').format(order.createdAt!),
+              ),
+            ),
+          ),
+          Expanded(child: Padding(
+            padding:  EdgeInsets.only(left: 10),
+            child: Text(itemsText),
+          )),
+          Expanded(child: Padding(
+            padding:  EdgeInsets.only(left: 10),
+            child: Text("₹ ${order.totalAmount.toStringAsFixed(0)}"),
+          )),
           Expanded(
             child: Text(
-              status,
-              style: TextStyle(
-                color: statusColor,
-                fontWeight: FontWeight.w600,
-              ),
+              order.orderStatus!,
+              style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
             ),
           ),
           Expanded(
             child: GestureDetector(
-              onTap: () {
-                _showStatusChangeDialog(status);
-              },
+              onTap: () => _showStatusDialog(order),
               child: Container(
                 padding: EdgeInsets.symmetric(vertical: 6.h),
+                alignment: Alignment.center,
                 decoration: BoxDecoration(
-                  color:AppColors.primary,
+                  color: AppColors.primary,
                   borderRadius: BorderRadius.circular(6),
                 ),
-                alignment: Alignment.center,
-                child: Text(
-                  "Change States",
-                  style: TextStyle(
-                    color: Colors.white,
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w600,
-                  ),
+                child: const Text(
+                  "Change Status",
+                  style: TextStyle(color: Colors.white),
                 ),
               ),
             ),
           ),
-
         ],
       ),
     );
   }
-  void _updateOrderStatus(String? newStatus) {
-    if (newStatus == null) return;
 
-    setState(() {
-      // UI only – later replace with API
-      selectedTab = orderStatusList.indexOf(newStatus);
-    });
-  }
+  /// ---------------- STATUS DIALOG ----------------
+  void _showStatusDialog(OrderModel order) {
+    RxString selectedStatus = order.orderStatus!.obs;
 
-  void _showStatusChangeDialog(String currentStatus) {
-    String selectedStatus = currentStatus;
-
-    showDialog(
-      context: context,
-      builder: (context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              backgroundColor: AppColors.whiteColor,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              title: Text(
-                "Change Order Status",
-                style: TextStyle(
-                  fontSize: 18.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textColor,
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Change Order Status"),
+        content: Obx(
+              () => Wrap(
+            spacing: 10,
+            children: controller.orderStatusList.map((status) {
+              final isSelected = selectedStatus.value == status;
+              return GestureDetector(
+                onTap: () => selectedStatus.value = status,
+                child: Chip(
+                  label: Text(status),
+                  backgroundColor: isSelected
+                      ? AppColors.primary.withOpacity(0.2)
+                      : Colors.grey.shade200,
                 ),
-              ),
-              content: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Select new status",
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: AppColors.grayTextColor,
-                    ),
-                  ),
-                  SizedBox(height: 16.h),
-
-                  /// STATUS OPTIONS
-                  Wrap(
-                    spacing: 10.w,
-                    runSpacing: 10.h,
-                    children: orderStatusList.map((status) {
-                      final bool isSelected = selectedStatus == status;
-
-                      return GestureDetector(
-                        onTap: () {
-                          setDialogState(() {
-                            selectedStatus = status;
-                          });
-                        },
-                        child: Container(
-                          padding: EdgeInsets.symmetric(
-                            horizontal: 14.w,
-                            vertical: 8.h,
-                          ),
-                          decoration: BoxDecoration(
-                            color: isSelected
-                                ? AppColors.primary.withOpacity(0.15)
-                                : Colors.transparent,
-                            borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : Colors.grey.shade300,
-                            ),
-                          ),
-                          child: Text(
-                            status,
-                            style: TextStyle(
-                              fontSize: 13.sp,
-                              fontWeight: FontWeight.w600,
-                              color: isSelected
-                                  ? AppColors.primary
-                                  : AppColors.textColor,
-                            ),
-                          ),
-                        ),
-                      );
-                    }).toList(),
-                  ),
-                ],
-              ),
-
-              /// ACTION BUTTONS
-              actions: [
-                TextButton(
-                  onPressed: () {
-                    Navigator.pop(context);
-                  },
-                  child: Text(
-                    "Cancel",
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      color: AppColors.grayTextColor,
-                    ),
-                  ),
-                ),
-                ElevatedButton(
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: AppColors.primary,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(8),
-                    ),
-                  ),
-                  onPressed: () {
-                    Navigator.pop(context);
-                    _updateOrderStatus(selectedStatus);
-                  },
-                  child: Text(
-                    "Update",
-                    style: TextStyle(
-                      fontSize: 14.sp,
-                      fontWeight: FontWeight.w600,
-                      color: AppColors.whiteColor,
-                    ),
-                  ),
-                ),
-              ],
-            );
-          },
-        );
-      },
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: Get.back, child: const Text("Cancel")),
+          ElevatedButton(
+            onPressed: () async {
+              await controller.updateOrderStatus(
+                orderId: order.orderId!,
+                status: selectedStatus.value,
+              );
+              Get.back();
+            },
+            child: const Text("Update"),
+          ),
+        ],
+      ),
     );
   }
 
-
+  /// ---------------- SEARCH BOX ----------------
   Widget _searchBox() {
     return Container(
       height: 60.h,
@@ -377,7 +308,6 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
               decoration: InputDecoration(
                 hintText: "Search",
                 border: InputBorder.none,
-                isDense: true,
               ),
             ),
           ),
@@ -385,7 +315,6 @@ class _AdminOrdersViewState extends State<AdminOrdersView> {
       ),
     );
   }
-
 
   BoxDecoration _cardDecoration() {
     return BoxDecoration(

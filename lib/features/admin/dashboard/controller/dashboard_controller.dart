@@ -1,6 +1,6 @@
 import 'package:get/get.dart';
 
-enum AdminTab { dashboard, users, orders, products, store,settings }
+enum AdminTab { dashboard, users, orders, products,promoCode,store,settings }
 
 class AdminDashboardController extends GetxController {
   var selectedTab = AdminTab.dashboard.obs;

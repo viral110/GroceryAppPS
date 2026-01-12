@@ -9,7 +9,8 @@ class UserModel {
   String? email;
   String? mobileNumber;
   int? credit;
-  int? spentCredit;
+  int? usedCredits;
+  int? remainingCredits;
   // Address
   String? area;
   String? city;
@@ -30,7 +31,8 @@ class UserModel {
     this.email,
     this.mobileNumber,
     this.credit,
-    this.spentCredit,
+    this.usedCredits,
+    this.remainingCredits,
     this.area,
     this.city,
     this.state,
@@ -54,7 +56,8 @@ class UserModel {
       area: map['area'],
       city: map['city'],
       credit: map['credit'],
-      spentCredit: map['spent_credit'],
+      usedCredits: map['used_credits'],
+      remainingCredits: map['remaining_credits'],
       state: map['state'],
       pincode: map['pincode'],
       createdAt: checkObjectForDateTime(map['created_at']),
@@ -62,7 +65,6 @@ class UserModel {
       fcmToken: map['fcm_token'],
       isNotification: map['isNotification'] ?? false,
       isAdmin: map['isAdmin'] ?? false,
-
     );
   }
 
@@ -76,7 +78,8 @@ class UserModel {
       'email': email,
       'mobile_number': mobileNumber,
       'credit': credit,
-      'spent_credit': spentCredit,
+      'used_credits': usedCredits,
+      'remaining_credits': remainingCredits,
       'area': area,
       'city': city,
       'state': state,
