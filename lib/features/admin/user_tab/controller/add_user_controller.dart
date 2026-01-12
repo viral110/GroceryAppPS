@@ -199,6 +199,7 @@ class AddUserController extends GetxController {
         mobileNumber: mobile.text.trim(),
         email: email.text.trim(),
         credit: int.parse(credit.text),
+        remainingCredits: int.parse(credit.text),
         area: area.text.trim(),
         state: state.text.trim(),
         isNotification: false,

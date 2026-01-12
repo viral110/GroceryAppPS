@@ -84,9 +84,8 @@ class UserDetailsTab extends StatelessWidget {
               final data = snapshot.data!.data() ?? {};
 
               final int totalCredit = data['credit'] ?? 0;
-              final int spentCredit = data['spent_credit'] ?? 0;
-              final int pendingCredit =
-              (totalCredit - spentCredit).clamp(0, totalCredit);
+              final int spentCredit = data['used_credits'] ?? 0;
+              final int pendingCredit =data['remaining_credits'] ?? 0;
 
               return Row(
                 children: [
@@ -402,31 +401,45 @@ class UserDetailsTab extends StatelessWidget {
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final snapshot = await transaction.get(userRef);
 
-        final currentCredit = snapshot["credit"] ?? 0;
+        if (!snapshot.exists) {
+          throw "User not found";
+        }
 
+        final int currentCredit = (snapshot.data()?['credit'] ?? 0) as int;
+
+        // ❌ Credit kam hai
         if (!isAdd && currentCredit < amount) {
           throw "Insufficient credit";
         }
 
-        final newCredit = isAdd
+        // ✅ New credit calculation
+        int newCredit = isAdd
             ? currentCredit + amount
             : currentCredit - amount;
 
+        // 🔒 Safety: credit negative na ho
+        if (newCredit < 0) {
+          newCredit = 0;
+        }
+
         transaction.update(userRef, {
           "credit": newCredit,
-          "update_at": DateTime.now(),
+          "updated_at": FieldValue.serverTimestamp(),
         });
       });
+
       Get.back();
-      CommonToast.show("Credit updated successfully", type: ToastType.success);
-    } catch (e, s) {
-      print(e);
-      print(s);
+      CommonToast.show(
+        isAdd ? "Credit added successfully" : "Credit used successfully",
+        type: ToastType.success,
+      );
+    } catch (e) {
       CommonToast.show(e.toString(), type: ToastType.error);
     } finally {
       CommonLoader.hide();
     }
   }
+
 
   Widget _infoRow({
     required String leftLabel,

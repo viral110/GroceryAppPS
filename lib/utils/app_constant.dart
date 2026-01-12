@@ -8,6 +8,7 @@ class AppConstantStrings {
   static const String feedbacksCollection = "feedbacks";
   static const String favouritesCollection = "favourites";
   static const String cartCollection = "cart";
+  static const String promocodesCollection = "promocodes";
 
   static const String rupeeSymbol = "\u{20B9}";
 
