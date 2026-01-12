@@ -198,6 +198,8 @@ class OrderController extends GetxController {
     return total < 0 ? 0 : total;
   }
 
+  Rx<OrderModel?> lastOrder = Rx<OrderModel?>(null);
+
   /// ================= PLACE ORDER =================
   Future<void> placeOrder({required String paymentMethod}) async {
     try {
@@ -205,10 +207,6 @@ class OrderController extends GetxController {
 
       final cartController = Get.find<CartController>();
       final user = UserService.getUserFromHive();
-
-      // if (user == null) {
-      //   throw Exception("User not logged in");
-      // }
 
       if (cartController.cartItems.isEmpty) {
         throw Exception("Cart is empty");
@@ -252,13 +250,17 @@ class OrderController extends GetxController {
         deliveryAddress: DeliveryAddressModel(
           city: user.city,
           addressLine: user.area,
-          name: user.firstName,
+          name: '${user.firstName ?? ''} ${user.lastName ?? ''}',
           phone: user.mobileNumber,
           pincode: user.pincode,
         ), // DeliveryAddressModel
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
+
+      /// 🔥 ADD THIS LINE
+      lastOrder.value = order;
+      log(" ORDER DATA: ${lastOrder.value}");
 
       /// Save order
       await orderDoc.set(order.toMap());
@@ -339,8 +341,8 @@ class OrderController extends GetxController {
 
       final data = snapshot.data() ?? {};
 
-      final int totalCredit = data['credit'] ?? 0;
-      final int spentCredit = data['spent_credit'] ?? 0;
+      final int totalCredit = (data['credit'] ?? 0).toInt();
+      final int spentCredit = data['used_credits'] ?? 0;
 
       final int remainingCredit = totalCredit - spentCredit;
 
@@ -353,7 +355,7 @@ class OrderController extends GetxController {
       }
 
       transaction.update(userRef, {
-        'spent_credit': spentCredit + creditToUse.toInt(),
+        'used_credits': spentCredit + creditToUse.toInt(),
         'update_at': FieldValue.serverTimestamp(),
       });
     });

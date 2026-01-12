@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/order_controller.dart';
@@ -178,21 +179,25 @@ class CheckoutBottomSheet extends StatelessWidget {
                         return;
                       }
 
-                      if (selectedMethod == "Cash on Delivery") {
-                        await orderController.placeOrder(paymentMethod: "COD");
+                      try {
+                        CommonLoader.show(); // ✅ SHOW LOADER
+                        if (selectedMethod == "Cash on Delivery") {
+                          await orderController.placeOrder(
+                            paymentMethod: "COD",
+                          );
 
-                        await orderController.onOrderSuccess();
-                        // Handle COD order
-                        Get.back(); // optional: close bottom sheet
-                        Get.to(() => OrderSuccessView());
-                      } else if (selectedMethod == "Online Payment") {
-                        // Trigger your online payment flow
-                        CommonToast.show(
-                          "Proceeding to online payment...",
-                          type: ToastType.success,
-                        );
-                      } else if (selectedMethod == "Pay on Credit") {
-                        try {
+                          await orderController.onOrderSuccess();
+                          // Handle COD order
+                          Get.back(); // optional: close bottom sheet
+                          Get.to(() => OrderSuccessView());
+                        } else if (selectedMethod == "Online Payment") {
+                          // Trigger your online payment flow
+                          CommonToast.show(
+                            "Online payment Comming Soon...",
+                            type: ToastType.info,
+                          );
+                          CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
+                        } else if (selectedMethod == "Pay on Credit") {
                           await orderController.payUsingCredit(
                             orderController.finalPayable,
                           );
@@ -202,15 +207,18 @@ class CheckoutBottomSheet extends StatelessWidget {
                           );
                           await orderController.onOrderSuccess();
 
-                          Get.back(); // close checkout
+                          CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
+                          Get.back(closeOverlays: true); // close checkout
                           Get.to(() => OrderSuccessView());
-                        } catch (e) {
-                          log("Credit Payment Error: ${e.toString()}");
-                          CommonToast.show(
-                            e.toString().replaceAll("Exception:", "").trim(),
-                            type: ToastType.error,
-                          );
                         }
+                      } catch (e) {
+                        CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
+                        Get.back(closeOverlays: true);
+                        showDialog(
+                          context: context,
+                          barrierDismissible: false,
+                          builder: (_) => const OrderFailedDialog(),
+                        );
                       }
                     },
                   ),

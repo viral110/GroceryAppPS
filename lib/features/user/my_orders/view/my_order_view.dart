@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
+import 'package:online_groceries_app/features/user/my_orders/view/order_details_view.dart';
 import 'package:online_groceries_app/models/order_model.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
@@ -95,8 +96,9 @@ Widget _orderCard(OrderModel order) {
             ),
             TextButton(
               onPressed: () {
-                // Get.to(() => OrderDetailsView());
+                Get.to(() => OrderDetailsView(order: order));
               },
+
               child: Text(
                 "View Details",
                 style: TextStyle(
