@@ -1,8 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
+import 'package:online_groceries_app/features/admin/orders/view/admin_order_detail_view.dart';
 import 'package:online_groceries_app/features/admin/user_tab/view/widgets/details_tab.dart';
+import 'package:online_groceries_app/features/user/my_orders/view/order_details_view.dart';
+import 'package:online_groceries_app/models/order_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 import '../../../../models/user_model.dart';
 
 
@@ -41,8 +48,7 @@ class AdminUserDetailView extends StatelessWidget {
               child: TabBarView(
                 children: [
                   UserDetailsTab(userModel),
-                  _UserOrdersTab(),
-                ],
+                  _UserOrdersTab(userId: userModel.uid),                ],
               ),
             ),
           ],
@@ -54,35 +60,64 @@ class AdminUserDetailView extends StatelessWidget {
 
 
 class _UserOrdersTab extends StatelessWidget {
-  const _UserOrdersTab();
+  final String userId;
+
+  const _UserOrdersTab({required this.userId});
 
   @override
   Widget build(BuildContext context) {
-    return ListView(
-      padding: EdgeInsets.all(16.w),
-      children: const [
-        _UserOrderCard(
-          orderId: "ORD-1023",
-          date: "15 Jan 2026",
-          items: "Rice 5kg, Oil 1L",
-          amount: "₹ 1,250",
-          status: "Completed",
-        ),
-        _UserOrderCard(
-          orderId: "ORD-1024",
-          date: "16 Jan 2026",
-          items: "Milk 2L, Bread ×2",
-          amount: "₹ 850",
-          status: "Pending",
-        ),
-        _UserOrderCard(
-          orderId: "ORD-1025",
-          date: "17 Jan 2026",
-          items: "Apple 1kg, Banana 1kg",
-          amount: "₹ 2,100",
-          status: "Cancelled",
-        ),
-      ],
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection(AppConstantStrings.orderCollection)
+          .where('user_id', isEqualTo: userId)
+          .snapshots(),
+      builder: (context, snapshot) {
+
+        // 1️⃣ Loader
+        if (snapshot.connectionState == ConnectionState.waiting) {
+          return const Center(child: CircularProgressIndicator());
+        }
+
+        // 2️⃣ Error
+        if (snapshot.hasError) {
+          return Center(child: Text(snapshot.error.toString()));
+        }
+
+        // 3️⃣ Docs
+        final docs = snapshot.data?.docs ?? [];
+
+        if (docs.isEmpty) {
+          return const Center(child: Text("No orders found"));
+        }
+
+        // 4️⃣ Convert Firestore → OrderModel
+        final orders = docs
+            .map((doc) =>
+            OrderModel.fromMap(doc.data() as Map<String, dynamic>))
+            .toList();
+
+        return ListView.builder(
+          padding: EdgeInsets.all(16.w),
+          itemCount: orders.length,
+          itemBuilder: (_, index) {
+            final order = orders[index];
+
+            final itemsText = order.items
+                .map((e) => "${e.productName} ×${e.quantity}")
+                .join(", ");
+
+            return _UserOrderCard(
+              orderId: order.orderId ?? "--",
+              date: order.createdAt != null
+                  ? DateFormat('dd MMM yyyy').format(order.createdAt!)
+                  : "--",
+              items: itemsText,
+              amount: "₹ ${order.totalAmount.toStringAsFixed(0)}",
+              status: order.orderStatus ?? "--",
+            );
+          },
+        );
+      },
     );
   }
 }
@@ -201,7 +236,7 @@ class _UserOrderCard extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to Order Details Screen
+                  Get.to(()=>AdminOrderDetailView(orderId: orderId,));
                 },
                 child: Container(
                   padding: EdgeInsets.symmetric(

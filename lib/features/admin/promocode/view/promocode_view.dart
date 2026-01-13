@@ -297,7 +297,7 @@ class PromoListView extends StatelessWidget {
                     };
 
                     final ref =
-                    FirebaseFirestore.instance.collection(AppConstantStrings.promocodesCollection);
+                    FirebaseFirestore.instance.collection(AppConstantStrings.promoCodeCollection);
 
                     if (promo == null) {
                       await ref.add(data);

@@ -100,7 +100,7 @@ class AdminDashboardView extends StatelessWidget {
               child: Obx(() {
                 switch (controller.selectedTab.value) {
                   case AdminTab.dashboard:
-                    return const DashboardTab();
+                    return  DashboardTab();
                   case AdminTab.users:
                     return  UserListView();
                   case AdminTab.orders:
@@ -193,4 +193,7 @@ class AdminDashboardView extends StatelessWidget {
       ),
     );
   }
+
+
+
 }

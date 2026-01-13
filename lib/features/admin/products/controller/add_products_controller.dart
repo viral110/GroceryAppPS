@@ -406,11 +406,14 @@ class AdminProductController extends GetxController {
 
 
     /// PACKAGING
-    if (packagingList.isEmpty) {
-      CommonToast.show("Please add at least one packaging option",
-          type: ToastType.warning);
-      return;
-    }
+   if( selectedUnit.value != "Packet"){
+     if (packagingList.isEmpty) {
+       CommonToast.show("Please add at least one packaging option",
+           type: ToastType.warning);
+       return;
+     }
+   }
+
 
     /// DESCRIPTION
     if (description.isEmpty) {
