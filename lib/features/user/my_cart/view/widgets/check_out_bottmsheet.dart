@@ -191,11 +191,15 @@ class CheckoutBottomSheet extends StatelessWidget {
                           Get.back(); // optional: close bottom sheet
                           Get.to(() => OrderSuccessView());
                         } else if (selectedMethod == "Online Payment") {
+                          var sucess = await orderController
+                              .processRazorpayPayment();
+
                           // Trigger your online payment flow
-                          CommonToast.show(
-                            "Online payment Comming Soon...",
-                            type: ToastType.info,
-                          );
+                          // CommonToast.show(
+                          //   "Online payment Comming Soon...",
+                          //   type: ToastType.info,
+                          // );
+
                           CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
                         } else if (selectedMethod == "Pay on Credit") {
                           await orderController.payUsingCredit(
