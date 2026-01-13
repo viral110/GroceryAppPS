@@ -202,18 +202,33 @@ class CheckoutBottomSheet extends StatelessWidget {
 
                           CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
                         } else if (selectedMethod == "Pay on Credit") {
-                          await orderController.payUsingCredit(
-                            orderController.finalPayable,
-                          );
+                          final double orderAmount =
+                              orderController.finalPayable;
+                          final double availableCredit =
+                         double.parse( _getAvailableCredit().toStringAsFixed(2));
 
-                          await orderController.placeOrder(
-                            paymentMethod: "Credit",
-                          );
-                          await orderController.onOrderSuccess();
+                          if (orderAmount > availableCredit) {
+                            CommonLoader.hide();
 
-                          CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
-                          Get.back(closeOverlays: true); // close checkout
-                          Get.to(() => OrderSuccessView());
+                            CommonToast.show(
+                              "Insufficient credit. Available credit is ₹$availableCredit",
+                              type: ToastType.error,
+                            );
+                            return;
+                          }else{
+                            await orderController.payUsingCredit(
+                              orderController.finalPayable,
+                            );
+
+                            await orderController.placeOrder(
+                              paymentMethod: "Credit",
+                            );
+                            await orderController.onOrderSuccess();
+
+                            CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
+                            Get.back(closeOverlays: true); // close checkout
+                            Get.to(() => OrderSuccessView());
+                          }
                         }
                       } catch (e) {
                         CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER

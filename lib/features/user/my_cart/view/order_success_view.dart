@@ -62,7 +62,7 @@ class OrderSuccessView extends StatelessWidget {
                   CommonToast.show("Order not found", type: ToastType.error);
                   return;
                 }
-                Get.to(() => OrderDetailsView(order: order));
+                Get.off(() => OrderDetailsView(order: order));
               },
               margin: EdgeInsets.symmetric(horizontal: 20),
             ),
