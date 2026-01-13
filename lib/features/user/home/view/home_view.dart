@@ -6,6 +6,8 @@ import 'package:get/get.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
 import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
+import 'package:online_groceries_app/features/user/home/controller/see_product_controller.dart';
+import 'package:online_groceries_app/features/user/home/view/see_products_view.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
@@ -183,7 +185,17 @@ class GroceryHomeScreen extends StatelessWidget {
 
                 return Column(
                   children: [
-                    _sectionHeader("Exclusive Offer"),
+                    _sectionHeader(
+                      "Exclusive Offer",
+                      onSeeAll: () {
+                        Get.to(
+                          () => const SeeAllProductsView(
+                            type: SeeAllType.exclusive,
+                            title: "Exclusive Offers",
+                          ),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 248.h,
@@ -211,7 +223,17 @@ class GroceryHomeScreen extends StatelessWidget {
                 return Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _sectionHeader("Best Selling"),
+                    _sectionHeader(
+                      "Best Selling",
+                      onSeeAll: () {
+                        Get.to(
+                          () => const SeeAllProductsView(
+                            type: SeeAllType.bestSelling,
+                            title: "Best Selling",
+                          ),
+                        );
+                      },
+                    ),
                     const SizedBox(height: 12),
                     SizedBox(
                       height: 248.h,
@@ -235,7 +257,17 @@ class GroceryHomeScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
               /// 🛒 Groceries
-              _sectionHeader("Groceries"),
+              _sectionHeader(
+                "Groceries",
+                onSeeAll: () {
+                  Get.to(
+                    () => const SeeAllProductsView(
+                      type: SeeAllType.random,
+                      title: "Groceries",
+                    ),
+                  );
+                },
+              ),
               const SizedBox(height: 12),
 
               SizedBox(
@@ -287,7 +319,7 @@ class GroceryHomeScreen extends StatelessWidget {
   }
 
   /// SECTION TITLE
-  Widget _sectionHeader(String title) {
+  Widget _sectionHeader(String title, {required VoidCallback onSeeAll}) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
@@ -299,12 +331,17 @@ class GroceryHomeScreen extends StatelessWidget {
             color: AppColors.textColor,
           ),
         ),
-        Text(
-          "See all",
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-            color: AppColors.primary,
+        TextButton(
+          onPressed: () {
+            onSeeAll();
+          },
+          child: Text(
+            "See all",
+            style: TextStyle(
+              fontSize: 16.sp,
+              fontWeight: FontWeight.w600,
+              color: AppColors.primary,
+            ),
           ),
         ),
       ],

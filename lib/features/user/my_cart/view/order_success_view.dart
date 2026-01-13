@@ -1,8 +1,13 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
+import 'package:online_groceries_app/features/user/my_cart/controller/order_controller.dart';
+import 'package:online_groceries_app/features/user/my_orders/view/order_details_view.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 class OrderSuccessView extends StatelessWidget {
@@ -10,6 +15,7 @@ class OrderSuccessView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final orderController = Get.find<OrderController>();
     return Scaffold(
       body: Container(
         height: Get.height,
@@ -23,10 +29,14 @@ class OrderSuccessView extends StatelessWidget {
         child: Column(
           children: [
             SizedBox(height: 115.h),
-            Image.asset(
-              "assets/png/success_image.png",
-              height: 240.h,
-              width: 270.w,
+            Align(
+              alignment: Alignment(-0.32, 0),
+
+              child: Image.asset(
+                "assets/png/success_image.png",
+                height: 240.h,
+                width: 270.w,
+              ),
             ),
             SizedBox(height: 66.h),
 
@@ -45,8 +55,14 @@ class OrderSuccessView extends StatelessWidget {
             CommonButton(
               title: "Track Order",
               onTap: () {
-                Get.find<BottomNavController>().currentIndex.value = 0;
-                Get.to(() => MainScreen());
+                final order = orderController.lastOrder.value;
+                log("Last Order: ${orderController.lastOrder.value}");
+
+                if (order == null) {
+                  CommonToast.show("Order not found", type: ToastType.error);
+                  return;
+                }
+                Get.to(() => OrderDetailsView(order: order));
               },
               margin: EdgeInsets.symmetric(horizontal: 20),
             ),
@@ -55,11 +71,10 @@ class OrderSuccessView extends StatelessWidget {
 
               title: "Back to home",
               onTap: () {
-                showDialog(
-                  context: context,
-                  barrierDismissible: false,
-                  builder: (_) => const OrderFailedDialog(),
-                );
+                Get.find<BottomNavController>().currentIndex.value = 0;
+                Get.to(() => MainScreen());
+                // Get.back(closeOverlays: true);
+                // Get.find<BottomNavController>().changeTab(0);
               },
               backgroundColor: Colors.transparent,
               textColor: Colors.black,
@@ -132,13 +147,19 @@ class OrderFailedDialog extends StatelessWidget {
             SizedBox(height: 60.h),
 
             /// TRY AGAIN BUTTON
-            CommonButton(title: "Please Try Again", onTap: () {}),
+            CommonButton(
+              title: "Please Try Again",
+              onTap: () {
+                Get.back(closeOverlays: true);
+              },
+            ),
 
             const SizedBox(height: 16),
 
             GestureDetector(
               onTap: () {
-                Navigator.pop(context);
+                Get.back(closeOverlays: true);
+                Get.find<BottomNavController>().changeTab(0);
                 // navigate to home
               },
               child: Text(

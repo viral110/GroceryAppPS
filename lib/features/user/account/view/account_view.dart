@@ -3,12 +3,14 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_loader.dart';
+import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/user/about/view/about_view.dart';
 import 'package:online_groceries_app/features/user/auth/view/login_view.dart';
 import 'package:online_groceries_app/features/user/my_orders/view/my_order_view.dart';
 import 'package:online_groceries_app/features/user/notifications/view/notification_view.dart';
 import 'package:online_groceries_app/features/user/promo_code/view/promo_code_view.dart';
 import 'package:online_groceries_app/services/auth_services.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 import '../../help/view/help_view.dart';
@@ -37,7 +39,7 @@ class AccountView extends StatelessWidget {
                       radius: 28,
                       backgroundColor: AppColors.primary,
                       child: Text(
-                        "R",
+                        "${UserService.getUserFromHive().firstName?[0]}${UserService.getUserFromHive().lastName?[0]}",
                         style: TextStyle(
                           fontSize: 20,
                           fontWeight: FontWeight.w900,
@@ -52,7 +54,7 @@ class AccountView extends StatelessWidget {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          "Ronak mehta",
+                          "${UserService.getUserFromHive().firstName} ${UserService.getUserFromHive().lastName}",
                           style: TextStyle(
                             fontSize: 20.sp,
                             fontWeight: FontWeight.w600,
@@ -60,7 +62,7 @@ class AccountView extends StatelessWidget {
                         ),
                         SizedBox(height: 4),
                         Text(
-                          "ronakmehta97@gmail.com",
+                          "${UserService.getUserFromHive().email}",
                           style: TextStyle(
                             fontSize: 16.sp,
                             color: AppColors.grayTextColor,
@@ -89,7 +91,12 @@ class AccountView extends StatelessWidget {
                     Get.to(() => PromoCodeView());
                   }),
                   _menuItem(Icons.notifications_none, "Notifications", () {
-                    Get.to(() => NotificationsView());
+                    // Get.to(() => NotificationsView());
+                    // CommonToast.show(
+                    //   "Notification Comming Soon...",
+                    //   type: ToastType.info,
+                    // );
+                    showComingSoonPopup();
                   }),
                   _menuItem(Icons.help_outline, "Help", () {
                     Get.to(() => HelpView());

@@ -5,9 +5,12 @@ import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
+import 'package:online_groceries_app/features/user/my_cart/view/order_success_view.dart';
 import 'package:online_groceries_app/models/order_model.dart';
+import 'package:online_groceries_app/services/razorpay_service.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
+import 'package:razorpay_flutter/razorpay_flutter.dart';
 
 class OrderController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -22,6 +25,7 @@ class OrderController extends GetxController {
   double cartTotal = 0.0;
   String userId = '';
   RxString selectedPaymentMethod = "Select Method".obs;
+
   @override
   void onInit() {
     super.onInit();
@@ -198,17 +202,124 @@ class OrderController extends GetxController {
     return total < 0 ? 0 : total;
   }
 
+  Rx<OrderModel?> lastOrder = Rx<OrderModel?>(null);
+
+  final RazorpayPaymentService _razorpayService =
+      Get.find<RazorpayPaymentService>();
+
+  /// ================= PROCESS RAZORPAY PAYMENT =================
+  Future<bool> processRazorpayPayment() async {
+    try {
+      final user = UserService.getUserFromHive();
+
+      // Open Razorpay checkout using service
+      final success = await _razorpayService.openCheckout(
+        amount: finalPayable,
+        orderId: DateTime.now().millisecondsSinceEpoch
+            .toString(), // Temporary order ID
+        userName: '${user.firstName ?? ''} ${user.lastName ?? ''}',
+        userEmail: user.email ?? 'user@example.com',
+        userPhone: user.mobileNumber ?? '',
+        description: 'Grocery App PS Order Payment',
+        notes: {
+          'user_id': userId,
+          'cart_total': cartTotal.toString(),
+          'discount': promoDiscount.value.toString(),
+        },
+        onSuccess: _handleRazorpaySuccess,
+        onError: _handleRazorpayError,
+        onExternalWallet: _handleRazorpayExternalWallet,
+      );
+
+      return success;
+    } catch (e) {
+      log('❌ Error processing Razorpay payment: $e');
+      CommonToast.show('Failed to initialize payment', type: ToastType.error);
+      return false;
+    }
+  }
+
+  /// ================= RAZORPAY SUCCESS CALLBACK =================
+  void _handleRazorpaySuccess(PaymentSuccessResponse response) async {
+    log('✅ Razorpay Payment Success in Controller');
+    log('   Payment ID: ${response.paymentId}');
+
+    try {
+      CommonLoader.show();
+
+      // Verify payment (should be done on backend in production)
+      final isVerified = await _razorpayService.verifyPayment(
+        paymentId: response.paymentId ?? '',
+        orderId: response.orderId ?? '',
+        signature: response.signature ?? '',
+      );
+
+      if (!isVerified) {
+        CommonLoader.hide();
+        CommonToast.show(
+          'Payment verification failed. Contact support with Payment ID: ${response.paymentId}',
+          type: ToastType.error,
+        );
+        return;
+      }
+
+      // Place order with payment details
+      await placeOrder(
+        paymentMethod: "Online",
+        paymentId: response.paymentId,
+        paymentSignature: response.signature,
+      );
+
+      // Save promo usage if applied
+      await onOrderSuccess();
+
+      CommonLoader.hide();
+      Get.back(closeOverlays: true); // close checkout
+      Get.to(() => OrderSuccessView());
+      CommonToast.show(
+        'Payment successful! Your order has been placed.',
+        type: ToastType.success,
+      );
+    } catch (e) {
+      CommonLoader.hide();
+      log('❌ Error handling payment success: $e');
+      CommonToast.show(
+        'Payment successful but order creation failed. Contact support with Payment ID: ${response.paymentId}',
+        type: ToastType.error,
+      );
+    }
+  }
+
+  /// ================= RAZORPAY ERROR CALLBACK =================
+  void _handleRazorpayError(PaymentFailureResponse response) {
+    log('❌ Razorpay Payment Error in Controller');
+    log('   Code: ${response.code}');
+    log('   Message: ${response.message}');
+
+    final errorMessage = _razorpayService.getPaymentErrorMessage(response);
+    CommonToast.show(errorMessage, type: ToastType.error);
+  }
+
+  /// ================= RAZORPAY EXTERNAL WALLET CALLBACK =================
+  void _handleRazorpayExternalWallet(ExternalWalletResponse response) {
+    log('💳 External Wallet Selected: ${response.walletName}');
+    CommonToast.show(
+      'Processing payment with ${response.walletName}',
+      type: ToastType.info,
+    );
+  }
+
   /// ================= PLACE ORDER =================
-  Future<void> placeOrder({required String paymentMethod}) async {
+  Future<void> placeOrder({
+    required String paymentMethod,
+    String? paymentId,
+    String? paymentSignature,
+  }) async {
     try {
       isPlacingOrder.value = true;
 
       final cartController = Get.find<CartController>();
       final user = UserService.getUserFromHive();
-
-      // if (user == null) {
-      //   throw Exception("User not logged in");
-      // }
 
       if (cartController.cartItems.isEmpty) {
         throw Exception("Cart is empty");
@@ -252,7 +363,7 @@ class OrderController extends GetxController {
         deliveryAddress: DeliveryAddressModel(
           city: user.city,
           addressLine: user.area,
-          name: user.firstName,
+          name: '${user.firstName ?? ''} ${user.lastName ?? ''}',
           phone: user.mobileNumber,
           pincode: user.pincode,
         ), // DeliveryAddressModel
@@ -260,8 +371,23 @@ class OrderController extends GetxController {
         updatedAt: DateTime.now(),
       );
 
+      /// 🔥 ADD THIS LINE
+      lastOrder.value = order;
+      log(" ORDER DATA: ${lastOrder.value}");
+
+      /// Prepare order data
+      final orderData = order.toMap();
+
+      // Add payment details if online payment
+      if (paymentMethod == "Online" && paymentId != null) {
+        orderData['payment_id'] = paymentId;
+        orderData['payment_signature'] = paymentSignature;
+        orderData['payment_completed_at'] = Timestamp.now();
+      }
+
       /// Save order
-      await orderDoc.set(order.toMap());
+      await orderDoc.set(orderData);
+      // await orderDoc.set(order.toMap());
 
       /// Clear cart (Firestore + local)
       await _clearCart(cartController, user.uid);
@@ -339,7 +465,7 @@ class OrderController extends GetxController {
 
       final data = snapshot.data() ?? {};
 
-      final int totalCredit = data['credit'] ?? 0;
+      final int totalCredit = (data['credit'] ?? 0).toInt();
       final int spentCredit = data['used_credits'] ?? 0;
 
       final int remainingCredit = totalCredit - spentCredit;

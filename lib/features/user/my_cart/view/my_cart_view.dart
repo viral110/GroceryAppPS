@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/order_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/view/widgets/check_out_bottmsheet.dart';
@@ -144,6 +145,13 @@ class MyCartView extends StatelessWidget {
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: () {
+                  if (controller.cartItems.isEmpty) {
+                    CommonToast.show(
+                      "Your cart is empty",
+                      type: ToastType.warning,
+                    );
+                    return;
+                  }
                   final orderController = Get.find<OrderController>();
                   orderController.initCheckout(
                     total: controller.subtotal,
