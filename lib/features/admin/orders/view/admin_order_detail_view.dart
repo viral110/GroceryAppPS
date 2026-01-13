@@ -1,30 +1,42 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
+import 'package:get/get.dart';
+import 'package:get/get_core/src/get_main.dart';
 import 'package:intl/intl.dart';
+import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/models/order_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 
-
-class OrderDetailView extends StatelessWidget {
+class AdminOrderDetailView extends StatelessWidget {
   final String orderId;
 
-  const OrderDetailView({super.key, required this.orderId});
+  const AdminOrderDetailView({super.key, required this.orderId});
+
+  // ORDER & PAYMENT OPTIONS
+  static const List<String> orderStatuses = [
+    "Pending",
+    "Ongoing",
+    "Completed",
+    "Cancelled",
+  ];
+
+  static const List<String> paymentStatuses = [
+    "pending",
+    "paid",
+  ];
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: const Color(0xffF5F5F5),
-      appBar: AppBar(
-        title: const Text("Order Details"),
-        backgroundColor: AppColors.primary,
-        foregroundColor: AppColors.whiteColor,
-      ),
+      appBar: CommonAppBar(title: "Order Details"),
       body: Center(
         child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 900), // WEB WIDTH
+          constraints: const BoxConstraints(maxWidth: 900),
           child: StreamBuilder<DocumentSnapshot>(
             stream: FirebaseFirestore.instance
-                .collection("orders")
+                .collection(AppConstantStrings.orderCollection)
                 .doc(orderId)
                 .snapshots(),
             builder: (context, snapshot) {
@@ -59,15 +71,59 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  // ---------------- ORDER HEADER ----------------
+  // ================= ORDER HEADER =================
   Widget _orderHeader(OrderModel order) {
+    final bool isEditable =
+        order.orderStatus != "Completed" &&
+            order.orderStatus != "Cancelled";
+
     return _card(
       Column(
         children: [
           _row("Order ID", order.orderId),
-          _row("Order Status", order.orderStatus),
+
+          /// ORDER STATUS
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Order Status", style: _grayText),
+              isEditable
+                  ? _dropdown(
+                value: order.orderStatus,
+                items: orderStatuses,
+                onChanged: (val) {
+                  _updateStatus(
+                    field: "order_status",
+                    value: val,
+                  );
+                },
+              )
+                  : _statusText(order.orderStatus),
+            ],
+          ),
+
+          /// PAYMENT STATUS
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text("Payment Status", style: _grayText),
+              isEditable
+                  ? _dropdown(
+                value: order.paymentStatus,
+                items: paymentStatuses,
+                onChanged: (val) {
+                  _updateStatus(
+                    field: "payment_status",
+                    value: val,
+                  );
+                },
+              )
+                  : _statusText(order.paymentStatus),
+            ],
+          ),
+
           _row("Payment Method", order.paymentMethod),
-          _row("Payment Status", order.paymentStatus),
+
           _row(
             "Created At",
             order.createdAt != null
@@ -80,7 +136,7 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  // ---------------- ITEMS ----------------
+  // ================= ITEMS =================
   Widget _itemsSection(OrderModel order) {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -96,6 +152,7 @@ class OrderDetailView extends StatelessWidget {
                     borderRadius: BorderRadius.circular(6),
                     child: Image.network(
                       item.image!,
+                      webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                       width: 60,
                       height: 60,
                       fit: BoxFit.cover,
@@ -111,8 +168,8 @@ class OrderDetailView extends StatelessWidget {
                       Text(
                         item.productName ?? "",
                         style: const TextStyle(
-                          color: AppColors.textColor,
                           fontWeight: FontWeight.w600,
+                          color: AppColors.textColor,
                         ),
                       ),
                       const SizedBox(height: 4),
@@ -140,7 +197,7 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  // ---------------- PRICE ----------------
+  // ================= PRICE =================
   Widget _priceSection(OrderModel order) {
     return _card(
       Column(
@@ -149,23 +206,20 @@ class OrderDetailView extends StatelessWidget {
           _priceRow("Delivery Charge", order.deliveryCharge),
           _priceRow("Discount", -order.discount),
           const Divider(),
-          _priceRow(
-            "Total Amount",
-            order.totalAmount,
-            isBold: true,
-          ),
+          _priceRow("Total Amount", order.totalAmount, isBold: true),
         ],
       ),
     );
   }
 
-  // ---------------- ADDRESS ----------------
+  // ================= ADDRESS =================
   Widget _addressSection(OrderModel order) {
     final a = order.deliveryAddress!;
     return _card(
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          SizedBox(width: Get.width,),
           _title("Delivery Address"),
           const SizedBox(height: 8),
           Text(a.name ?? "", style: _normalText),
@@ -177,11 +231,56 @@ class OrderDetailView extends StatelessWidget {
     );
   }
 
-  // ---------------- COMMON WIDGETS ----------------
+  // ================= DROPDOWN =================
+  Widget _dropdown({
+    required String? value,
+    required List<String> items,
+    required Function(String) onChanged,
+  }) {
+    return DropdownButton<String>(
+      value: value,
+      underline: const SizedBox(),
+      focusColor: Colors.transparent,
+      icon: Icon(Icons.keyboard_arrow_down_sharp),
+      padding: EdgeInsets.zero,
+      items: items
+          .map(
+            (e) => DropdownMenuItem(
+          value: e,
+          child: Text(
+            e,
+            style: TextStyle(
+              fontWeight: FontWeight.w600,
+              color: _statusColor(e),
+            ),
+          ),
+        ),
+      )
+          .toList(),
+      onChanged: (val) {
+        if (val != null) onChanged(val);
+      },
+    );
+  }
+
+  Future<void> _updateStatus({
+    required String field,
+    required String value,
+  }) async {
+    await FirebaseFirestore.instance
+        .collection(AppConstantStrings.orderCollection)
+        .doc(orderId)
+        .update({
+      field: value,
+      "updatedAt": FieldValue.serverTimestamp(),
+    });
+  }
+
+  // ================= HELPERS =================
   Widget _card(Widget child) {
     return Card(
-      color: AppColors.whiteColor,
       elevation: 2,
+      color: AppColors.whiteColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       child: Padding(
         padding: const EdgeInsets.all(14),
@@ -213,7 +312,6 @@ class OrderDetailView extends StatelessWidget {
           Text(
             "₹${value.toStringAsFixed(2)}",
             style: TextStyle(
-              color: AppColors.textColor,
               fontWeight: isBold ? FontWeight.bold : FontWeight.w500,
               fontSize: isBold ? 16 : 14,
             ),
@@ -229,13 +327,41 @@ class OrderDetailView extends StatelessWidget {
       style: const TextStyle(
         fontSize: 18,
         fontWeight: FontWeight.bold,
-        color: AppColors.textColor,
       ),
     );
   }
 
+  Widget _statusText(String? status) {
+    return Text(
+      status ?? "-",
+      style: TextStyle(
+        fontWeight: FontWeight.w600,
+        color: _statusColor(status),
+      ),
+    );
+  }
+
+  Color _statusColor(String? status) {
+    switch (status) {
+      case "Pending":
+        return Colors.orange;
+      case "Ongoing":
+        return Colors.blue;
+      case "Completed":
+        return Colors.green;
+      case "Cancelled":
+        return Colors.red;
+      case "paid":
+        return Colors.green;
+      case "pending":
+        return Colors.orange;
+      default:
+        return Colors.grey;
+    }
+  }
+
   TextStyle get _normalText =>
-      const TextStyle(color: AppColors.textColor, fontWeight: FontWeight.w500);
+      const TextStyle(fontWeight: FontWeight.w500);
 
   TextStyle get _grayText =>
       const TextStyle(color: AppColors.grayTextColor);
