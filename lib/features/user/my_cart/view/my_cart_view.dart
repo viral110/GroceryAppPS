@@ -158,9 +158,9 @@ class MyCartView extends StatelessWidget {
                     total: controller.subtotal,
                     uid: UserService.getUserFromHive().uid,
                   );
-                  if (orderController.finalPayable > 10000) {
+                  if (orderController.finalPayable < 10000) {
                     CommonToast.show(
-                      "Maximum order amount is ₹10000. Please adjust your cart items.",
+                      "Minimum order amount is ₹10,000",
                       type: ToastType.warning,
                     );
                     return;
