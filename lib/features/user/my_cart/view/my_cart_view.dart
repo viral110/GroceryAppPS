@@ -152,12 +152,19 @@ class MyCartView extends StatelessWidget {
                     );
                     return;
                   }
+
                   final orderController = Get.find<OrderController>();
                   orderController.initCheckout(
                     total: controller.subtotal,
                     uid: UserService.getUserFromHive().uid,
                   );
-
+                  if (orderController.finalPayable > 10000) {
+                    CommonToast.show(
+                      "Maximum order amount is ₹10000. Please adjust your cart items.",
+                      type: ToastType.warning,
+                    );
+                    return;
+                  }
                   showModalBottomSheet(
                     context: context,
                     isScrollControlled: true,
