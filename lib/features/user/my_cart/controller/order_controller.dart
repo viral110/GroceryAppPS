@@ -340,7 +340,7 @@ class OrderController extends GetxController {
       final data = snapshot.data() ?? {};
 
       final int totalCredit = data['credit'] ?? 0;
-      final int spentCredit = data['spent_credit'] ?? 0;
+      final int spentCredit = data['used_credits'] ?? 0;
 
       final int remainingCredit = totalCredit - spentCredit;
 
@@ -353,7 +353,7 @@ class OrderController extends GetxController {
       }
 
       transaction.update(userRef, {
-        'spent_credit': spentCredit + creditToUse.toInt(),
+        'used_credits': spentCredit + creditToUse.toInt(),
         'update_at': FieldValue.serverTimestamp(),
       });
     });

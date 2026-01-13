@@ -1,5 +1,6 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 
 class AdminOrdersController extends GetxController {
   RxInt selectedTab = 0.obs;
@@ -22,7 +23,7 @@ class AdminOrdersController extends GetxController {
 
   Query get ordersQuery {
     Query query = FirebaseFirestore.instance
-        .collection('orders');
+        .collection(AppConstantStrings.orderCollection);
     switch (selectedTab.value) {
       case 1:
         query = query.where('order_status', isEqualTo: 'Pending');
@@ -54,7 +55,7 @@ class AdminOrdersController extends GetxController {
     required String status,
   }) async {
     final snapshot = await FirebaseFirestore.instance
-        .collection('orders')
+        .collection(AppConstantStrings.orderCollection)
         .where('order_id', isEqualTo: orderId)
         .limit(1)
         .get();

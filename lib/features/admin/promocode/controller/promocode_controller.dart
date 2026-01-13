@@ -8,7 +8,7 @@ class PromoController extends GetxController {
 
   Stream<List<PromoModel>> getPromos() {
     return FirebaseFirestore.instance
-        .collection(AppConstantStrings.promocodesCollection)
+        .collection(AppConstantStrings.promoCodeCollection)
         .snapshots()
         .map((snapshot) =>
         snapshot.docs.map((e) => PromoModel.fromJson(e)).toList());
@@ -33,7 +33,7 @@ class PromoController extends GetxController {
 
   Future<void> deletePromo(String id) async {
     await FirebaseFirestore.instance
-        .collection(AppConstantStrings.promocodesCollection)
+        .collection(AppConstantStrings.promoCodeCollection)
         .doc(id)
         .delete();
   }

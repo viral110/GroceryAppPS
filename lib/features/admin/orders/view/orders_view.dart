@@ -4,6 +4,7 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
 import 'package:online_groceries_app/features/admin/orders/controller/admin_orderview_controller.dart';
+import 'package:online_groceries_app/features/admin/orders/view/admin_order_detail_view.dart';
 
 import '../../../../models/order_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
@@ -18,7 +19,6 @@ class AdminOrdersView extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        /// HEADER
         Row(
           mainAxisAlignment: MainAxisAlignment.spaceBetween,
           children: [
@@ -189,60 +189,65 @@ class AdminOrdersView extends StatelessWidget {
         ? Colors.red
         : AppColors.primary;
 
-    return Container(
-      margin: EdgeInsets.only(top: 8.h),
-      padding: EdgeInsets.all(14.w),
-      decoration: _cardDecoration(),
-      child: Row(
-        children: [
-          Expanded(child: Padding(
-            padding:  EdgeInsets.only(left: 10),
-            child: Text("#${order.orderId}"),
-          )),
-          Expanded(child: Padding(
-            padding:  EdgeInsets.only(left: 10),
-            child: Text(order.deliveryAddress?.name ?? "User"),
-          )),
-          Expanded(
-            child: Padding(
+    return GestureDetector(
+      onTap: (){
+        Get.to(()=>OrderDetailView(orderId: order.orderId ??"",));
+      },
+      child: Container(
+        margin: EdgeInsets.only(top: 8.h),
+        padding: EdgeInsets.all(14.w),
+        decoration: _cardDecoration(),
+        child: Row(
+          children: [
+            Expanded(child: Padding(
               padding:  EdgeInsets.only(left: 10),
+              child: Text("#${order.orderId}"),
+            )),
+            Expanded(child: Padding(
+              padding:  EdgeInsets.only(left: 10),
+              child: Text(order.deliveryAddress?.name ?? "User"),
+            )),
+            Expanded(
+              child: Padding(
+                padding:  EdgeInsets.only(left: 10),
+                child: Text(
+                  DateFormat('dd MMM yyyy').format(order.createdAt!),
+                ),
+              ),
+            ),
+            Expanded(child: Padding(
+              padding:  EdgeInsets.only(left: 10),
+              child: Text(itemsText),
+            )),
+            Expanded(child: Padding(
+              padding:  EdgeInsets.only(left: 10),
+              child: Text("₹ ${order.totalAmount.toStringAsFixed(0)}"),
+            )),
+            Expanded(
               child: Text(
-                DateFormat('dd MMM yyyy').format(order.createdAt!),
+                order.orderStatus!,
+                style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
               ),
             ),
-          ),
-          Expanded(child: Padding(
-            padding:  EdgeInsets.only(left: 10),
-            child: Text(itemsText),
-          )),
-          Expanded(child: Padding(
-            padding:  EdgeInsets.only(left: 10),
-            child: Text("₹ ${order.totalAmount.toStringAsFixed(0)}"),
-          )),
-          Expanded(
-            child: Text(
-              order.orderStatus!,
-              style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
-            ),
-          ),
-          Expanded(
-            child: GestureDetector(
-              onTap: () => _showStatusDialog(order),
-              child: Container(
-                padding: EdgeInsets.symmetric(vertical: 6.h),
-                alignment: Alignment.center,
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(6),
-                ),
-                child: const Text(
-                  "Change Status",
-                  style: TextStyle(color: Colors.white),
+            Expanded(
+              child: GestureDetector(
+                onTap: () => _showStatusDialog(order),
+                child: Container(
+                  padding: EdgeInsets.symmetric(vertical: 6.h),
+                  alignment: Alignment.center,
+                  decoration: BoxDecoration(
+                    color: AppColors.primary,
+                    borderRadius: BorderRadius.circular(6),
+                  ),
+                  child: const Text(
+                    "Change Status",
+                    style: TextStyle(color: Colors.white),
+                  ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
