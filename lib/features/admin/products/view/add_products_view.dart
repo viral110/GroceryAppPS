@@ -279,16 +279,8 @@ class AdminAddProductView extends StatelessWidget {
                               ),
                               DropdownMenuItem(value: "Ml", child: Text("Ml")),
                               DropdownMenuItem(
-                                value: "Piece",
-                                child: Text("Piece"),
-                              ),
-                              DropdownMenuItem(
                                 value: "Packet",
                                 child: Text("Packet"),
-                              ),
-                              DropdownMenuItem(
-                                value: "Box",
-                                child: Text("Box"),
                               ),
                             ],
                             onChanged: (v) =>
@@ -449,7 +441,7 @@ class AdminAddProductView extends StatelessWidget {
               ),
             ),
             SizedBox(height: 24.h),
-
+            controller.selectedUnit.value == "Packet"?SizedBox() :
             _sectionCard(
               title: "Packaging Options",
               child: Column(

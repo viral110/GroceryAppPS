@@ -21,6 +21,7 @@ class UserModel {
   String? fcmToken;
   bool isNotification;
   bool isAdmin;
+  bool isEnable;
 
 
   UserModel({
@@ -42,6 +43,7 @@ class UserModel {
     this.updateAt,
     this.isNotification = true,
     this.isAdmin = false,
+    this.isEnable= false,
   });
 
   /// Convert Firestore doc to model
@@ -65,6 +67,7 @@ class UserModel {
       fcmToken: map['fcm_token'],
       isNotification: map['isNotification'] ?? false,
       isAdmin: map['isAdmin'] ?? false,
+      isEnable: map['isEnable'] ?? true,
     );
   }
 
@@ -89,6 +92,7 @@ class UserModel {
       'fcm_token': fcmToken,
       'isNotification': isNotification,
       'isAdmin': isAdmin,
+      'isEnable':isEnable,
     };
   }
 

@@ -1,3 +1,4 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -7,6 +8,7 @@ import 'package:online_groceries_app/features/admin/user_tab/view/add_user_view.
 import 'package:online_groceries_app/features/admin/user_tab/view/user_detail_view.dart';
 import 'package:online_groceries_app/models/user_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 
 class UserListView extends StatelessWidget {
    UserListView({super.key});
@@ -89,10 +91,7 @@ class UserListView extends StatelessWidget {
                       Get.to(()=>AdminUserDetailView(userModel: user,));
                     },
                     child: _userRow(
-                      "${user.firstName} ${user.lastName}",
-                      user.email ?? "",
-                      user.mobileNumber ?? "",
-                      "₹${user.credit}",
+                     user
                     ),
                   );
                 }).toList(),
@@ -105,38 +104,73 @@ class UserListView extends StatelessWidget {
     );
   }
 
-  Widget _tableHeader() {
-    return Container(
-      padding: EdgeInsets.all(14.w),
-      decoration: _cardDecoration(),
-      child: Row(
-        children:  [
-          Expanded(child: Text("Name", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
-          Expanded(child: Text("Email", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
-          Expanded(child: Text("Mobile", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
-          Expanded(child: Text("Credit Amount", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
-        ],
-      ),
-    );
-  }
+   Widget _tableHeader() {
+     return Container(
+       padding: EdgeInsets.all(14.w),
+       decoration: _cardDecoration(),
+       child: Row(
+         children: [
+           Expanded(child: Text("Name", style: _headerText())),
+           Expanded(child: Text("Email", style: _headerText())),
+           Expanded(child: Text("Mobile", style: _headerText())),
+           Expanded(child: Text("Credit", style: _headerText())),
+           SizedBox(
+             width: 90.w,
+             child: Text("Dashboard Access", style: _headerText()),
+           ),
+         ],
+       ),
+     );
+   }
 
-  Widget _userRow(String name, String email, String mobile,String creditAmount) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 10.h),
-      padding: EdgeInsets.all(14.w),
-      decoration: _cardDecoration(),
-      child: Row(
-        children: [
-          Expanded(child: Text(name)),
-          Expanded(child: Text(email)),
-          Expanded(child: Text(mobile)),
-          Expanded(child: Text(creditAmount)),
-        ],
-      ),
-    );
-  }
+   TextStyle _headerText() =>
+       TextStyle(fontWeight: FontWeight.w600, fontSize: 17.sp);
 
-  BoxDecoration _cardDecoration() {
+   Widget _userRow(UserModel user) {
+     return Container(
+       margin: EdgeInsets.only(bottom: 10.h),
+       padding: EdgeInsets.all(14.w),
+       decoration: _cardDecoration(),
+       child: Row(
+         children: [
+           Expanded(child: Text("${user.firstName} ${user.lastName}")),
+           Expanded(child: Text(user.email ?? "")),
+           Expanded(child: Text(user.mobileNumber ?? "")),
+           Expanded(child: Text("₹${user.credit}")),
+
+           // ===== ENABLE / DISABLE SWITCH =====
+           SizedBox(
+             width: 90.w,
+             child: Switch(
+               value: user.isEnable,
+               activeColor: AppColors.primary,
+               onChanged: (value) {
+                 _updateUserStatus(
+                   userId: user.uid!,
+                   isActive: value,
+                 );
+               },
+             ),
+           ),
+         ],
+       ),
+     );
+   }
+   Future<void> _updateUserStatus({
+     required String userId,
+     required bool isActive,
+   }) async {
+     await FirebaseFirestore.instance
+         .collection(AppConstantStrings.userCollection)
+         .doc(userId)
+         .update({
+       "isEnable": isActive,
+       "updatedAt": FieldValue.serverTimestamp(),
+     });
+   }
+
+
+   BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: AppColors.whiteColor,
       borderRadius: BorderRadius.circular(12),

@@ -3,6 +3,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:intl/intl.dart';
+import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/features/admin/orders/controller/admin_orderview_controller.dart';
 import 'package:online_groceries_app/features/admin/orders/view/admin_order_detail_view.dart';
 
@@ -191,7 +192,7 @@ class AdminOrdersView extends StatelessWidget {
 
     return GestureDetector(
       onTap: (){
-        Get.to(()=>OrderDetailView(orderId: order.orderId ??"",));
+        Get.to(()=>AdminOrderDetailView(orderId: order.orderId ??"",));
       },
       child: Container(
         margin: EdgeInsets.only(top: 8.h),
@@ -259,6 +260,7 @@ class AdminOrdersView extends StatelessWidget {
     Get.dialog(
       AlertDialog(
         title: const Text("Change Order Status"),
+        backgroundColor: Colors.white,
         content: Obx(
               () => Wrap(
             spacing: 10,
@@ -270,24 +272,30 @@ class AdminOrdersView extends StatelessWidget {
                   label: Text(status),
                   backgroundColor: isSelected
                       ? AppColors.primary.withOpacity(0.2)
-                      : Colors.grey.shade200,
+                      : Colors.white,
                 ),
               );
             }).toList(),
           ),
         ),
         actions: [
-          TextButton(onPressed: Get.back, child: const Text("Cancel")),
-          ElevatedButton(
-            onPressed: () async {
+          TextButton(onPressed: Get.back, child:  Text("Cancel",style: TextStyle(
+            fontSize: 17.sp,
+            color: Colors.black,
+          ),)),
+
+          SizedBox(
+            width: 150.w,
+            child: CommonButton(title: "Update", onTap: ()
+            async {
               await controller.updateOrderStatus(
                 orderId: order.orderId!,
                 status: selectedStatus.value,
               );
               Get.back();
-            },
-            child: const Text("Update"),
-          ),
+            },),
+          )
+
         ],
       ),
     );

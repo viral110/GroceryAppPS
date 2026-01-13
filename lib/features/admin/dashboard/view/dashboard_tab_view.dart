@@ -5,7 +5,9 @@ import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:fl_chart/fl_chart.dart';
 import 'package:online_groceries_app/features/admin/dashboard/controller/dashboard_controller.dart';
+import 'package:online_groceries_app/features/admin/orders/view/admin_order_detail_view.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 
 class DashboardTab extends StatelessWidget {
   DashboardTab({super.key});
@@ -99,7 +101,7 @@ class DashboardTab extends StatelessWidget {
         /// DATA
         StreamBuilder<QuerySnapshot>(
           stream: FirebaseFirestore.instance
-              .collection('orders')
+              .collection(AppConstantStrings.orderCollection)
               .orderBy('created_at', descending: true)
               .limit(5)
               .snapshots(),
@@ -130,43 +132,48 @@ class DashboardTab extends StatelessWidget {
                     statusColor = AppColors.primary;
                 }
 
-                return Container(
-                  margin: EdgeInsets.only(top: 8.h),
-                  padding: EdgeInsets.all(14.w),
-                  decoration: _cardDecoration(),
-                  child: Row(
-                    children: [
-                      Expanded(
-                        child: Text("#${data['order_id'] ?? '--'}"),
-                      ),
-                      Expanded(
-                        child: Text(
-                          data['delivery_address']?['name'] ?? "User",
+                return GestureDetector(
+                  onTap: () {
+                    Get.to(()=>AdminOrderDetailView(orderId: data['order_id'],));
+                  },
+                  child: Container(
+                    margin: EdgeInsets.only(top: 8.h),
+                    padding: EdgeInsets.all(14.w),
+                    decoration: _cardDecoration(),
+                    child: Row(
+                      children: [
+                        Expanded(
+                          child: Text("#${data['order_id'] ?? '--'}"),
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          DateFormat('dd MMM yyyy').format(
-                            (data['created_at'] as Timestamp).toDate(),
+                        Expanded(
+                          child: Text(
+                            data['delivery_address']?['name'] ?? "User",
                           ),
                         ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          "₹ ${data['total_amount'] ?? 0}",
-                          style: const TextStyle(fontWeight: FontWeight.w600),
-                        ),
-                      ),
-                      Expanded(
-                        child: Text(
-                          status,
-                          style: TextStyle(
-                            color: statusColor,
-                            fontWeight: FontWeight.w600,
+                        Expanded(
+                          child: Text(
+                            DateFormat('dd MMM yyyy').format(
+                              (data['created_at'] as Timestamp).toDate(),
+                            ),
                           ),
                         ),
-                      ),
-                    ],
+                        Expanded(
+                          child: Text(
+                            "₹ ${data['total_amount'] ?? 0}",
+                            style: const TextStyle(fontWeight: FontWeight.w600),
+                          ),
+                        ),
+                        Expanded(
+                          child: Text(
+                            status,
+                            style: TextStyle(
+                              color: statusColor,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
                   ),
                 );
               }).toList(),
@@ -321,7 +328,38 @@ class DashboardTab extends StatelessWidget {
         LineChartData(
           borderData: FlBorderData(show: false),
           gridData: FlGridData(show: true),
-          titlesData: FlTitlesData(show: false),
+
+          titlesData: FlTitlesData(
+            leftTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            topTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            rightTitles: const AxisTitles(
+              sideTitles: SideTitles(showTitles: false),
+            ),
+            bottomTitles: AxisTitles(
+              sideTitles: SideTitles(
+                showTitles: true,
+                interval: 2, // show every 2 days
+                getTitlesWidget: (value, meta) {
+                  final day = value.toInt() + 1;
+                  return Padding(
+                    padding: const EdgeInsets.only(top: 8),
+                    child: Text(
+                      day.toString(),
+                      style: TextStyle(
+                        fontSize: 11.sp,
+                        color: AppColors.grayTextColor,
+                      ),
+                    ),
+                  );
+                },
+              ),
+            ),
+          ),
+
           lineBarsData: [
             LineChartBarData(
               spots: List.generate(
@@ -334,7 +372,10 @@ class DashboardTab extends StatelessWidget {
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
-                  colors: [color.withOpacity(0.3), color.withOpacity(0.05)],
+                  colors: [
+                    color.withOpacity(0.3),
+                    color.withOpacity(0.05),
+                  ],
                 ),
               ),
               dotData: FlDotData(show: false),
@@ -344,6 +385,7 @@ class DashboardTab extends StatelessWidget {
       ),
     );
   }
+
 
   Widget _graphLoader() {
     return Container(

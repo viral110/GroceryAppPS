@@ -1,11 +1,15 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
+import 'package:get/get.dart';
 import 'package:intl/intl.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
+import 'package:online_groceries_app/features/admin/orders/view/admin_order_detail_view.dart';
 import 'package:online_groceries_app/features/admin/user_tab/view/widgets/details_tab.dart';
+import 'package:online_groceries_app/features/user/my_orders/view/order_details_view.dart';
 import 'package:online_groceries_app/models/order_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 import '../../../../models/user_model.dart';
 
 
@@ -64,7 +68,7 @@ class _UserOrdersTab extends StatelessWidget {
   Widget build(BuildContext context) {
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
-          .collection('orders')
+          .collection(AppConstantStrings.orderCollection)
           .where('user_id', isEqualTo: userId)
           .snapshots(),
       builder: (context, snapshot) {
@@ -232,7 +236,7 @@ class _UserOrderCard extends StatelessWidget {
               ),
               GestureDetector(
                 onTap: () {
-                  // TODO: Navigate to Order Details Screen
+                  Get.to(()=>AdminOrderDetailView(orderId: orderId,));
                 },
                 child: Container(
                   padding: EdgeInsets.symmetric(
