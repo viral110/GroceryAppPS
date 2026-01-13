@@ -198,7 +198,7 @@ class GroceryHomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
-                      height: 248.h,
+                      height: 260.h,
                       child: ListView.builder(
                         scrollDirection: Axis.horizontal,
                         itemCount: controller.exclusiveOffers.length,
@@ -236,7 +236,7 @@ class GroceryHomeScreen extends StatelessWidget {
                     ),
                     const SizedBox(height: 12),
                     SizedBox(
-                      height: 248.h,
+                      height: 260.h,
                       child: ListView.builder(
                         itemCount: controller.bestSelling.length,
                         shrinkWrap: true,
@@ -293,7 +293,7 @@ class GroceryHomeScreen extends StatelessWidget {
                 }
 
                 return SizedBox(
-                  height: 248.h,
+                  height: 260.h,
                   child: ListView.builder(
                     itemCount: controller.randomProducts.length,
                     shrinkWrap: true,
@@ -385,8 +385,14 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final discountedPrice =
-        product.price - (product.price * product.discount / 100);
+    final double sellingPrice = product.price;
+
+    final double originalPrice = product.discount > 0
+        ? sellingPrice / (1 - product.discount / 100)
+        : sellingPrice;
+
+    // final discountedPrice =
+    //     product.price - (product.price * product.discount / 100);
     return GestureDetector(
       onTap: () {
         Get.to(() => ProductDetailView(product: product));
@@ -403,17 +409,22 @@ class ProductCard extends StatelessWidget {
           mainAxisAlignment: MainAxisAlignment.end,
           children: [
             /// 🖼 PRODUCT IMAGE
-            ClipRRect(
-              borderRadius: BorderRadius.circular(12),
-              child: Image.network(
-                product.thumbnail,
-                fit: BoxFit.contain,
-                errorBuilder: (_, __, ___) => Container(
-                  color: Colors.grey.shade200,
-                  child: Icon(
-                    Icons.image_not_supported,
-                    color: Colors.grey,
-                    size: 40,
+            Align(
+              alignment: Alignment.center,
+              child: ClipRRect(
+                borderRadius: BorderRadius.circular(12),
+                child: Image.network(
+                  product.thumbnail,
+                  fit: BoxFit.contain,
+                  height: 100.h,
+                  width: 100.w,
+                  errorBuilder: (_, __, ___) => Container(
+                    color: Colors.grey.shade200,
+                    child: Icon(
+                      Icons.image_not_supported,
+                      color: Colors.grey,
+                      size: 40,
+                    ),
                   ),
                 ),
               ),
@@ -422,11 +433,15 @@ class ProductCard extends StatelessWidget {
             SizedBox(height: 10.h),
             Text(
               product.name,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
               style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16.sp),
             ),
             const SizedBox(height: 4),
             Text(
               product.priceUnit,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
               style: const TextStyle(color: Color(0xff7C7C7C)),
             ),
             const SizedBox(height: 10),
@@ -438,7 +453,8 @@ class ProductCard extends StatelessWidget {
                   children: [
                     // Discounted Price
                     Text(
-                      "₹${discountedPrice.toStringAsFixed(2)}",
+                      // "₹${discountedPrice.toStringAsFixed(2)}",
+                      "₹${sellingPrice.toStringAsFixed(2)}",
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 18.sp,
@@ -448,7 +464,8 @@ class ProductCard extends StatelessWidget {
                     // Original Price (only if discount exists)
                     if (product.discount > 0)
                       Text(
-                        "₹${product.price.toStringAsFixed(2)}",
+                        // "₹${product.price.toStringAsFixed(2)}",
+                        "₹${originalPrice.toStringAsFixed(2)}",
                         style: TextStyle(
                           fontWeight: FontWeight.w400,
                           fontSize: 14.sp,

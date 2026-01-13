@@ -1,3 +1,5 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -8,7 +10,7 @@ import 'package:online_groceries_app/features/user/favourite/view/favourite_view
 import 'package:online_groceries_app/features/user/home/view/home_view.dart';
 import 'package:online_groceries_app/features/user/my_cart/view/my_cart_view.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
-
+import 'package:online_groceries_app/utils/app_constant.dart';
 
 // class MainScreen extends StatefulWidget {
 //   const MainScreen({super.key});
@@ -89,7 +91,6 @@ import 'package:online_groceries_app/utils/app_colors.dart';
 //   }
 // }
 
-
 class BottomNavController extends GetxController {
   RxInt currentIndex = 0.obs;
 
@@ -97,11 +98,80 @@ class BottomNavController extends GetxController {
     currentIndex.value = index;
   }
 }
-class MainScreen extends StatelessWidget {
-  MainScreen({super.key});
 
-  final BottomNavController controller =
-  Get.put(BottomNavController(), permanent: true);
+class MainScreen extends StatelessWidget {
+  const MainScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    final String uid = FirebaseAuth.instance.currentUser!.uid;
+
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection(AppConstantStrings.userCollection)
+          .doc(uid)
+          .snapshots(),
+      builder: (_, snap) {
+        if (!snap.hasData) {
+          return const Scaffold(
+            body: Center(child: CircularProgressIndicator()),
+          );
+        }
+
+        final data = snap.data!.data() as Map<String, dynamic>?;
+
+        final bool dashboardEnabled = data?['isEnable'] ?? true;
+
+        if (!dashboardEnabled) {
+          return const DashboardBlockedPage();
+        }
+
+        return _ActualDashboard();
+      },
+    );
+  }
+}
+
+class DashboardBlockedPage extends StatelessWidget {
+  const DashboardBlockedPage({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: AppColors.whiteColor,
+      body: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(24),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: const [
+              Icon(Icons.block, size: 80, color: Colors.red),
+              SizedBox(height: 20),
+              Text(
+                "Dashboard Access Disabled",
+                style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              ),
+              SizedBox(height: 10),
+              Text(
+                "Your access to the dashboard has been restricted.\nPlease contact support.",
+                textAlign: TextAlign.center,
+                style: TextStyle(color: Colors.grey),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _ActualDashboard extends StatelessWidget {
+  _ActualDashboard({super.key});
+
+  final BottomNavController controller = Get.put(
+    BottomNavController(),
+    permanent: true,
+  );
 
   final List<Widget> _pages = [
     const GroceryHomeScreen(),
@@ -171,4 +241,3 @@ class MainScreen extends StatelessWidget {
     });
   }
 }
-

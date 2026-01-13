@@ -6,7 +6,7 @@ import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/order_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/view/widgets/check_out_bottmsheet.dart';
-import 'package:online_groceries_app/services/product_pricing_extension.dart';
+import 'package:online_groceries_app/utils/product_pricing_extension.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';

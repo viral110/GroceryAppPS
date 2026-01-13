@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
@@ -19,9 +21,17 @@ class ProductDetailView extends StatefulWidget {
 }
 
 class _ProductDetailViewState extends State<ProductDetailView> {
+  late final ProductDetailController controller;
+
+  @override
+  void initState() {
+    super.initState();
+    controller = Get.put(ProductDetailController(widget.product));
+  }
+
   @override
   Widget build(BuildContext context) {
-    final controller = Get.put(ProductDetailController(widget.product));
+    // final controller = Get.put(ProductDetailController(widget.product));
     final favouriteController = Get.put(FavouriteController());
 
     return Scaffold(
@@ -88,43 +98,82 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                   const SizedBox(height: 16),
 
                   /// WEIGHT CHIPS
-                  Obx(
-                    () => Wrap(
+                  // Obx(
+                  //   () => Wrap(
+                  //     spacing: 10,
+                  //     children: List.generate(controller.sortedPackaging.length, (
+                  //       index,
+                  //     ) {
+                  //       final isSelected =
+                  //           controller.selectedWeightIndex.value == index;
+                  //       return ChoiceChip(
+                  //         label: Text(controller.sortedPackaging[index]),
+                  //         selected: isSelected,
+                  //         selectedColor: AppColors.primary.withOpacity(0.15),
+                  //         labelStyle: TextStyle(
+                  //           color: isSelected
+                  //               ? AppColors.primary
+                  //               : Colors.black,
+                  //           fontWeight: FontWeight.w600,
+                  //         ),
+                  //         shape: RoundedRectangleBorder(
+                  //           borderRadius: BorderRadius.circular(20),
+                  //           side: BorderSide(
+                  //             color: isSelected
+                  //                 ? AppColors.primary
+                  //                 : Colors.grey.shade300,
+                  //           ),
+                  //         ),
+                  //         onSelected: (_) => controller.selectWeight(index),
+                  //         // onSelected: (_) {
+                  //         //   setState(() {
+                  //         //     selectedWeightIndex = index;
+                  //         //     quantity = 1; // reset quantity on change (optional)
+                  //         //   });
+                  //         // },
+                  //       );
+                  //     }),
+                  //   ),
+                  // ),
+                  Obx(() {
+                    log("sortedPackaging: ${controller.sortedPackaging}");
+                    if (controller.sortedPackaging.isEmpty) {
+                      return const SizedBox(); // ← packet / piece / box
+                    }
+
+                    return Wrap(
                       spacing: 10,
-                      children: List.generate(controller.sortedPackaging.length, (
-                        index,
-                      ) {
-                        final isSelected =
-                            controller.selectedWeightIndex.value == index;
-                        return ChoiceChip(
-                          label: Text(controller.sortedPackaging[index]),
-                          selected: isSelected,
-                          selectedColor: AppColors.primary.withOpacity(0.15),
-                          labelStyle: TextStyle(
-                            color: isSelected
-                                ? AppColors.primary
-                                : Colors.black,
-                            fontWeight: FontWeight.w600,
-                          ),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(20),
-                            side: BorderSide(
+                      children: List.generate(
+                        controller.sortedPackaging.length,
+                        (index) {
+                          final isSelected =
+                              controller.selectedWeightIndex.value == index;
+
+                          return ChoiceChip(
+                            label: Text(controller.sortedPackaging[index]),
+                            selected: isSelected,
+                            selectedColor: AppColors.primary.withOpacity(0.15),
+                            labelStyle: TextStyle(
                               color: isSelected
                                   ? AppColors.primary
-                                  : Colors.grey.shade300,
+                                  : Colors.black,
+                              fontWeight: FontWeight.w600,
                             ),
-                          ),
-                          onSelected: (_) => controller.selectWeight(index),
-                          // onSelected: (_) {
-                          //   setState(() {
-                          //     selectedWeightIndex = index;
-                          //     quantity = 1; // reset quantity on change (optional)
-                          //   });
-                          // },
-                        );
-                      }),
-                    ),
-                  ),
+                            shape: RoundedRectangleBorder(
+                              borderRadius: BorderRadius.circular(20),
+                              side: BorderSide(
+                                color: isSelected
+                                    ? AppColors.primary
+                                    : Colors.grey.shade300,
+                              ),
+                            ),
+                            onSelected: (_) => controller.selectWeight(index),
+                          );
+                        },
+                      ),
+                    );
+                  }),
+
                   const SizedBox(height: 16),
 
                   /// QUANTITY + PRICE

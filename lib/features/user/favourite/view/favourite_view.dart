@@ -6,7 +6,7 @@ import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/features/user/favourite/controller/favourite_controller.dart';
 import 'package:online_groceries_app/features/user/home/view/home_view.dart';
 import 'package:online_groceries_app/features/user/product_detail/view/product_detail_view.dart';
-import 'package:online_groceries_app/services/product_pricing_extension.dart';
+import 'package:online_groceries_app/utils/product_pricing_extension.dart';
 
 class FavouriteView extends StatelessWidget {
   const FavouriteView({super.key});
