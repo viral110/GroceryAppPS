@@ -5,7 +5,7 @@ import 'package:get/get.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/features/admin/settings/controller/add_banner_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
-import 'package:online_groceries_app/services/product_pricing_extension.dart';
+import 'package:online_groceries_app/utils/product_pricing_extension.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import '../../../admin/store_manage/models/store_model.dart';

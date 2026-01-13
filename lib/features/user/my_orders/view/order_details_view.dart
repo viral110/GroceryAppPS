@@ -1,15 +1,20 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
+import 'package:online_groceries_app/features/user/my_orders/view/order_details_controller.dart';
 import 'package:online_groceries_app/models/order_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
+import 'package:online_groceries_app/utils/app_constant.dart';
 
 class OrderDetailsView extends StatelessWidget {
   final OrderModel order;
 
-  const OrderDetailsView({super.key, required this.order});
-
+  OrderDetailsView({super.key, required this.order});
+  late final OrderDetailsController controller = Get.put(
+    OrderDetailsController(order),
+  );
   @override
   Widget build(BuildContext context) {
     return WillPopScope(
@@ -47,6 +52,7 @@ class OrderDetailsView extends StatelessWidget {
 
               // Order Info
               _buildOrderInfo(),
+              if (controller.canCancelOrder) _buildCancelOrderButton(),
 
               const SizedBox(height: 20),
             ],
@@ -54,6 +60,158 @@ class OrderDetailsView extends StatelessWidget {
         ),
       ),
     );
+  }
+
+  Widget _buildCancelOrderButton() {
+    return Padding(
+      padding: const EdgeInsets.all(20),
+      child: SizedBox(
+        width: double.infinity,
+        height: 50,
+        child: ElevatedButton(
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.red,
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
+          ),
+          onPressed: () => _confirmCancelOrder(Get.context!),
+          child: const Text(
+            "Cancel Order",
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.white,
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  void _confirmCancelOrder(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (_) {
+        return Dialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          child: Padding(
+            padding: const EdgeInsets.all(20),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                /// ICON + TITLE
+                Row(
+                  children: [
+                    Container(
+                      padding: const EdgeInsets.all(10),
+                      decoration: BoxDecoration(
+                        color: Colors.red.withOpacity(0.1),
+                        shape: BoxShape.circle,
+                      ),
+                      child: const Icon(
+                        Icons.cancel_outlined,
+                        color: Colors.red,
+                        size: 26,
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    const Expanded(
+                      child: Text(
+                        "Cancel Order",
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+
+                const SizedBox(height: 16),
+
+                /// MESSAGE
+                Text(
+                  "Are you sure you want to cancel this order?",
+                  style: TextStyle(fontSize: 15, color: Colors.grey.shade800),
+                ),
+                const SizedBox(height: 6),
+                Text(
+                  "This action cannot be undone.",
+                  style: TextStyle(fontSize: 13, color: Colors.grey.shade600),
+                ),
+
+                const SizedBox(height: 24),
+
+                /// ACTION BUTTONS
+                Row(
+                  children: [
+                    Expanded(
+                      child: OutlinedButton(
+                        onPressed: () => Navigator.pop(context),
+                        style: OutlinedButton.styleFrom(
+                          side: BorderSide(color: Colors.grey.shade400),
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text("No"),
+                      ),
+                    ),
+                    const SizedBox(width: 12),
+                    Expanded(
+                      child: ElevatedButton(
+                        onPressed: () {
+                          Navigator.pop(context);
+                          _cancelOrder();
+                        },
+                        style: ElevatedButton.styleFrom(
+                          backgroundColor: Colors.red,
+                          shape: RoundedRectangleBorder(
+                            borderRadius: BorderRadius.circular(10),
+                          ),
+                        ),
+                        child: const Text(
+                          "Yes, Cancel",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  Future<void> _cancelOrder() async {
+    try {
+      await controller.cancelOrder();
+
+      Get.snackbar(
+        "Order Cancelled",
+        "Your order has been cancelled successfully",
+        backgroundColor: Colors.green.shade100,
+        colorText: Colors.green.shade900,
+      );
+
+      Get.find<BottomNavController>().changeTab(4);
+      Get.offAll(() => MainScreen());
+    } catch (e) {
+      Get.snackbar(
+        "Error",
+        "Failed to cancel order. Please try again.",
+        backgroundColor: Colors.red.shade100,
+        colorText: Colors.red.shade900,
+      );
+    }
   }
 
   Widget _buildOrderStatusStepper() {

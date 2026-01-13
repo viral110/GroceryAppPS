@@ -8,9 +8,6 @@ import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 
-/*TODO:
-INDEX ADD: user_id, created_at=>descending: orderCollection
-*/
 class MyOrdersView extends StatelessWidget {
   const MyOrdersView({super.key});
 
@@ -25,7 +22,7 @@ class MyOrdersView extends StatelessWidget {
         stream: FirebaseFirestore.instance
             .collection(AppConstantStrings.orderCollection)
             .where('user_id', isEqualTo: userId)
-            // .orderBy('created_at', descending: true)
+            .orderBy('created_at', descending: true)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -53,63 +50,72 @@ class MyOrdersView extends StatelessWidget {
 }
 
 Widget _orderCard(OrderModel order) {
-  return Container(
-    padding: const EdgeInsets.all(16),
-    decoration: BoxDecoration(
-      borderRadius: BorderRadius.circular(16),
-      border: Border.all(color: Colors.grey.shade300),
-    ),
-    child: Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        /// ORDER ID + STATUS
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              order.orderId ?? "-",
-              style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
-            ),
-            _statusChip(order.orderStatus),
-          ],
-        ),
-
-        const SizedBox(height: 8),
-
-        /// DATE
-        Text(
-          order.createdAt != null
-              ? "${order.createdAt!.day}-${order.createdAt!.month}-${order.createdAt!.year}"
-              : "-",
-          style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
-        ),
-
-        const SizedBox(height: 12),
-
-        /// TOTAL + VIEW DETAILS
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "₹${order.totalAmount.toStringAsFixed(2)}",
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-            ),
-            TextButton(
-              onPressed: () {
-                Get.to(() => OrderDetailsView(order: order));
-              },
-
-              child: Text(
-                "View Details",
-                style: TextStyle(
-                  color: AppColors.primary,
+  return GestureDetector(
+    onTap: () => Get.to(() => OrderDetailsView(order: order)),
+    child: Container(
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: Colors.grey.shade300),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// ORDER ID + STATUS
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                order.orderId ?? "-",
+                style: const TextStyle(
                   fontWeight: FontWeight.w600,
+                  fontSize: 15,
                 ),
               ),
-            ),
-          ],
-        ),
-      ],
+              _statusChip(order.orderStatus),
+            ],
+          ),
+
+          const SizedBox(height: 8),
+
+          /// DATE
+          Text(
+            order.createdAt != null
+                ? "${order.createdAt!.day}-${order.createdAt!.month}-${order.createdAt!.year}"
+                : "-",
+            style: TextStyle(color: Colors.grey.shade600, fontSize: 13),
+          ),
+
+          const SizedBox(height: 12),
+
+          /// TOTAL + VIEW DETAILS
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "${AppConstantStrings.rupeeSymbol} ${order.totalAmount.toStringAsFixed(2)}",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.bold,
+                ),
+              ),
+              TextButton(
+                onPressed: () {
+                  Get.to(() => OrderDetailsView(order: order));
+                },
+
+                child: Text(
+                  "View Details",
+                  style: TextStyle(
+                    color: AppColors.primary,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ],
+      ),
     ),
   );
 }

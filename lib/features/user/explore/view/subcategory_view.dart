@@ -8,6 +8,7 @@ import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
 import 'package:online_groceries_app/features/user/explore/controller/sub_category_controller.dart';
 import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
+import 'package:online_groceries_app/features/user/product_detail/view/product_detail_view.dart';
 import 'package:online_groceries_app/models/category_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
@@ -52,105 +53,121 @@ class SubcategoryView extends StatelessWidget {
             ),
             itemBuilder: (context, index) {
               final item = controller.products[index];
-              final discountedPrice =
-                  item.price - (item.price * item.discount / 100);
-              return Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: Colors.grey.shade300),
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    /// IMAGE
-                    Expanded(
-                      child: Center(
-                        child: Image.network(
-                          item.thumbnail,
-                          height: 90,
-                          fit: BoxFit.contain,
-                        ),
-                      ),
-                    ),
+              final double sellingPrice = item.price;
 
-                    const SizedBox(height: 10),
-
-                    /// TITLE
-                    Text(
-                      item.name,
-                      style: TextStyle(
-                        color: AppColors.textColor,
-                        fontWeight: FontWeight.w600,
-                        fontSize: 16.sp,
-                      ),
-                    ),
-
-                    const SizedBox(height: 4),
-
-                    /// SUBTITLE
-                    Text(
-                      item.priceUnit,
-                      style: TextStyle(color: Colors.grey, fontSize: 14.sp),
-                    ),
-
-                    const SizedBox(height: 10),
-
-                    /// PRICE + ADD BUTTON
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: [
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            // Discounted Price
-                            Text(
-                              "₹${discountedPrice.toStringAsFixed(2)}",
-                              style: TextStyle(
-                                fontWeight: FontWeight.w600,
-                                fontSize: 18.sp,
-                              ),
-                            ),
-
-                            // Original Price (only if discount exists)
-                            if (item.discount > 0)
-                              Text(
-                                "${AppConstantStrings.rupeeSymbol} ${item.price.toStringAsFixed(2)}",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w400,
-                                  fontSize: 14.sp,
-                                  color: Colors.grey.shade600,
-                                  decoration: TextDecoration.lineThrough,
-                                ),
-                              ),
-                          ],
-                        ),
-
-                        GestureDetector(
-                          onTap: () async {
-                            log("Clicked");
-                            final homeController = Get.find<HomeController>();
-                            await homeController.addProductToCart(item);
-                            Get.back(closeOverlays: true);
-                            Get.find<BottomNavController>().changeTab(2);
-                          },
-                          child: Container(
-                            height: 45.h,
-                            width: 45.h,
-                            decoration: BoxDecoration(
-                              color: AppColors.primary,
-                              borderRadius: BorderRadius.circular(15),
-                            ),
-                            child: const Icon(
-                              Icons.add,
-                              color: Colors.white,
-                              size: 20,
-                            ),
+              final double originalPrice = item.discount > 0
+                  ? sellingPrice / (1 - item.discount / 100)
+                  : sellingPrice;
+              // final discountedPrice =
+              //     item.price - (item.price * item.discount / 100);
+              return GestureDetector(
+                onTap: () {
+                  Get.to(() => ProductDetailView(product: item));
+                },
+                child: Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: Colors.grey.shade300),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      /// IMAGE
+                      Expanded(
+                        child: Center(
+                          child: Image.network(
+                            item.thumbnail,
+                            height: 90,
+                            fit: BoxFit.contain,
                           ),
                         ),
-                      ],
-                    ),
-                  ],
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// TITLE
+                      Text(
+                        item.name,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(
+                          color: AppColors.textColor,
+                          fontWeight: FontWeight.w600,
+                          fontSize: 16.sp,
+                        ),
+                      ),
+
+                      const SizedBox(height: 4),
+
+                      /// SUBTITLE
+                      Text(
+                        item.priceUnit,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: TextStyle(color: Colors.grey, fontSize: 14.sp),
+                      ),
+
+                      const SizedBox(height: 10),
+
+                      /// PRICE + ADD BUTTON
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              // Discounted Price
+                              Text(
+                                // "${AppConstantStrings.rupeeSymbol} ${discountedPrice.toStringAsFixed(2)}",
+                                "${AppConstantStrings.rupeeSymbol} ${sellingPrice.toStringAsFixed(2)}",
+                                style: TextStyle(
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 18.sp,
+                                ),
+                              ),
+
+                              // Original Price (only if discount exists)
+                              if (item.discount > 0)
+                                Text(
+                                  "${AppConstantStrings.rupeeSymbol} ${originalPrice.toStringAsFixed(2)}",
+                                  // "${AppConstantStrings.rupeeSymbol} ${item.price.toStringAsFixed(2)}",
+                                  style: TextStyle(
+                                    fontWeight: FontWeight.w400,
+                                    fontSize: 14.sp,
+                                    color: Colors.grey.shade600,
+                                    decoration: TextDecoration.lineThrough,
+                                  ),
+                                ),
+                            ],
+                          ),
+
+                          GestureDetector(
+                            onTap: () async {
+                              log("Clicked");
+                              final homeController = Get.find<HomeController>();
+                              await homeController.addProductToCart(item);
+                              Get.back(closeOverlays: true);
+                              Get.find<BottomNavController>().changeTab(2);
+                            },
+                            child: Container(
+                              height: 45.h,
+                              width: 45.h,
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                borderRadius: BorderRadius.circular(15),
+                              ),
+                              child: const Icon(
+                                Icons.add,
+                                color: Colors.white,
+                                size: 20,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
                 ),
               );
             },

@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
-import 'package:online_groceries_app/services/product_pricing_extension.dart';
+import 'package:online_groceries_app/utils/product_pricing_extension.dart';
 
 class ProductDetailController extends GetxController {
   final ProductModel product;
@@ -16,57 +16,62 @@ class ProductDetailController extends GetxController {
   final PageController pageController = PageController();
   final RxInt currentIndex = 0.obs;
 
-  late final List<String> sortedPackaging;
+  // List<String> sortedPackaging = [];
+  final RxList<String> sortedPackaging = <String>[].obs;
+
   @override
   void onInit() {
     super.onInit();
 
-    sortedPackaging = product.sortedPackaging;
-    selectedWeightIndex.value = sortedPackaging.length - 1;
+    sortedPackaging.value = product.sortedPackaging;
+
+    if (sortedPackaging.isNotEmpty) {
+      selectedWeightIndex.value = sortedPackaging.length - 1;
+    } else {
+      selectedWeightIndex.value = 0;
+    }
 
     everAll([selectedWeightIndex, quantity], (_) => _updatePrice());
     _updatePrice();
   }
 
+  // @override
+  // void onInit() {
+  //   super.onInit();
+  //   sortedPackaging = product.sortedPackaging;
+  //   selectedWeightIndex.value = sortedPackaging.length - 1;
+  //   everAll([selectedWeightIndex, quantity], (_) => _updatePrice());
+  //   _updatePrice();
+  // }
   void _updatePrice() {
+    if (sortedPackaging.isEmpty) {
+      // Packet / Piece / Box
+      totalPrice.value = product.price * quantity.value;
+      return;
+    }
+
     final packaging = sortedPackaging[selectedWeightIndex.value];
     totalPrice.value = product.unitPriceFor(packaging) * quantity.value;
   }
+
   // void _updatePrice() {
-  //   // base price per unit
-  //   double basePrice = product.price;
-  //   // If packaging has a multiplier (like "250 gm" = 0.25kg)
-  //   final selectedPackage = sortedPackaging[selectedWeightIndex.value];
-  //   double multiplier = _getMultiplier(selectedPackage);
-  //   totalPrice.value = (basePrice * multiplier * quantity.value);
+  //   final packaging = sortedPackaging[selectedWeightIndex.value];
+  //   totalPrice.value = product.unitPriceFor(packaging) * quantity.value;
   // }
 
-  // String get selectedPackaging => sortedPackaging[selectedWeightIndex.value];
+  String get selectedPackaging => sortedPackaging.isEmpty
+      ? product.priceUnit
+      : sortedPackaging[selectedWeightIndex.value];
+  //sortedPackaging[selectedWeightIndex.value];
 
-  // double get selectedMultiplier => _getMultiplier(selectedPackaging);
+  double get unitPrice => sortedPackaging.isEmpty
+      ? product.price
+      : product.unitPriceFor(selectedPackaging);
+  //product.unitPriceFor(selectedPackaging);
 
-  // double get unitPrice => product.price * selectedMultiplier;
-  String get selectedPackaging => sortedPackaging[selectedWeightIndex.value];
-
-  double get unitPrice => product.unitPriceFor(selectedPackaging);
-
-  double get multiplier => product.multiplierFor(selectedPackaging);
-
-  // double _getMultiplier(String packagingLabel) {
-  //   if (packagingLabel.toLowerCase().contains("kg")) {
-  //     return double.tryParse(
-  //           packagingLabel.replaceAll(RegExp(r'[^0-9.]'), ''),
-  //         ) ??
-  //         1.0;
-  //   } else if (packagingLabel.toLowerCase().contains("g")) {
-  //     return (double.tryParse(
-  //               packagingLabel.replaceAll(RegExp(r'[^0-9.]'), ''),
-  //             ) ??
-  //             0) /
-  //         1000;
-  //   }
-  //   return 1.0;
-  // }
+  double get multiplier =>
+      sortedPackaging.isEmpty ? 1 : product.multiplierFor(selectedPackaging);
+  // product.multiplierFor(selectedPackaging);
 
   void incrementQuantity() {
     quantity.value++;
