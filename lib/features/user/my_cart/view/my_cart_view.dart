@@ -14,12 +14,38 @@ import 'package:online_groceries_app/utils/app_constant.dart';
 import '../../../../common_widgets/common_app_bar.dart';
 
 /// ================= VIEW =================
-class MyCartView extends StatelessWidget {
+class MyCartView extends StatefulWidget {
   MyCartView({super.key});
 
-  final CartController controller = Get.put(CartController());
-  final orderController = Get.put(OrderController(), permanent: false);
+  @override
+  State<MyCartView> createState() => _MyCartViewState();
 
+  /// QTY BUTTON (UNCHANGED UI)
+  static Widget _qtyButton(IconData icon, {bool isAdd = false}) {
+    return Container(
+      height: 36,
+      width: 36,
+      decoration: BoxDecoration(
+        border: Border.all(color: Colors.grey.shade300),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Icon(icon, color: isAdd ? Colors.green : Colors.grey.shade600),
+    );
+  }
+}
+
+class _MyCartViewState extends State<MyCartView> {
+  final CartController controller = Get.put(CartController());
+
+  final orderController = Get.put(OrderController(), permanent: false);
+  @override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    if (UserService.getUserFromHive().uid.isNotEmpty) {
+      controller.loadCart();
+    }
+  }
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -54,7 +80,8 @@ class MyCartView extends StatelessWidget {
                     children: [
                       Image.network(
                         item.product.thumbnail,
-                        height: 55.h,
+                        height: 70.h,
+                        width: 70.h,
                         errorBuilder: (_, __, ___) =>
                             const Icon(Icons.image_not_supported),
                       ),
@@ -90,13 +117,13 @@ class MyCartView extends StatelessWidget {
 
                             /// SUBTITLE
                             Text(
-                              // item.product.priceUnit,
-                              item.packaging, // ✅ actual selected unit
+                              item.packagingLabel, // ✅ selected packaging (e.g. 500g, 1kg)
                               style: const TextStyle(
                                 color: Colors.grey,
                                 fontSize: 12,
                               ),
                             ),
+
 
                             const SizedBox(height: 10),
 
@@ -108,14 +135,14 @@ class MyCartView extends StatelessWidget {
                                   children: [
                                     GestureDetector(
                                       onTap: () => controller.decrement(index),
-                                      child: _qtyButton(Icons.remove),
+                                      child: MyCartView._qtyButton(Icons.remove),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(item.quantity.toString()),
                                     const SizedBox(width: 10),
                                     GestureDetector(
                                       onTap: () => controller.increment(index),
-                                      child: _qtyButton(Icons.add, isAdd: true),
+                                      child: MyCartView._qtyButton(Icons.add, isAdd: true),
                                     ),
                                   ],
                                 ),
@@ -169,7 +196,7 @@ class MyCartView extends StatelessWidget {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (_) => const CheckoutBottomSheet(),
+                    builder: (_) =>  CheckoutBottomSheet(),
                   ).then((_) {
                     orderController.selectedPaymentMethod.value =
                         "Select Method";
@@ -232,19 +259,6 @@ class MyCartView extends StatelessWidget {
           ),
         ],
       ),
-    );
-  }
-
-  /// QTY BUTTON (UNCHANGED UI)
-  static Widget _qtyButton(IconData icon, {bool isAdd = false}) {
-    return Container(
-      height: 36,
-      width: 36,
-      decoration: BoxDecoration(
-        border: Border.all(color: Colors.grey.shade300),
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Icon(icon, color: isAdd ? Colors.green : Colors.grey.shade600),
     );
   }
 }

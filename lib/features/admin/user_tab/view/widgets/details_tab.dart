@@ -64,6 +64,18 @@ class UserDetailsTab extends StatelessWidget {
                     },
                   ),
                 ),
+                SizedBox(width: 10.w),
+                SizedBox(
+                  width: 200.w,
+                  child: CommonButton(
+                    fontSize: 16.sp,
+                    title: "Reset Credit",
+                    backgroundColor: Colors.redAccent,
+                    onTap: () {
+                      _showResetCreditConfirm(context, userModel.uid);
+                    },
+                  ),
+                ),
               ],
             ),
           ),
@@ -391,54 +403,63 @@ class UserDetailsTab extends StatelessWidget {
     required int amount,
     required bool isAdd,
   }) async {
+    final userRef = FirebaseFirestore.instance
+        .collection(AppConstantStrings.userCollection)
+        .doc(userId);
+
     try {
       CommonLoader.show();
-
-      final userRef = FirebaseFirestore.instance
-          .collection(AppConstantStrings.userCollection)
-          .doc(userId);
 
       await FirebaseFirestore.instance.runTransaction((transaction) async {
         final snapshot = await transaction.get(userRef);
 
         if (!snapshot.exists) {
-          throw "User not found";
+          throw Exception("User not found");
         }
 
-        final int currentCredit = (snapshot.data()?['credit'] ?? 0) as int;
+        final data = snapshot.data()!;
 
-        // ❌ Credit kam hai
-        if (!isAdd && currentCredit < amount) {
-          throw "Insufficient credit";
+        final int totalCredit = (data['credit'] ?? 0) as int;
+        final int usedCredit = (data['used_credits'] ?? 0) as int;
+        final int remainingCredit =
+        (data['remaining_credits'] ?? 0) as int;
+
+        if (isAdd) {
+          /// ✅ ADD CREDIT
+          transaction.update(userRef, {
+            'credit': totalCredit + amount,
+            'remaining_credits': remainingCredit + amount,
+            'updated_at': FieldValue.serverTimestamp(),
+          });
+        } else {
+          /// ❌ DEDUCT CREDIT
+          if (remainingCredit < amount) {
+            throw Exception("Insufficient remaining credit");
+          }
+
+          transaction.update(userRef, {
+            'credit': totalCredit - amount,
+            'remaining_credits': remainingCredit - amount,
+            'used_credits': usedCredit + amount,
+            'updated_at': FieldValue.serverTimestamp(),
+          });
         }
-
-        // ✅ New credit calculation
-        int newCredit = isAdd
-            ? currentCredit + amount
-            : currentCredit - amount;
-
-        // 🔒 Safety: credit negative na ho
-        if (newCredit < 0) {
-          newCredit = 0;
-        }
-
-        transaction.update(userRef, {
-          "credit": newCredit,
-          "updated_at": FieldValue.serverTimestamp(),
-        });
       });
 
-      Get.back();
       CommonToast.show(
-        isAdd ? "Credit added successfully" : "Credit used successfully",
+        isAdd ? "Credit added successfully" : "Credit deducted successfully",
         type: ToastType.success,
       );
     } catch (e) {
-      CommonToast.show(e.toString(), type: ToastType.error);
+      CommonToast.show(
+        e.toString().replaceAll('Exception: ', ''),
+        type: ToastType.error,
+      );
     } finally {
       CommonLoader.hide();
     }
   }
+
 
 
   Widget _infoRow({
@@ -574,4 +595,69 @@ class UserDetailsTab extends StatelessWidget {
       ),
     );
   }
+  void _showResetCreditConfirm(BuildContext context, String userId) {
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Reset Credit"),
+        content: const Text(
+          "This will reset all credit values to zero.\n\n"
+              "This action cannot be undone.",
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Get.back(),
+            child: const Text("Cancel"),
+          ),
+          ElevatedButton(
+            style: ElevatedButton.styleFrom(
+              backgroundColor: Colors.redAccent,
+            ),
+            onPressed: () async {
+              Get.back();
+              await _resetUserCredit(userId);
+            },
+            child: const Text("Reset"),
+          ),
+        ],
+      ),
+      barrierDismissible: false,
+    );
+  }
+  Future<void> _resetUserCredit(String userId) async {
+    final userRef = FirebaseFirestore.instance
+        .collection(AppConstantStrings.userCollection)
+        .doc(userId);
+
+    try {
+      CommonLoader.show();
+
+      await FirebaseFirestore.instance.runTransaction((transaction) async {
+        final snapshot = await transaction.get(userRef);
+
+        if (!snapshot.exists) {
+          throw Exception("User not found");
+        }
+
+        transaction.update(userRef, {
+          'credit': 0,
+          'used_credits': 0,
+          'remaining_credits': 0,
+          'updated_at': FieldValue.serverTimestamp(),
+        });
+      });
+
+      CommonToast.show(
+        "User credit reset successfully",
+        type: ToastType.success,
+      );
+    } catch (e) {
+      CommonToast.show(
+        e.toString().replaceAll('Exception: ', ''),
+        type: ToastType.error,
+      );
+    } finally {
+      CommonLoader.hide();
+    }
+  }
+
 }

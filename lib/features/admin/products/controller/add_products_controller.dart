@@ -20,21 +20,13 @@ class AdminProductController extends GetxController {
   /// TEXT CONTROLLERS
   final nameController = TextEditingController();
   final brandController = TextEditingController();
-  final priceController = TextEditingController();
 
-  RxList<StoreStockModel> storeStocks = <StoreStockModel>[].obs;
+  RxList<StoreProductConfig> storeConfigs = <StoreProductConfig>[].obs;
 
   final descriptionController = TextEditingController();
-  final packagingController = TextEditingController();
-  final TextEditingController kpsController = TextEditingController();
-  final TextEditingController discountController = TextEditingController();
   /// DROPDOWNS
   final selectedCategory = ''.obs;
   final selectedCategoryId = ''.obs;
-  final selectedUnit = ''.obs;
-
-  /// PACKAGING
-  final packagingList = <String>[].obs;
 
   /// IMAGE (WEB + MOBILE)
   final thumbnailFile = Rx<File?>(null);
@@ -64,22 +56,43 @@ class AdminProductController extends GetxController {
   RxList<StoreModel> stores = <StoreModel>[].obs;
   RxList<StoreModel> selectedStores = <StoreModel>[].obs;
   Future<void> fetchStores() async {
-    final snapshot =
-    await FirebaseFirestore.instance.collection(AppConstantStrings.storesCollection).get();
+    final snapshot = await FirebaseFirestore.instance
+        .collection(AppConstantStrings.storesCollection)
+        .get();
 
     stores.value = snapshot.docs
         .map((doc) => StoreModel.fromJson(doc.id, doc.data()))
         .toList();
+
+    /// ✅ EDIT MODE → prefill from product
     if (isEdit.value && _editProductCache != null) {
       _prefillStoreStocks(_editProductCache!);
+      return;
+    }
+
+    /// ✅ ADD MODE → auto select first store
+    if (stores.isNotEmpty && storeConfigs.isEmpty) {
+      final firstStore = stores.first;
+
+      selectedStores.add(firstStore);
+
+      storeConfigs.add(
+        StoreProductConfig(
+          storeId: firstStore.id,
+          storeName: firstStore.name,
+          unit: '',
+          packaging: [],
+        ),
+      );
     }
   }
 
+
   void _prefillStoreStocks(ProductModel product) {
     selectedStores.clear();
-    storeStocks.clear();
+    storeConfigs.clear();
 
-    for (final storeStock in product.storeStocks) {
+    for (final storeStock in product.storeConfigs) {
       final store = stores.firstWhereOrNull(
             (s) => s.id == storeStock.storeId,
       );
@@ -87,11 +100,11 @@ class AdminProductController extends GetxController {
       if (store != null) {
         selectedStores.add(store);
 
-        storeStocks.add(
-          StoreStockModel(
+        storeConfigs.add(
+          StoreProductConfig(
             storeId: store.id,
             storeName: store.name,
-            stock: storeStock.stock,
+            unit: storeStock.unit, packaging:storeStock.packaging ,
           ),
         );
       }
@@ -140,16 +153,10 @@ class AdminProductController extends GetxController {
     /// BASIC FIELDS
     nameController.text = product.name;
     brandController.text = product.brand;
-    priceController.text = product.price.toString();
     descriptionController.text = product.description;
-    kpsController.text = product.kps.toString();
-    discountController.text = product.discount.toString();
 
     selectedCategory.value = product.categoryName;
     selectedCategoryId.value = product.categoryId;
-    selectedUnit.value = product.priceUnit;
-
-    packagingList.assignAll(product.packaging);
 
     thumbnailUrl.value = product.thumbnail;
     productImageUrls.assignAll(product.images);
@@ -345,10 +352,8 @@ class AdminProductController extends GetxController {
 
     final name = nameController.text.trim();
     final brand = brandController.text.trim();
-    final priceText = priceController.text.trim();
     final description = descriptionController.text.trim();
-    final kpsText = kpsController.text.trim();
-    final discountText = discountController.text.trim();
+
 
     /// NAME
     if (name.isEmpty) {
@@ -368,36 +373,49 @@ class AdminProductController extends GetxController {
       return;
     }
 
-    /// UNIT
-    if (selectedUnit.value.isEmpty) {
-      CommonToast.show("Please select price unit", type: ToastType.warning);
-      return;
-    }
 
-    /// PRICE
-    if (priceText.isEmpty) {
-      CommonToast.show("Please enter price", type: ToastType.warning);
-      return;
-    }
 
-    final price = double.tryParse(priceText);
-    if (price == null || price <= 0) {
-      CommonToast.show("Please enter a valid price", type: ToastType.warning);
-      return;
-    }
+    for (final store in storeConfigs) {
+      if (store.unit.isEmpty) {
+        CommonToast.show("Select unit for ${store.storeName}");
+        return;
+      }
 
-    if (storeStocks.isEmpty) {
-      CommonToast.show(
-        "Please select at least one store",
-        type: ToastType.warning,
-      );
-      return;
-    }
+      if (store.unit != "Packet" && store.packaging.isEmpty) {
+        CommonToast.show("Add packaging for ${store.storeName}");
+        return;
+      }
 
-    for (final s in storeStocks) {
-      if (s.stock <= 0) {
+      for (final pkg in store.packaging) {
+        if (pkg.price <= 0) {
+          CommonToast.show("Enter price for ${pkg.label}");
+          return;
+        }
+        if (pkg.sku.isEmpty) {
+          CommonToast.show("Enter SKU for ${pkg.label}");
+          return;
+        }
+        if (pkg.discount < 0 || pkg.discount > 100) {
+          CommonToast.show("Invalid discount for ${pkg.label}");
+          return;
+        }
+      }
+
+      final hasDefaultPackaging =
+      store.packaging.any((pkg) => pkg.isDefault);
+
+      if (!hasDefaultPackaging) {
         CommonToast.show(
-          "Enter valid stock for ${s.storeName}",
+          "Select one packaging to show for ${store.storeName}",
+          type: ToastType.warning,
+        );
+        return;
+      }
+    }
+    for (final s in storeConfigs) {
+      if (s.packaging.isEmpty) {
+        CommonToast.show(
+          "Enter packaging",
           type: ToastType.warning,
         );
         return;
@@ -405,14 +423,6 @@ class AdminProductController extends GetxController {
     }
 
 
-    /// PACKAGING
-   if( selectedUnit.value != "Packet"){
-     if (packagingList.isEmpty) {
-       CommonToast.show("Please add at least one packaging option",
-           type: ToastType.warning);
-       return;
-     }
-   }
 
 
     /// DESCRIPTION
@@ -422,25 +432,7 @@ class AdminProductController extends GetxController {
       return;
     }
 
-    /// KPS (OPTIONAL BUT IF FILLED → VALIDATE)
-    if (kpsText.isNotEmpty) {
-      final kps = int.tryParse(kpsText);
-      if (kps == null || kps <= 0) {
-        CommonToast.show("Please enter valid KPS value",
-            type: ToastType.warning);
-        return;
-      }
-    }
 
-    /// DISCOUNT (OPTIONAL)
-    if (discountText.isNotEmpty) {
-      final discount = double.tryParse(discountText);
-      if (discount == null || discount < 0 || discount > 100) {
-        CommonToast.show("Discount must be between 0 and 100",
-            type: ToastType.warning);
-        return;
-      }
-    }
 
     CommonLoader.show();
     isLoading.value = true;
@@ -490,16 +482,13 @@ class AdminProductController extends GetxController {
         categoryName: selectedCategory.value,
         categoryId: selectedCategoryId.value,
         brand: brandController.text.trim(),
-        priceUnit: selectedUnit.value,
-        price: double.parse(priceController.text),
-          storeStocks: storeStocks,
+
         description: descriptionController.text.trim(),
         thumbnail: thumbnailUrl.value,
         images: productImageUrls,
-        packaging: packagingList,
         createdAt: DateTime.now(),
-        discount: int.parse(discountText),
-        kps: int.parse(kpsController.text.trim())
+       storeConfigs: storeConfigs,
+        storeIds: storeConfigs.map((e) => e.storeId).toSet().toList(),
       );
 
       if (isEdit.value) {
@@ -527,29 +516,14 @@ class AdminProductController extends GetxController {
   }
 
 
-  void addPackaging() {
-    final value = packagingController.text.trim();
-    if (value.isNotEmpty && !packagingList.contains(value)) {
-      packagingList.add(value);
-      packagingController.clear();
-    }
-  }
-
   void clearForm() {
     nameController.clear();
     brandController.clear();
-    priceController.clear();
     descriptionController.clear();
-    packagingController.clear();
-    packagingList.clear();
-    kpsController.clear();
-    discountController.clear();
     selectedStores.clear();
 
     selectedCategory.value = '';
     selectedCategoryId.value = '';
-    selectedUnit.value = '';
-
     thumbnailFile.value = null;
     thumbnailBytes.value = null;
     thumbnailUrl.value = '';
@@ -567,9 +541,66 @@ class AdminProductController extends GetxController {
   void onClose() {
     nameController.dispose();
     brandController.dispose();
-    priceController.dispose();
     descriptionController.dispose();
-    packagingController.dispose();
     super.onClose();
   }
+
+  void toggleStore(StoreModel store, bool selected) {
+    if (selected) {
+      storeConfigs.add(StoreProductConfig(
+        storeId: store.id,
+        storeName: store.name,
+        unit: '',
+        packaging: [],
+      ));
+    } else {
+      storeConfigs.removeWhere((e) => e.storeId == store.id);
+    }
+  }
+  void addPackaging(StoreProductConfig store, String value) {
+    if (value.isEmpty) {
+      CommonToast.show("Please Enter Packaging",type: ToastType.warning);
+      return;
+    }
+    store.packaging.add(PackagingModel(
+      label: value,
+      price: 0,
+      sku: '',
+      discount: 0,
+      quantity: 0,
+    ));
+    storeConfigs.refresh();
+  }
+
+  bool isValidPackagingForUnit({
+    required String unit,
+    required String value,
+  }) {
+    final v = value.toLowerCase().trim();
+
+    switch (unit) {
+      case "Kg":
+      // 250g, 500g, 1kg
+        return v.endsWith("g") || v.endsWith("kg");
+
+      case "Gram":
+      // only grams
+        return v.endsWith("g");
+
+      case "Liter":
+      // 500ml, 1l
+        return v.endsWith("ml") || v.endsWith("l");
+
+      case "Ml":
+      // only ml
+        return v.endsWith("ml");
+
+      case "Packet":
+        return false;
+
+      default:
+        return false;
+    }
+  }
+
 }

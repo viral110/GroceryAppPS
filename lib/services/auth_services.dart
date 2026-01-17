@@ -21,9 +21,7 @@ class AuthServices {
         log("Firebase user is null");
         return null;
       }
-
       UserModel? user;
-
       try {
         user = await UserService().getUserFromDbById(firebaseUser.uid);
       } catch (_) {

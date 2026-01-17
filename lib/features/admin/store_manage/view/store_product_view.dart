@@ -15,9 +15,10 @@ class StoreProductView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return GetBuilder<StoreProductController>(
-        init: StoreProductController(store.id),
-        builder: (controller) {
+      init: StoreProductController(store.id),
+      builder: (controller) {
         return Scaffold(
+          backgroundColor: const Color(0xffF5F6FA),
           appBar: CommonAppBar(
             title: "${store.name} Products",
           ),
@@ -31,15 +32,18 @@ class StoreProductView extends StatelessWidget {
             }
 
             return ListView.separated(
-              padding: const EdgeInsets.all(16),
+              padding: EdgeInsets.all(16.w),
               itemCount: controller.products.length,
-              separatorBuilder: (_, __) => const SizedBox(height: 12),
+              separatorBuilder: (_, __) => SizedBox(height: 14.h),
               itemBuilder: (context, index) {
                 final product = controller.products[index];
-                final stock = controller.getStock(product, store.id);
+                final storeConfig =
+                controller.getStoreConfig(product);
+
+                if (storeConfig == null) return const SizedBox();
 
                 return Container(
-                  padding: const EdgeInsets.all(12),
+                  padding: EdgeInsets.all(14.w),
                   decoration: BoxDecoration(
                     color: AppColors.whiteColor,
                     borderRadius: BorderRadius.circular(12),
@@ -50,123 +54,174 @@ class StoreProductView extends StatelessWidget {
                       ),
                     ],
                   ),
-                  child: Row(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      /// Thumbnail
-                      ClipRRect(
-                        borderRadius: BorderRadius.circular(8),
-                        child: Image.network(
-                          product.thumbnail,
-                          width: 60,
-                          height: 60,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, __, ___) =>
-                          const Icon(Icons.image, size: 30),
-                        ),
-                      ),
-                      const SizedBox(width: 12),
-
-                      /// Product Info
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
+                      /// PRODUCT HEADER
+                      Row(
+                        children: [
+                          ClipRRect(
+                            borderRadius: BorderRadius.circular(8),
+                            child: Image.network(
+                              product.thumbnail,
+                              width: 70.h,
+                              webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+                              height: 70.h,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, __, ___) =>
+                              const Icon(Icons.image, size: 30),
+                            ),
+                          ),
+                          SizedBox(width: 12.w),
+                          Expanded(
+                            child: Text(
                               product.name,
-                              style: const TextStyle(fontWeight: FontWeight.w600),
-                            ),
-                            const SizedBox(height: 4),
-                            Text(
-                              "₹${product.price}",
-                              style: const TextStyle(
-                                color: AppColors.primary,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-
-                            /// ✅ STOCK
-                            Text(
-                              "Stock: $stock",
                               style: TextStyle(
-                                color: stock <= 5 ? Colors.red : Colors.green,
-                                fontWeight: FontWeight.w600,
+                                fontWeight: FontWeight.w700,
+                                fontSize: 15.sp,
                               ),
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
 
-                      /// Edit Stock Button
-                      IconButton(
-                        icon: const Icon(Icons.edit, color: AppColors.primary),
-                        onPressed: () => _updateStockDialog(
-                          context,
-                          product,
-                          store.id,
-                        ),
+                      SizedBox(height: 12.h),
+
+                      /// PACKAGING LIST
+                      Column(
+                        children: storeConfig.packaging.map((pkg) {
+                          return Container(
+                            margin: EdgeInsets.only(bottom: 10.h),
+                            padding: EdgeInsets.all(12.w),
+                            decoration: BoxDecoration(
+                              color: Colors.grey.shade100,
+                              borderRadius: BorderRadius.circular(10),
+                            ),
+                            child: Row(
+                              children: [
+                                /// PACKAGING INFO
+                                Expanded(
+                                  child: Column(
+                                    crossAxisAlignment:
+                                    CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        pkg.label,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w700,
+                                        ),
+                                      ),
+                                      SizedBox(height: 4.h),
+                                      Text(
+                                        "₹${pkg.price}  |  ${pkg.discount}% off",
+                                        style: TextStyle(
+                                          color: AppColors.primary,
+                                          fontWeight: FontWeight.w600,
+                                        ),
+                                      ),
+                                    ],
+                                  ),
+                                ),
+
+                                /// QUANTITY
+                                Text(
+                                  pkg.quantity == 0
+                                      ? "Out of Stock"
+                                      : "Qty: ${pkg.quantity}",
+                                  style: TextStyle(
+                                    color: pkg.quantity == 0
+                                        ? Colors.red
+                                        : pkg.quantity <= 5
+                                        ? Colors.orange
+                                        : Colors.green,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+
+                                IconButton(
+                                  icon: const Icon(Icons.edit,
+                                      color: AppColors.primary),
+                                  onPressed: () =>
+                                      _updateQtyDialog(
+                                        context,
+                                        controller,
+                                        product,
+                                        pkg,
+                                      ),
+                                ),
+                                IconButton(
+                                  icon: Icon(
+                                    pkg.isDefault ? Icons.radio_button_checked : Icons.radio_button_unchecked,
+                                    color: pkg.isDefault ? AppColors.primary : Colors.grey,
+                                  ),
+                                  onPressed: () async {
+                                    await controller.setDefaultPackaging(
+                                      productId: product.id,
+                                      storeId: controller.storeId,
+                                      selectedLabel: pkg.label,
+                                    );
+                                  },
+                                ),
+
+                              ],
+                            ),
+                          );
+                        }).toList(),
                       ),
                     ],
                   ),
                 );
               },
             );
-
           }),
         );
-      }
+      },
     );
   }
-  void _updateStockDialog(
+
+  void _updateQtyDialog(
       BuildContext context,
+      StoreProductController controller,
       ProductModel product,
-      String storeId,
+      PackagingModel pkg,
       ) {
-    final controller = Get.find<StoreProductController>();
-
-    final storeStock = product.storeStocks.firstWhere(
-          (e) => e.storeId == storeId,
-    );
-
-    final stockController =
-    TextEditingController(text: storeStock.stock.toString());
+    final qtyController =
+    TextEditingController(text: pkg.quantity.toString());
 
     showDialog(
       context: context,
       builder: (_) => AlertDialog(
-        backgroundColor: AppColors.whiteColor,
-        title: const Text("Update Stock"),
+        title: const Text("Update Quantity"),
         content: TextField(
-          controller: stockController,
+          controller: qtyController,
           keyboardType: TextInputType.number,
-          decoration: const InputDecoration(
-            labelText: "Stock Quantity",
-          ),
+          decoration: const InputDecoration(labelText: "Quantity"),
         ),
         actions: [
           TextButton(
             onPressed: () => Get.back(),
-            child:  Text("Cancel",style: TextStyle(fontSize: 18.sp,color: Colors.black),),
+            child: const Text("Cancel"),
           ),
-
           SizedBox(
-            width: 150.w,
-            child: CommonButton(title: "Update", onTap: () async{
-              final newStock = int.tryParse(stockController.text) ?? 0;
+            width: 140.w,
+            child: CommonButton(
+              title: "Update",
+              onTap: () async {
+                final newQty =
+                    int.tryParse(qtyController.text) ?? 0;
 
-              await controller.updateStoreStock(
-                productId: product.id,
-                storeId: storeId,
-                newStock: newStock,
-              );
+                await controller.updatePackagingQuantity(
+                  productId: product.id,
+                  storeId: controller.storeId,
+                  packagingLabel: pkg.label,
+                  newQty: newQty,
+                );
 
-              Get.back();
-            },),
-          )
-
+              },
+            ),
+          ),
         ],
       ),
     );
   }
-
 }

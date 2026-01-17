@@ -11,7 +11,9 @@ import 'package:online_groceries_app/features/user/my_orders/view/order_details_
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 class OrderSuccessView extends StatelessWidget {
-  const OrderSuccessView({super.key});
+  final String orderId;
+  final String paymentMethod;
+  const OrderSuccessView({super.key, required this.orderId, required this.paymentMethod});
 
   @override
   Widget build(BuildContext context) {
@@ -51,7 +53,23 @@ class OrderSuccessView extends StatelessWidget {
               textAlign: TextAlign.center,
               style: TextStyle(fontSize: 16.sp, color: AppColors.grayTextColor),
             ),
-            SizedBox(height: 134.h),
+            SizedBox(height: 30.h),
+            Container(
+              margin: EdgeInsets.symmetric(horizontal: 20.w),
+              padding: EdgeInsets.all(16.w),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(12.r),
+              ),
+              child: Column(
+                children: [
+                  _infoRow("Order ID", orderId),
+                  SizedBox(height: 8.h),
+                  _infoRow("Payment Method", paymentMethod),
+                ],
+              ),
+            ),
+            Spacer(),
             CommonButton(
               title: "Track Order",
               onTap: () {
@@ -68,11 +86,10 @@ class OrderSuccessView extends StatelessWidget {
             ),
             CommonButton(
               margin: EdgeInsets.symmetric(horizontal: 20),
-
               title: "Back to home",
               onTap: () {
                 Get.find<BottomNavController>().currentIndex.value = 0;
-                Get.to(() => MainScreen());
+                Get.offAll(() => MainScreen());
                 // Get.back(closeOverlays: true);
                 // Get.find<BottomNavController>().changeTab(0);
               },
@@ -82,6 +99,27 @@ class OrderSuccessView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+  Widget _infoRow(String title, String value) {
+    return Row(
+      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+      children: [
+        Text(
+          title,
+          style: TextStyle(
+            fontSize: 14.sp,
+            color: AppColors.grayTextColor,
+          ),
+        ),
+        Text(
+          value,
+          style: TextStyle(
+            fontSize: 14.sp,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ],
     );
   }
 }

@@ -63,10 +63,8 @@ class AdminOrdersView extends StatelessWidget {
               onTap: () => controller.changeTab(index),
             ),
           ),
-        )),
-
+        ),),
         SizedBox(height: 16.h),
-
         _tableHeader(),
         SizedBox(height: 8.h),
 
@@ -202,7 +200,7 @@ class AdminOrdersView extends StatelessWidget {
           children: [
             Expanded(child: Padding(
               padding:  EdgeInsets.only(left: 10),
-              child: Text("#${order.orderId}"),
+              child: Text("#${order.shortOrderId}"),
             )),
             Expanded(child: Padding(
               padding:  EdgeInsets.only(left: 10),
@@ -296,34 +294,6 @@ class AdminOrdersView extends StatelessWidget {
             },),
           )
 
-        ],
-      ),
-    );
-  }
-
-  /// ---------------- SEARCH BOX ----------------
-  Widget _searchBox() {
-    return Container(
-      height: 60.h,
-      width: 400.w,
-      padding: const EdgeInsets.symmetric(horizontal: 12),
-      decoration: BoxDecoration(
-        color: AppColors.whiteColor,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: Colors.grey.shade300),
-      ),
-      child: const Row(
-        children: [
-          Icon(Icons.search, size: 18, color: Colors.grey),
-          SizedBox(width: 6),
-          Expanded(
-            child: TextField(
-              decoration: InputDecoration(
-                hintText: "Search",
-                border: InputBorder.none,
-              ),
-            ),
-          ),
         ],
       ),
     );

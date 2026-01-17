@@ -5,13 +5,17 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/svg.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
+import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
 import 'package:online_groceries_app/features/user/explore/controller/sub_category_controller.dart';
 import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
 import 'package:online_groceries_app/features/user/product_detail/view/product_detail_view.dart';
 import 'package:online_groceries_app/models/category_model.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
+
+import '../../../admin/products/models/produce_model.dart';
 
 class SubcategoryView extends StatelessWidget {
   final CategoryModel category;
@@ -52,14 +56,25 @@ class SubcategoryView extends StatelessWidget {
               childAspectRatio: 0.72,
             ),
             itemBuilder: (context, index) {
-              final item = controller.products[index];
-              final double sellingPrice = item.price;
 
-              final double originalPrice = item.discount > 0
-                  ? sellingPrice / (1 - item.discount / 100)
-                  : sellingPrice;
-              // final discountedPrice =
-              //     item.price - (item.price * item.discount / 100);
+              final item = controller.products[index];
+
+              final storeConfig = item.storeConfigs
+                  .firstWhereOrNull((s) => s.storeId == UserService.getUserFromHive().storeId);
+
+              final PackagingModel? userPackaging = storeConfig?.packaging
+                  .firstWhereOrNull((p) => p.isDefault);
+              final int quantity = userPackaging?.quantity ?? 0;
+              final bool isSoldOut = quantity <= 0;
+
+              final double mrp = userPackaging?.price ?? 0.0;
+              final int discount = userPackaging?.discount ?? 0;
+
+              /// ✅ DISCOUNTED PRICE (MINUS)
+              final double sellingPrice = discount > 0
+                  ? mrp - (mrp * discount / 100)
+                  : mrp;
+
               return GestureDetector(
                 onTap: () {
                   Get.to(() => ProductDetailView(product: item));
@@ -74,14 +89,43 @@ class SubcategoryView extends StatelessWidget {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       /// IMAGE
-                      Expanded(
-                        child: Center(
-                          child: Image.network(
-                            item.thumbnail,
-                            height: 90,
-                            fit: BoxFit.contain,
+                      Stack(
+                        children: [
+                          Align(
+                            alignment: Alignment.center,
+                            child: ClipRRect(
+                              borderRadius: BorderRadius.circular(12),
+                              child: Image.network(
+                                item.thumbnail,
+                                fit: BoxFit.contain,
+                                height: 100.h,
+                                width: 100.h,
+                              ),
+                            ),
                           ),
-                        ),
+
+                          if (isSoldOut)
+                            Positioned(
+                              top: 8,
+                              left: 8,
+                              child: Container(
+                                padding: const EdgeInsets.symmetric(
+                                    horizontal: 8, vertical: 4),
+                                decoration: BoxDecoration(
+                                  color: Colors.red,
+                                  borderRadius: BorderRadius.circular(6),
+                                ),
+                                child: const Text(
+                                  "SOLD OUT",
+                                  style: TextStyle(
+                                    color: Colors.white,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.bold,
+                                  ),
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
 
                       const SizedBox(height: 10),
@@ -102,7 +146,7 @@ class SubcategoryView extends StatelessWidget {
 
                       /// SUBTITLE
                       Text(
-                        item.priceUnit,
+                        userPackaging?.label ??"-",
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: Colors.grey, fontSize: 14.sp),
@@ -128,9 +172,9 @@ class SubcategoryView extends StatelessWidget {
                               ),
 
                               // Original Price (only if discount exists)
-                              if (item.discount > 0)
+                              if (userPackaging!.discount > 0)
                                 Text(
-                                  "${AppConstantStrings.rupeeSymbol} ${originalPrice.toStringAsFixed(2)}",
+                                  "${AppConstantStrings.rupeeSymbol} ${mrp.toStringAsFixed(2)}",
                                   // "${AppConstantStrings.rupeeSymbol} ${item.price.toStringAsFixed(2)}",
                                   style: TextStyle(
                                     fontWeight: FontWeight.w400,
@@ -143,12 +187,19 @@ class SubcategoryView extends StatelessWidget {
                           ),
 
                           GestureDetector(
-                            onTap: () async {
+                            onTap: isSoldOut
+                                ? (){
+                              Get.to(() => ProductDetailView(product: item));
+                            }
+                                :() async {
                               log("Clicked");
-                              final homeController = Get.find<HomeController>();
-                              await homeController.addProductToCart(item);
+
                               Get.back(closeOverlays: true);
+                              CommonLoader.show();
+                              final homeController = Get.find<HomeController>();
+                              await homeController.addProductToCart(item,UserService.getUserFromHive().storeId);
                               Get.find<BottomNavController>().changeTab(2);
+                              CommonLoader.hide();
                             },
                             child: Container(
                               height: 45.h,

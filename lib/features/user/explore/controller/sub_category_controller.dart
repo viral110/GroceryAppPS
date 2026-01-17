@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 
 class SubcategoryController extends GetxController {
@@ -31,6 +32,7 @@ class SubcategoryController extends GetxController {
       final snapshot = await FirebaseFirestore.instance
           .collection(AppConstantStrings.productsCollection)
           .where('category_id', isEqualTo: categoryId)
+          .where('store_ids', arrayContains: UserService.getUserFromHive().storeId)
           // .orderBy('created_at', descending: true)
           .get();
 

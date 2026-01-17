@@ -38,7 +38,7 @@ class AdminOrdersController extends GetxController {
         query = query.where('order_status', isEqualTo: 'Cancelled');
         break;
     }
-
+    query = query.orderBy('created_at', descending: false);
     return query;
   }
 

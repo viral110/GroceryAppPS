@@ -4,10 +4,14 @@ import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
+import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
 import 'package:online_groceries_app/features/user/explore/controller/explore_controller.dart';
 import 'package:online_groceries_app/features/user/explore/filter_bottom_sheet.dart';
 import 'package:online_groceries_app/features/user/explore/view/subcategory_view.dart';
+import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
 import 'package:online_groceries_app/features/user/product_detail/view/product_detail_view.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 
@@ -34,7 +38,7 @@ class ExploreView extends StatelessWidget {
                     controller: controller.searchController,
                     onChanged: controller.onSearchChanged,
                     decoration: InputDecoration(
-                      hintText: "Search Store",
+                      hintText: "Search products/category",
                       prefixIcon: const Icon(Icons.search),
                       filled: true,
                       fillColor: Colors.grey.shade100,
@@ -82,10 +86,24 @@ class ExploreView extends StatelessWidget {
                           crossAxisCount: 2,
                           crossAxisSpacing: 14,
                           mainAxisSpacing: 14,
-                          childAspectRatio: 0.72,
+                          childAspectRatio: 0.68,
                         ),
                     itemBuilder: (context, index) {
                       final item = controller.searchedProducts[index];
+                      final storeConfig = item.storeConfigs
+                          .firstWhereOrNull((s) => s.storeId == UserService.getUserFromHive().storeId);
+
+                      final PackagingModel? userPackaging = storeConfig?.packaging
+                          .firstWhereOrNull((p) => p.isDefault);
+
+                      final int quantity = userPackaging?.quantity ?? 0;
+                      final bool isSoldOut = quantity <= 0;
+                      final double mrp = userPackaging?.price ?? 0.0;
+                      final int discount = userPackaging?.discount ?? 0;
+                      /// ✅ DISCOUNTED PRICE (MINUS)
+                      final double sellingPrice = discount > 0
+                          ? mrp - (mrp * discount / 100)
+                          : mrp;
                       return GestureDetector(
                         onTap: () {
                           Get.to(() => ProductDetailView(product: item));
@@ -100,14 +118,43 @@ class ExploreView extends StatelessWidget {
                             crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               /// IMAGE
-                              Expanded(
-                                child: Center(
-                                  child: Image.network(
-                                    item.thumbnail,
-                                    height: 90,
-                                    fit: BoxFit.contain,
+                              Stack(
+                                children: [
+                                  Align(
+                                    alignment: Alignment.center,
+                                    child: ClipRRect(
+                                      borderRadius: BorderRadius.circular(12),
+                                      child: Image.network(
+                                        item.thumbnail,
+                                        fit: BoxFit.contain,
+                                        height: 100.h,
+                                        width: 100.h,
+                                      ),
+                                    ),
                                   ),
-                                ),
+
+                                  if (isSoldOut)
+                                    Positioned(
+                                      top: 8,
+                                      left: 8,
+                                      child: Container(
+                                        padding: const EdgeInsets.symmetric(
+                                            horizontal: 8, vertical: 4),
+                                        decoration: BoxDecoration(
+                                          color: Colors.red,
+                                          borderRadius: BorderRadius.circular(6),
+                                        ),
+                                        child: const Text(
+                                          "SOLD OUT",
+                                          style: TextStyle(
+                                            color: Colors.white,
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.bold,
+                                          ),
+                                        ),
+                                      ),
+                                    ),
+                                ],
                               ),
 
                               const SizedBox(height: 10),
@@ -124,15 +171,11 @@ class ExploreView extends StatelessWidget {
 
                               const SizedBox(height: 4),
 
-                              /// SUBTITLE
                               Text(
-                                // "180g, Price",
-                                item.priceUnit,
-                                style: TextStyle(
-                                  color: Colors.grey,
-                                  fontSize: 14.sp,
-                                ),
+                                userPackaging?.label ?? "-",
+                                style: const TextStyle(color: Color(0xff7C7C7C)),
                               ),
+
 
                               const SizedBox(height: 10),
 
@@ -141,24 +184,59 @@ class ExploreView extends StatelessWidget {
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Text(
-                                    "${AppConstantStrings.rupeeSymbol} ${item.price}",
-                                    style: TextStyle(
-                                      fontSize: 18.sp,
-                                      fontWeight: FontWeight.w600,
-                                    ),
+                                  Column(
+                                    crossAxisAlignment: CrossAxisAlignment.start,
+                                    children: [
+                                      Text(
+                                        "₹${sellingPrice.toStringAsFixed(2)}",
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 18.sp,
+                                          color:
+                                          isSoldOut ? Colors.grey : Colors.black,
+                                        ),
+                                      ),
+
+                                      if (discount > 0)
+                                        Text(
+                                          "₹${mrp.toStringAsFixed(2)}",
+                                          style: TextStyle(
+                                            fontSize: 14.sp,
+                                            color: Colors.grey,
+                                            decoration:
+                                            TextDecoration.lineThrough,
+                                          ),
+                                        ),
+                                    ],
                                   ),
-                                  Container(
-                                    height: 45.h,
-                                    width: 45.h,
-                                    decoration: BoxDecoration(
-                                      color: AppColors.primary,
-                                      borderRadius: BorderRadius.circular(15),
-                                    ),
-                                    child: const Icon(
-                                      Icons.add,
-                                      color: Colors.white,
-                                      size: 20,
+                                  GestureDetector(
+                                    onTap: isSoldOut
+                                        ? (){
+                                      Get.to(() => ProductDetailView(product: item));
+                                    }
+                                        :() async {
+                                      final homeController =
+                                      Get.find<HomeController>();
+                                      await homeController.addProductToCart(
+                                        item,
+                                        UserService.getUserFromHive().storeId,
+                                      );
+
+                                      Get.find<BottomNavController>()
+                                          .changeTab(2);
+                                    },
+                                    child: Container(
+                                      height: 45.h,
+                                      width: 45.h,
+                                      decoration: BoxDecoration(
+                                        color: AppColors.primary,
+                                        borderRadius: BorderRadius.circular(15),
+                                      ),
+                                      child: const Icon(
+                                        Icons.add,
+                                        color: Colors.white,
+                                        size: 20,
+                                      ),
                                     ),
                                   ),
                                 ],

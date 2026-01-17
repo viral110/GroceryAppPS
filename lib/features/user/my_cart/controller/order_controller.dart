@@ -1,9 +1,13 @@
 import 'dart:developer';
+import 'dart:math' as mt;
 
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/cupertino.dart';
 import 'package:get/get.dart';
+import 'package:intl/intl.dart';
 import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
+import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/view/order_success_view.dart';
 import 'package:online_groceries_app/models/order_model.dart';
@@ -11,6 +15,9 @@ import 'package:online_groceries_app/services/razorpay_service.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
+
+import '../../../../models/cart_tems_model.dart';
+import '../../../admin/products/models/produce_model.dart';
 
 class OrderController extends GetxController {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
@@ -274,8 +281,6 @@ class OrderController extends GetxController {
       await onOrderSuccess();
 
       CommonLoader.hide();
-      Get.back(closeOverlays: true); // close checkout
-      Get.to(() => OrderSuccessView());
       CommonToast.show(
         'Payment successful! Your order has been placed.',
         type: ToastType.success,
@@ -309,6 +314,106 @@ class OrderController extends GetxController {
     );
   }
 
+  Future<void> _decreaseStockAfterOrder(
+      List<CartItem> cartItems,
+      String storeId,
+      ) async {
+    await _firestore.runTransaction((transaction) async {
+
+      /// ================= STEP 1: AGGREGATE REQUIRED QTY =================
+      /// key = productId|packagingLabel
+      final Map<String, int> requiredQtyMap = {};
+
+      for (final item in cartItems) {
+        if (item.quantity <= 0) continue;
+
+        final key = '${item.product.id}|${item.packagingLabel}';
+        requiredQtyMap[key] =
+            (requiredQtyMap[key] ?? 0) + item.quantity;
+      }
+
+      /// ================= STEP 2: READ ALL UNIQUE PRODUCTS =================
+      final Map<String, DocumentSnapshot> productSnaps = {};
+
+      for (final key in requiredQtyMap.keys) {
+        final productId = key.split('|').first;
+
+        if (productSnaps.containsKey(productId)) continue;
+
+        final ref = _firestore
+            .collection(AppConstantStrings.productsCollection)
+            .doc(productId);
+
+        final snap = await transaction.get(ref);
+        if (snap.exists) {
+          productSnaps[productId] = snap;
+        }
+      }
+
+      /// ================= STEP 3: UPDATE STOCK (SAFE WAY) =================
+      /// ================= STEP 3: UPDATE STOCK (SAFE WAY) =================
+      for (final entry in requiredQtyMap.entries) {
+        final parts = entry.key.split('|');
+        final productId = parts[0];
+        final packagingLabel = parts[1];
+        final requiredQty = entry.value;
+
+        final snap = productSnaps[productId];
+        if (snap == null) continue;
+
+        final product = ProductModel.fromDoc(snap);
+
+        final storeIndex = product.storeConfigs
+            .indexWhere((s) => s.storeId == storeId);
+        if (storeIndex == -1) continue;
+
+        final storeConfig = product.storeConfigs[storeIndex];
+
+        final packagingIndex = storeConfig.packaging
+            .indexWhere((p) => p.label == packagingLabel);
+        if (packagingIndex == -1) continue;
+
+        final currentQty = storeConfig.packaging[packagingIndex].quantity;
+
+        final newQty =
+        (currentQty - requiredQty).clamp(0, currentQty);
+
+        debugPrint(
+          'STOCK UPDATE → '
+              'Product:$productId | '
+              'Pack:$packagingLabel | '
+              'Old:$currentQty | '
+              'Minus:$requiredQty | '
+              'New:$newQty',
+        );
+
+        /// ✅ UPDATE IN MEMORY
+        storeConfig.packaging[packagingIndex].quantity = newQty;
+
+        /// ✅ WRITE FULL store_configs ARRAY (CRITICAL)
+        transaction.update(
+          snap.reference,
+          {
+            'store_configs':
+            product.storeConfigs.map((e) => e.toJson()).toList(),
+          },
+        );
+      }
+
+    });
+  }
+
+  String generateOrderCode() {
+    const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789';
+    final rand = mt.Random();
+    return 'ORD-' +
+        List.generate(6, (_) => chars[rand.nextInt(chars.length)]).join();
+  }
+
+
+
+
+
   /// ================= PLACE ORDER =================
   Future<void> placeOrder({
     required String paymentMethod,
@@ -316,6 +421,7 @@ class OrderController extends GetxController {
     String? paymentSignature,
   }) async {
     try {
+      CommonLoader.show();
       isPlacingOrder.value = true;
 
       final cartController = Get.find<CartController>();
@@ -325,40 +431,40 @@ class OrderController extends GetxController {
         throw Exception("Cart is empty");
       }
 
-      /// Create order document
+      /// ================= CREATE ORDER DOC =================
       final orderDoc = _firestore
           .collection(AppConstantStrings.orderCollection)
           .doc();
 
-      /// Build order items from cart
+      /// ================= BUILD ORDER ITEMS =================
       final orderItems = cartController.cartItems.map((item) {
         return OrderItemModel(
           productId: item.product.id,
           productName: item.product.name,
-          unitValue: item.packaging,
+          unitValue: item.packagingLabel, // ✅ FIXED
           unitPrice: item.unitPrice,
           quantity: item.quantity,
           totalPrice: item.totalPrice,
-          // isPromo: isPromoApplied.value,
-          // promoPrice: promoDiscount.value,
           image: item.product.thumbnail,
         );
       }).toList();
+      final shortOrderId = generateOrderCode();
 
-      /// Build order model
+      /// ================= BUILD ORDER MODEL =================
       final order = OrderModel(
         orderId: orderDoc.id,
         userId: user.uid,
-        storeId: user.storeId, // if available
+        shortOrderId: shortOrderId,
+        deliveryDate: formattedDate,
+        storeId: user.storeId,
         orderStatus: "Pending",
         paymentStatus: paymentMethod == "COD" ? "pending" : "paid",
         paymentMethod: paymentMethod,
         items: orderItems,
-        subtotal: cartTotal,
+        subtotal: cartController.subtotal, // ✅ safer
         discount: promoDiscount.value,
         appliedPromoCode: appliedPromoCode.value,
         totalAmount: finalPayable,
-
         deliveryCharge: 0,
         deliveryAddress: DeliveryAddressModel(
           city: user.city,
@@ -366,35 +472,43 @@ class OrderController extends GetxController {
           name: '${user.firstName ?? ''} ${user.lastName ?? ''}',
           phone: user.mobileNumber,
           pincode: user.pincode,
-        ), // DeliveryAddressModel
+        ),
         createdAt: DateTime.now(),
         updatedAt: DateTime.now(),
       );
 
-      /// 🔥 ADD THIS LINE
+      /// Save last order (for success screen)
       lastOrder.value = order;
-      log(" ORDER DATA: ${lastOrder.value}");
 
-      /// Prepare order data
-      final orderData = order.toMap();
+      /// ================= PREPARE DATA =================
+      final Map<String, dynamic> orderData = order.toMap();
 
-      // Add payment details if online payment
+      /// Add payment info if online
       if (paymentMethod == "Online" && paymentId != null) {
-        orderData['payment_id'] = paymentId;
-        orderData['payment_signature'] = paymentSignature;
-        orderData['payment_completed_at'] = Timestamp.now();
+        orderData.addAll({
+          'payment_id': paymentId,
+          'payment_signature': paymentSignature,
+          'payment_completed_at': Timestamp.now(),
+        });
       }
 
-      /// Save order
       await orderDoc.set(orderData);
-      // await orderDoc.set(order.toMap());
-
-      /// Clear cart (Firestore + local)
+      await _decreaseStockAfterOrder(
+        cartController.cartItems,
+        user.storeId,
+      );
+      /// ================= CLEAR CART =================
       await _clearCart(cartController, user.uid);
-
-      /// 🔥 RESET ORDER STATE
+      /// ================= RESET =================
       resetCheckout();
-      CommonToast.show("Order placed successfully", type: ToastType.success);
+      final homeController = Get.find<HomeController>();
+await homeController.fetchProducts();
+      Get.back(closeOverlays: true); // close checkout
+      Get.to(() => OrderSuccessView(orderId: shortOrderId,paymentMethod: paymentMethod,));
+      CommonToast.show(
+        "Order placed successfully",
+        type: ToastType.success,
+      );
     } catch (e) {
       CommonToast.show(
         e.toString().replaceAll('Exception: ', ''),
@@ -402,9 +516,11 @@ class OrderController extends GetxController {
       );
       rethrow;
     } finally {
+      CommonLoader.hide();
       isPlacingOrder.value = false;
     }
   }
+
 
   Future<void> onOrderSuccess() async {
     if (isPromoApplied.value) {
@@ -429,7 +545,10 @@ class OrderController extends GetxController {
   }
 
   /// ================= CLEAR CART =================
-  Future<void> _clearCart(CartController cartController, String userId) async {
+  Future<void> _clearCart(
+      CartController cartController,
+      String userId,
+      ) async {
     final cartRef = _firestore
         .collection(AppConstantStrings.userCollection)
         .doc(userId)
@@ -438,13 +557,16 @@ class OrderController extends GetxController {
     final batch = _firestore.batch();
 
     for (final item in cartController.cartItems) {
-      batch.delete(cartRef.doc(item.product.id + item.packaging));
+      final docId = "${item.product.id}_${item.packagingLabel}";
+      batch.delete(cartRef.doc(docId));
     }
 
     await batch.commit();
 
+    /// Clear local cart
     cartController.cartItems.clear();
-    // cartController.discount.value = 0;
+
+    /// Reset checkout state
     selectedPaymentMethod.value = "Select Method";
   }
 
@@ -460,30 +582,53 @@ class OrderController extends GetxController {
         .collection(AppConstantStrings.userCollection)
         .doc(user.uid);
 
+    final int creditToDeduct = creditToUse.round(); // keep integers
+
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(userRef);
 
-      final data = snapshot.data() ?? {};
+      if (!snapshot.exists) {
+        throw Exception("User not found");
+      }
 
-      final int totalCredit = (data['credit'] ?? 0).toInt();
-      final int spentCredit = data['used_credits'] ?? 0;
+      final data = snapshot.data()!;
 
-      final int remainingCredit = totalCredit - spentCredit;
+      final int remainingCredit =
+      (data['remaining_credits'] ?? 0) as int;
+      final int usedCredit =
+      (data['used_credits'] ?? 0) as int;
 
       if (remainingCredit <= 0) {
         throw Exception("No credit available");
       }
 
-      if (remainingCredit < creditToUse) {
+      if (remainingCredit < creditToDeduct) {
         throw Exception("Insufficient credit balance");
       }
 
+      /// ✅ ATOMIC UPDATE
       transaction.update(userRef, {
-        'used_credits': spentCredit + creditToUse.toInt(),
-        'update_at': FieldValue.serverTimestamp(),
+        'remaining_credits': remainingCredit - creditToDeduct,
+        'used_credits': usedCredit + creditToDeduct,
+        'updated_at': FieldValue.serverTimestamp(),
       });
     });
-    user.usedCredits = ((user.usedCredits ?? 0) + creditToUse).toInt();
+
+    /// ✅ SYNC LOCAL (Hive) AFTER SUCCESS
+    user.remainingCredits =
+        (user.remainingCredits ?? 0) - creditToDeduct;
+    user.usedCredits =
+        (user.usedCredits ?? 0) + creditToDeduct;
+
     await UserService.setUserInHive(user);
+  }
+
+  Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
+
+  String get formattedDate {
+    if (selectedDate.value == null) return "Select Date";
+
+    final date = selectedDate.value!;
+    return DateFormat('dd MMM yyyy, EEEE').format(date);
   }
 }

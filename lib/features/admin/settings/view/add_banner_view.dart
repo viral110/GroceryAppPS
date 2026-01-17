@@ -136,6 +136,7 @@ class AdminBannerView extends StatelessWidget {
                               banner.image,
                               height: 50,
                               width: 90,
+                              webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
                               fit: BoxFit.cover,
                             ),
                           ),

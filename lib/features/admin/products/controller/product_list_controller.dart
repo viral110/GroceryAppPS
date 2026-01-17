@@ -21,7 +21,6 @@ class ProductListController extends GetxController {
   Future<void> fetchProducts() async {
     try {
       isLoading.value = true;
-
       final snapshot = await _firestore
           .collection(AppConstantStrings.productsCollection)
           .get();

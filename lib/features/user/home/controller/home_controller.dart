@@ -2,10 +2,11 @@ import 'dart:developer';
 import 'dart:ui';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:get/get.dart';
+import 'package:online_groceries_app/common_widgets/common_loader.dart';
+import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/features/admin/settings/controller/add_banner_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
-import 'package:online_groceries_app/utils/product_pricing_extension.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import '../../../admin/store_manage/models/store_model.dart';
@@ -90,6 +91,48 @@ class HomeController extends GetxController {
   final bestSelling = <ProductModel>[].obs;
   final randomProducts = <ProductModel>[].obs;
 
+  int _maxDiscountForStore(ProductModel product, String storeId) {
+    final store = product.storeConfigs.firstWhere(
+          (s) => s.storeId == storeId,
+      orElse: () => StoreProductConfig(
+        storeId: '',
+        storeName: '',
+        unit: '',
+        packaging: [],
+      ),
+    );
+
+    int maxDiscount = 0;
+    for (final p in store.packaging) {
+      if (p.discount > maxDiscount) {
+        maxDiscount = p.discount;
+      }
+    }
+    return maxDiscount;
+  }
+
+  int _totalStockForStore(ProductModel product, String storeId) {
+    final store = product.storeConfigs.firstWhere(
+          (s) => s.storeId == storeId,
+      orElse: () => StoreProductConfig(
+        storeId: '',
+        storeName: '',
+        unit: '',
+        packaging: [],
+      ),
+    );
+
+    int total = 0;
+    for (final p in store.packaging) {
+      total += p.quantity;
+    }
+    return total;
+  }
+
+
+
+
+
   /// 🔥 PRODUCTS FETCH
   Future<void> fetchProducts() async {
     if (selectedStoreId.value.isEmpty) {
@@ -97,63 +140,117 @@ class HomeController extends GetxController {
       return;
     }
 
-    log("🔥 Fetching products for store: ${selectedStoreId.value}");
+    final storeId = selectedStoreId.value;
 
     final snapshot = await _firestore
         .collection(AppConstantStrings.productsCollection)
-        .where('store_ids', arrayContains: selectedStoreId.value)
+        .where('store_ids', arrayContains: storeId)
         .get();
 
-    final products = snapshot.docs.map((e) => ProductModel.fromDoc(e)).toList();
+    final products =
+    snapshot.docs.map((e) => ProductModel.fromDoc(e)).toList();
 
-    log("🟢 PRODUCTS FOUND: ${products.length}");
     allProducts.assignAll(products);
 
-    /// ⭐ Exclusive (20–30%)
+    /// ⭐ EXCLUSIVE (20–30% discount)
     exclusiveOffers.assignAll(
-      products
-          .where(
-            (p) =>
-                p.discount >= AppConstantStrings.minDiscount &&
-                p.discount <= AppConstantStrings.minDiscount,
-          )
-          .toList(),
+      products.where((product) {
+        final discount = _maxDiscountForStore(product, storeId);
+        return discount >= 20 && discount <= 30;
+      }).toList(),
     );
-    log("EXCLUSIVE PRODUCTS:${exclusiveOffers.length}");
 
-    /// 🔥 Best Selling (based on kps or flag)
-    bestSelling.assignAll(products..sort((a, b) => b.kps.compareTo(a.kps)));
+    /// 🔥 BEST SELLING (LOW STOCK FIRST)
+    final bestSellingList = products
+        .where((p) => _totalStockForStore(p, storeId) > 0)
+        .toList()
+      ..sort(
+            (a, b) =>
+            _totalStockForStore(a, storeId)
+                .compareTo(_totalStockForStore(b, storeId)),
+      );
 
-    // /// 🎲 Random 10 Products
-    products.shuffle();
-    randomProducts.assignAll(products.take(10).toList());
+    bestSelling.assignAll(bestSellingList);
+
+    /// 🎲 RANDOM 10
+    final shuffled = [...products]..shuffle();
+    randomProducts.assignAll(shuffled.take(10).toList());
   }
 
   Future<void> onStoreChanged(String storeId) async {
     selectedStoreId.value = storeId;
-
+    CommonLoader.show();
     final user = UserService.getUserFromHive();
     user.storeId = storeId;
     await UserService().updateUser(user);
-
+    await clearUserCart(user.uid);
+    await clearUserFavourites(user.uid);
     await fetchProducts(); // 🔥 reload products
+    CommonLoader.hide();
   }
 
+  Future<void> clearUserCart(String userId) async {
+    final cartRef = FirebaseFirestore.instance
+        .collection(AppConstantStrings.userCollection)
+        .doc(userId)
+        .collection('cart');
+
+    final snapshot = await cartRef.get();
+
+    for (final doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+  }
+  Future<void> clearUserFavourites(String userId) async {
+    final favRef = FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .collection('favourites');
+
+    final snapshot = await favRef.get();
+
+    for (final doc in snapshot.docs) {
+      await doc.reference.delete();
+    }
+  }
+
+
   /// ✅ SINGLE SOURCE OF ADD TO CART
-  Future<void> addProductToCart(ProductModel product) async {
+  Future<void> addProductToCart(ProductModel product, String storeId) async {
     final cartController = Get.find<CartController>();
 
-    final packaging = product.defaultPackaging;
-    log("PACKING $packaging");
-    final multiplier = product.multiplierFor(packaging);
-    log("MULTIPLIER $multiplier");
-    final unitPrice = product.unitPriceFor(packaging);
-    log("UNIT PRICE $unitPrice");
+    /// 1️⃣ Get store config
+    final StoreProductConfig? storeConfig = product.storeConfigs
+        .firstWhereOrNull((s) => s.storeId == storeId);
+print("ADDPRODUCT");
+print(storeConfig?.packaging.toString());
+    if (storeConfig == null) {
+      CommonToast.show(
+        "Product not available in this store",
+        type: ToastType.warning,
+      );
+      return;
+    }
 
+    /// 2️⃣ Get default packaging
+    final PackagingModel? packaging = storeConfig.packaging
+        .firstWhereOrNull((p) => p.isDefault);
+
+    if (packaging == null) {
+      CommonToast.show(
+        "Product packaging not available",
+        type: ToastType.warning,
+      );
+      return;
+    }
+
+    /// 3️⃣ Selling price (already discounted)
+    final double unitPrice = packaging.price;
+
+    /// 5️⃣ Add to cart
     await cartController.addToCart(
       product: product,
       packaging: packaging,
-      multiplier: multiplier,
       unitPrice: unitPrice,
       quantity: 1,
     );
