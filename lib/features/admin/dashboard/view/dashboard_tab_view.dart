@@ -143,7 +143,7 @@ class DashboardTab extends StatelessWidget {
                     child: Row(
                       children: [
                         Expanded(
-                          child: Text("#${data['order_id'] ?? '--'}"),
+                          child: Text("#${data['short_order_id'] ?? '--'}"),
                         ),
                         Expanded(
                           child: Text(

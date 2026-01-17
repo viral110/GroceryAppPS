@@ -1,5 +1,6 @@
 import 'dart:developer';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -15,12 +16,12 @@ import 'package:online_groceries_app/utils/app_constant.dart';
 
 class CheckoutBottomSheet extends StatelessWidget {
   // final String totalPrice;
-  const CheckoutBottomSheet({super.key});
+   CheckoutBottomSheet({super.key});
+  final orderController = Get.find<OrderController>();
 
   @override
   Widget build(BuildContext context) {
     final cartController = Get.find<CartController>();
-    final orderController = Get.find<OrderController>();
 
     return Container(
       decoration: const BoxDecoration(
@@ -76,6 +77,15 @@ class CheckoutBottomSheet extends StatelessWidget {
                     title: "Promo Code",
                     value: "Pick discount",
                     onTap: () => showPromoCodeSheet(context),
+                  ),
+                  const Divider(height: 35),
+
+                  Obx(
+                        () => _rowItem(
+                      title: "Delivery Date",
+                      value: orderController.formattedDate,
+                      onTap: () => showSelectDate(context),
+                    ),
                   ),
                   Obx(() {
                     if (!orderController.isPromoApplied.value) {
@@ -151,14 +161,23 @@ class CheckoutBottomSheet extends StatelessWidget {
                   ),
 
                   const SizedBox(height: 4),
-                  Text(
-                    "• Your available credit is ${AppConstantStrings.rupeeSymbol} ${_getAvailableCredit().toStringAsFixed(2)}",
-                    style: TextStyle(
-                      fontSize: 15.sp,
-                      fontWeight: FontWeight.w500,
-                      color: const Color(0xff7C7C7C),
-                    ),
+                  FutureBuilder<double>(
+                    future: getAvailableCreditFromFirebase(),
+                    builder: (context, snapshot) {
+                      final credit = snapshot.data ?? 0.0;
+
+                      return Text(
+                        "• Your available credit is ${AppConstantStrings.rupeeSymbol} "
+                            "${credit.toStringAsFixed(2)}",
+                        style: TextStyle(
+                          fontSize: 15.sp,
+                          fontWeight: FontWeight.w500,
+                          color: const Color(0xff7C7C7C),
+                        ),
+                      );
+                    },
                   ),
+
 
                   const SizedBox(height: 10),
                   CommonButton(
@@ -170,7 +189,6 @@ class CheckoutBottomSheet extends StatelessWidget {
                       log("Selected Method: $selectedMethod");
                       if (selectedMethod.isEmpty ||
                           selectedMethod == "Select Method") {
-                        // No method selected
                         CommonToast.show(
                           "Please select a payment method",
                           type: ToastType.error,
@@ -178,44 +196,40 @@ class CheckoutBottomSheet extends StatelessWidget {
 
                         return;
                       }
+                      if (orderController.formattedDate.isEmpty) {
+                        // No method selected
+                        CommonToast.show(
+                          "Please select a order date",
+                          type: ToastType.error,
+                        );
 
+                        return;
+                      }
                       try {
-                        CommonLoader.show(); // ✅ SHOW LOADER
                         if (selectedMethod == "Cash on Delivery") {
                           await orderController.placeOrder(
                             paymentMethod: "COD",
                           );
 
                           await orderController.onOrderSuccess();
-                          // Handle COD order
-                          Get.back(); // optional: close bottom sheet
-                          Get.to(() => OrderSuccessView());
                         } else if (selectedMethod == "Online Payment") {
                           var sucess = await orderController
                               .processRazorpayPayment();
 
-                          // Trigger your online payment flow
-                          // CommonToast.show(
-                          //   "Online payment Comming Soon...",
-                          //   type: ToastType.info,
-                          // );
-
-                          CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
                         } else if (selectedMethod == "Pay on Credit") {
                           final double orderAmount =
                               orderController.finalPayable;
                           final double availableCredit =
-                         double.parse( _getAvailableCredit().toStringAsFixed(2));
+                          await getAvailableCreditFromFirebase();
 
                           if (orderAmount > availableCredit) {
-                            CommonLoader.hide();
-
                             CommonToast.show(
-                              "Insufficient credit. Available credit is ₹$availableCredit",
+                              "Insufficient credit. Available credit is ₹${availableCredit.toStringAsFixed(2)}",
                               type: ToastType.error,
                             );
                             return;
-                          }else{
+                          }
+                          else{
                             await orderController.payUsingCredit(
                               orderController.finalPayable,
                             );
@@ -225,12 +239,11 @@ class CheckoutBottomSheet extends StatelessWidget {
                             );
                             await orderController.onOrderSuccess();
 
-                            CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
-                            Get.back(closeOverlays: true); // close checkout
-                            Get.to(() => OrderSuccessView());
                           }
                         }
-                      } catch (e) {
+                      } catch (e,s) {
+                        print(e);
+                        print(s);
                         CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
                         Get.back(closeOverlays: true);
                         showDialog(
@@ -248,7 +261,20 @@ class CheckoutBottomSheet extends StatelessWidget {
         ),
       ),
     );
+
   }
+   Future<void> showSelectDate(BuildContext context) async {
+     final pickedDate = await showDatePicker(
+       context: context,
+       initialDate: DateTime.now(),
+       firstDate: DateTime.now(),
+       lastDate: DateTime.now().add(const Duration(days: 365)),
+     );
+
+     if (pickedDate != null) {
+       orderController.selectedDate.value = pickedDate;
+     }
+   }
 
   double _getAvailableCredit() {
     final user = UserService.getUserFromHive();
@@ -438,4 +464,22 @@ class CheckoutBottomSheet extends StatelessWidget {
       },
     );
   }
+   Future<double> getAvailableCreditFromFirebase() async {
+     final userId = UserService.getUserFromHive().uid;
+
+     final doc = await FirebaseFirestore.instance
+         .collection('users')
+         .doc(userId)
+         .get();
+
+     if (!doc.exists) return 0.0;
+
+     final data = doc.data()!;
+     final remainingCredit =
+     (data['remaining_credits'] ?? 0).toDouble();
+
+     return remainingCredit;
+   }
+
+
 }

@@ -23,7 +23,7 @@ class StoreProductController extends GetxController {
     try {
       isLoading.value = true;
 
-      final snapshot = await FirebaseFirestore.instance
+      final snapshot = await _firestore
           .collection(AppConstantStrings.productsCollection)
           .where('store_ids', arrayContains: storeId)
           .get();
@@ -32,29 +32,25 @@ class StoreProductController extends GetxController {
         snapshot.docs.map((e) => ProductModel.fromDoc(e)).toList(),
       );
     } catch (e) {
-      CommonToast.show(
-        "Failed to load products",
-        type: ToastType.error,
-      );
+      CommonToast.show("Failed to load products", type: ToastType.error);
     } finally {
       isLoading.value = false;
     }
   }
-  int getStock(ProductModel product, String storeId) {
-    final stock = product.storeStocks.firstWhere(
+
+  /// 🔥 Get store config for this store
+  StoreProductConfig? getStoreConfig(ProductModel product) {
+    return product.storeConfigs.firstWhereOrNull(
           (e) => e.storeId == storeId,
-      orElse: () => StoreStockModel(
-        storeId: storeId,
-        storeName: '',
-        stock: 0,
-      ),
     );
-    return stock.stock;
   }
-  Future<void> updateStoreStock({
+
+  /// 🔥 Update quantity for a packaging
+  Future<void> updatePackagingQuantity({
     required String productId,
     required String storeId,
-    required int newStock,
+    required String packagingLabel,
+    required int newQty,
   }) async {
     try {
       final docRef = _firestore
@@ -64,31 +60,70 @@ class StoreProductController extends GetxController {
       final doc = await docRef.get();
       final data = doc.data() as Map<String, dynamic>;
 
-      final List stocks = data['store_stock'];
+      final List storeConfigs = data['store_configs'];
 
-      for (final s in stocks) {
-        if (s['store_id'] == storeId) {
-          s['stock'] = newStock;
+      for (final store in storeConfigs) {
+        if (store['store_id'] == storeId) {
+          for (final pkg in store['packaging']) {
+            if (pkg['label'] == packagingLabel) {
+              pkg['quantity'] = newQty;
+            }
+          }
         }
       }
 
       await docRef.update({
-        'store_stock': stocks,
+        'store_configs': storeConfigs,
       });
 
-      // 🔁 Update local state
-      final index = products.indexWhere((p) => p.id == productId);
-      products[index].storeStocks
-          .firstWhere((e) => e.storeId == storeId)
-          .stock = newStock;
+      /// 🔁 LOCAL UPDATE
+      final pIndex = products.indexWhere((p) => p.id == productId);
+      final storeConfig = products[pIndex]
+          .storeConfigs
+          .firstWhere((s) => s.storeId == storeId);
+
+      final pkg = storeConfig.packaging
+          .firstWhere((p) => p.label == packagingLabel);
+
+      pkg.quantity = newQty;
 
       products.refresh();
-
-      CommonToast.show("Stock updated");
+      Get.back();
+      CommonToast.show("Quantity updated");
     } catch (e) {
-      CommonToast.show("Failed to update stock", type: ToastType.error);
+      CommonToast.show("Failed to update quantity",
+          type: ToastType.error);
     }
   }
+  Future<void> setDefaultPackaging({
+    required String productId,
+    required String storeId,
+    required String selectedLabel,
+  }) async {
+    final index =
+    products.indexWhere((p) => p.id == productId);
 
+    if (index == -1) return;
+
+    final product = products[index];
+    final storeConfig =
+    getStoreConfig(product);
+
+    if (storeConfig == null) return;
+
+    // ✅ sirf ek default
+    for (final pkg in storeConfig.packaging) {
+      pkg.isDefault = pkg.label == selectedLabel;
+    }
+
+    await _firestore
+        .collection(AppConstantStrings.productsCollection)
+        .doc(productId)
+        .update({
+      "storeConfigs": product.storeConfigs.map((e) => e.toJson()).toList(),
+    });
+
+    update(); // GetBuilder refresh
+  }
 
 }

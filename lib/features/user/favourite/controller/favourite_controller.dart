@@ -17,13 +17,6 @@ class FavouriteController extends GetxController {
 
   String? get _userId => UserService.getUserFromHive().uid;
 
-  @override
-  void onInit() {
-    super.onInit();
-    if (_userId != null) {
-      loadFavourites();
-    }
-  }
 
   /// ================= LOAD =================
   Future<void> loadFavourites() async {
@@ -41,12 +34,13 @@ class FavouriteController extends GetxController {
             .collection(AppConstantStrings.productsCollection)
             .doc(doc.id)
             .get();
-
         if (productDoc.exists) {
           favouriteProducts.add(ProductModel.fromDoc(productDoc));
         }
       }
-    } catch (e) {
+    } catch (e,s) {
+      print(e);
+      print(s);
       CommonToast.show('Failed to load favourites', type: ToastType.error);
     }
   }
@@ -66,6 +60,7 @@ class FavouriteController extends GetxController {
       // favouriteProducts.add(product);
       await loadFavourites();
 
+      Get.back();
       Get.back();
 
       Get.find<BottomNavController>().changeTab(3);
@@ -121,9 +116,8 @@ class FavouriteController extends GetxController {
     isLoading.value = true;
 
     final homeController = Get.find<HomeController>();
-    // final products = List<ProductModel>.from(favouriteProducts);
     for (final product in favouriteProducts) {
-      await homeController.addProductToCart(product);
+      await homeController.addProductToCart(product,UserService.getUserFromHive().storeId);
 
       await _firestore
           .collection(AppConstantStrings.userCollection)

@@ -220,30 +220,38 @@ class AdminManageCategoryView extends StatelessWidget {
                   SizedBox(height: 20.h),
 
                   /// IMAGE
-                  GestureDetector(
-                    onTap: controller.pickImage,
-                    child: ClipRRect(
-                      borderRadius: BorderRadius.circular(12.r),
-                      child: Container(
-                        height: 100,
-                        width: 100,
-                        color: Colors.grey.shade200,
-                        child: controller.imageBytes.value != null
-                            ? Image.memory(
-                          controller.imageBytes.value!,
-                          fit: BoxFit.cover,
-                        )
-                            : Image.network(
-                          webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
-                          controller.oldImageUrl.value,
-                          fit: BoxFit.cover,
-                          errorBuilder: (_, error, ___){
-                            print(error);
-                            return  const Icon(Icons.broken_image);
-                          },
+                  Stack(
+                    children: [
+                      GestureDetector(
+                        onTap: controller.pickImage,
+                        child: ClipRRect(
+                          borderRadius: BorderRadius.circular(12.r),
+                          child: Container(
+                            height: 100,
+                            width: 100,
+                            color: Colors.grey.shade200,
+                            child: controller.imageBytes.value != null
+                                ? Image.memory(
+                              controller.imageBytes.value!,
+                              fit: BoxFit.cover,
+                            )
+                                : Image.network(
+                              webHtmlElementStrategy: WebHtmlElementStrategy.prefer,
+                              controller.oldImageUrl.value,
+                              fit: BoxFit.cover,
+                              errorBuilder: (_, error, ___){
+                                print(error);
+                                return  const Icon(Icons.broken_image);
+                              },
+                            ),
+                          ),
                         ),
                       ),
-                    ),
+                      Positioned(
+                          bottom: 0,
+                          right: 0,
+                          child: Icon(Icons.edit))
+                    ],
                   ),
 
                   SizedBox(height: 16.h),

@@ -3,6 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
 import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
@@ -94,7 +95,7 @@ class GroceryHomeScreen extends StatelessWidget {
                   Get.find<BottomNavController>().changeTab(1);
                 },
                 decoration: InputDecoration(
-                  hintText: "Search Store",
+                  hintText: "Search products/category",
                   prefixIcon: const Icon(Icons.search),
                   filled: true,
                   fillColor: Colors.grey.shade100,
@@ -175,12 +176,16 @@ class GroceryHomeScreen extends StatelessWidget {
                 );
               }),
 
-              const SizedBox(height: 20),
 
               /// ⭐ Exclusive Offers
               Obx(() {
                 if (controller.exclusiveOffers.isEmpty) {
-                  return const Text("NO Exclusive PRODUCT FOUND");
+                  return Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      const SizedBox.shrink(),
+                    ],
+                  );
                 }
 
                 return Column(
@@ -214,10 +219,15 @@ class GroceryHomeScreen extends StatelessWidget {
                   ],
                 );
               }),
-              const SizedBox(height: 20),
+
               Obx(() {
                 if (controller.bestSelling.isEmpty) {
-                  return Text("NO BEST SELLING PRODUCT FOUND");
+                  return Column(
+                    children: [
+                      const SizedBox(height: 20),
+                      const SizedBox.shrink(),
+                    ],
+                  );
                 }
 
                 return Column(
@@ -385,14 +395,24 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final double sellingPrice = product.price;
+    final storeConfig = product.storeConfigs
+        .firstWhereOrNull(
+          (s) => s.storeId == UserService.getUserFromHive().storeId,
+    );
 
-    final double originalPrice = product.discount > 0
-        ? sellingPrice / (1 - product.discount / 100)
-        : sellingPrice;
+    final PackagingModel? userPackaging = storeConfig?.packaging
+        .firstWhereOrNull((p) => p.isDefault);
 
-    // final discountedPrice =
-    //     product.price - (product.price * product.discount / 100);
+    final double mrp = userPackaging?.price ?? 0.0;
+    final int discount = userPackaging?.discount ?? 0;
+
+    final double sellingPrice =
+    discount > 0 ? mrp - (mrp * discount / 100) : mrp;
+
+    /// 🔴 STOCK CHECK
+    final int quantity = userPackaging?.quantity ?? 0;
+    final bool isSoldOut = quantity <= 0;
+
     return GestureDetector(
       onTap: () {
         Get.to(() => ProductDetailView(product: product));
@@ -406,91 +426,126 @@ class ProductCard extends StatelessWidget {
         ),
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
-          mainAxisAlignment: MainAxisAlignment.end,
           children: [
-            /// 🖼 PRODUCT IMAGE
-            Align(
-              alignment: Alignment.center,
-              child: ClipRRect(
-                borderRadius: BorderRadius.circular(12),
-                child: Image.network(
-                  product.thumbnail,
-                  fit: BoxFit.contain,
-                  height: 100.h,
-                  width: 100.w,
-                  errorBuilder: (_, __, ___) => Container(
-                    color: Colors.grey.shade200,
-                    child: Icon(
-                      Icons.image_not_supported,
-                      color: Colors.grey,
-                      size: 40,
+            /// 🖼 IMAGE + SOLD OUT TAG
+            Stack(
+              children: [
+                Align(
+                  alignment: Alignment.center,
+                  child: ClipRRect(
+                    borderRadius: BorderRadius.circular(12),
+                    child: Image.network(
+                      product.thumbnail,
+                      fit: BoxFit.contain,
+                      height: 100.h,
+                      width: 100.h,
                     ),
                   ),
                 ),
-              ),
+
+                if (isSoldOut)
+                  Positioned(
+                    top: 8,
+                    left: 8,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 8, vertical: 4),
+                      decoration: BoxDecoration(
+                        color: Colors.red,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        "SOLD OUT",
+                        style: TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+              ],
             ),
 
             SizedBox(height: 10.h),
+
             Text(
               product.name,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16.sp),
+              style:
+              TextStyle(fontWeight: FontWeight.w800, fontSize: 16.sp),
             ),
+
             const SizedBox(height: 4),
+
             Text(
-              product.priceUnit,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
+              userPackaging?.label ?? "-",
               style: const TextStyle(color: Color(0xff7C7C7C)),
             ),
+
             const SizedBox(height: 10),
+
             Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
               children: [
+                /// PRICE
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Discounted Price
                     Text(
-                      // "₹${discountedPrice.toStringAsFixed(2)}",
                       "₹${sellingPrice.toStringAsFixed(2)}",
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 18.sp,
+                        color:
+                        isSoldOut ? Colors.grey : Colors.black,
                       ),
                     ),
 
-                    // Original Price (only if discount exists)
-                    if (product.discount > 0)
+                    if (discount > 0)
                       Text(
-                        // "₹${product.price.toStringAsFixed(2)}",
-                        "₹${originalPrice.toStringAsFixed(2)}",
+                        "₹${mrp.toStringAsFixed(2)}",
                         style: TextStyle(
-                          fontWeight: FontWeight.w400,
                           fontSize: 14.sp,
-                          color: Colors.grey.shade600,
-                          decoration: TextDecoration.lineThrough,
+                          color: Colors.grey,
+                          decoration:
+                          TextDecoration.lineThrough,
                         ),
                       ),
                   ],
                 ),
 
+                /// ➕ ADD BUTTON
                 GestureDetector(
-                  onTap: () async {
-                    final homeController = Get.find<HomeController>();
-                    await homeController.addProductToCart(product);
-
-                    Get.find<BottomNavController>().changeTab(2);
+                  onTap: isSoldOut
+                      ? (){
+                    Get.to(() => ProductDetailView(product: product));
+                  }
+                      : () async {
+                    CommonLoader.show();
+                    final homeController =
+                    Get.find<HomeController>();
+                    await homeController.addProductToCart(
+                      product,
+                      UserService.getUserFromHive().storeId,
+                    );
+                    Get.find<BottomNavController>()
+                        .changeTab(2);
+                    CommonLoader.hide();
                   },
                   child: Container(
                     height: 45.h,
                     width: 45.h,
                     decoration: BoxDecoration(
-                      color: AppColors.primary,
+                      color:  AppColors.primary,
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    child: const Icon(Icons.add, color: Colors.white, size: 20),
+                    child: Icon(
+                     Icons.add,
+                      color: Colors.white,
+                      size: 20,
+                    ),
                   ),
                 ),
               ],

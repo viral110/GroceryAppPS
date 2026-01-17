@@ -209,7 +209,7 @@ class _ActualDashboard extends StatelessWidget {
                 "assets/svg/explore_icon.svg",
                 color: AppColors.primary,
               ),
-              label: "Explore",
+              label: "Category",
             ),
             BottomNavigationBarItem(
               icon: SvgPicture.asset("assets/svg/cart_icon.svg"),

@@ -3,17 +3,36 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
+import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/features/user/favourite/controller/favourite_controller.dart';
 import 'package:online_groceries_app/features/user/home/view/home_view.dart';
 import 'package:online_groceries_app/features/user/product_detail/view/product_detail_view.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/product_pricing_extension.dart';
 
-class FavouriteView extends StatelessWidget {
+class FavouriteView extends StatefulWidget {
   const FavouriteView({super.key});
 
   @override
+  State<FavouriteView> createState() => _FavouriteViewState();
+}
+
+class _FavouriteViewState extends State<FavouriteView> {
+  final controller = Get.put(FavouriteController());
+@override
+  void initState() {
+    // TODO: implement initState
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if(UserService.getUserFromHive().uid.isNotEmpty){
+        controller.loadFavourites();
+
+      }
+    });
+
+  }
+  @override
   Widget build(BuildContext context) {
-    final controller = Get.put(FavouriteController());
     return Scaffold(
       backgroundColor: Colors.white,
       appBar: CommonAppBar(title: "Favourite", showBack: false),
@@ -64,6 +83,20 @@ class FavouriteView extends StatelessWidget {
                 separatorBuilder: (_, __) => const Divider(height: 38),
                 itemBuilder: (context, index) {
                   final item = favItems[index];
+                  final storeConfig = item.storeConfigs
+                      .firstWhereOrNull((s) => s.storeId == UserService.getUserFromHive().storeId);
+
+                  final PackagingModel? userPackaging = storeConfig?.packaging
+                      .firstWhereOrNull((p) => p.isDefault);
+
+
+                  final double mrp = userPackaging?.price ?? 0.0;
+                  final int discount = userPackaging?.discount ?? 0;
+
+                  /// ✅ DISCOUNTED PRICE (MINUS)
+                  final double sellingPrice = discount > 0
+                      ? mrp - (mrp * discount / 100)
+                      : mrp;
                   return GestureDetector(
                     onTap: () {
                       Get.to(() => ProductDetailView(product: item));
@@ -88,7 +121,7 @@ class FavouriteView extends StatelessWidget {
                               const SizedBox(height: 4),
                               Text(
                                 // item.priceUnit,
-                                item.defaultPackaging,
+                                userPackaging?.label ??"-",
                                 style: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 12,
@@ -99,7 +132,7 @@ class FavouriteView extends StatelessWidget {
                         ),
                         Text(
                           // "₹${item.price.toStringAsFixed(2)}",
-                          "₹${item.unitPriceFor(item.defaultPackaging).toStringAsFixed(2)}",
+                          "₹${sellingPrice}",
                           style: const TextStyle(fontWeight: FontWeight.w600),
                         ),
 
@@ -113,7 +146,7 @@ class FavouriteView extends StatelessWidget {
             }),
           ),
 
-          Padding(
+          controller.favouriteProducts.isEmpty? SizedBox():   Padding(
             padding: const EdgeInsets.all(16),
             child: CommonButton(
               title: "Add All To Cart ",

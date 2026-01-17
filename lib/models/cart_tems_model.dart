@@ -4,32 +4,29 @@ import 'package:online_groceries_app/features/admin/products/models/produce_mode
 class CartItem {
   final ProductModel product;
   int quantity;
-  String packaging;
-  double multiplier; // e.g. 0.25, 1
-  double unitPrice; // price for selected packaging (1 qty)
+
+  String packagingLabel; // ✅ FIXED
+  double multiplier;
+  double unitPrice;
 
   CartItem({
     required this.product,
     this.quantity = 1,
-    required this.packaging,
+    required this.packagingLabel,
     required this.multiplier,
     required this.unitPrice,
   });
-
-  // double get discountedPrice =>
-  //     product.price - (product.price * product.discount / 100);
 
   double get totalPrice => unitPrice * quantity;
 
   Map<String, dynamic> toJson() {
     return {
       'product_id': product.id,
-      'packaging': packaging,
+      'packaging': packagingLabel,
       'multiplier': multiplier,
       'unit_price': unitPrice,
       'quantity': quantity,
-
-      "createdAt": FieldValue.serverTimestamp(),
+      'createdAt': FieldValue.serverTimestamp(),
     };
   }
 
@@ -37,9 +34,9 @@ class CartItem {
     return CartItem(
       product: product,
       quantity: json['quantity'] ?? 1,
-      packaging: json['packaging'] ?? "1kg",
-      multiplier: json['multiplier'] ?? 1.0,
-      unitPrice: json['unit_price'] ?? 1.0,
+      packagingLabel: json['packaging'] ?? '',
+      multiplier: (json['multiplier'] ?? 1).toDouble(),
+      unitPrice: (json['unit_price'] ?? 0).toDouble(),
     );
   }
 }

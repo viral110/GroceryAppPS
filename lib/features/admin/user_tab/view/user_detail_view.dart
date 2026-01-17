@@ -107,6 +107,7 @@ class _UserOrdersTab extends StatelessWidget {
                 .join(", ");
 
             return _UserOrderCard(
+              sortOrderId: order.shortOrderId ??"--",
               orderId: order.orderId ?? "--",
               date: order.createdAt != null
                   ? DateFormat('dd MMM yyyy').format(order.createdAt!)
@@ -124,6 +125,7 @@ class _UserOrdersTab extends StatelessWidget {
 
 class _UserOrderCard extends StatelessWidget {
   final String orderId;
+  final String sortOrderId;
   final String date;
   final String items;
   final String amount;
@@ -131,6 +133,7 @@ class _UserOrderCard extends StatelessWidget {
 
   const _UserOrderCard({
     required this.orderId,
+    required this.sortOrderId,
     required this.date,
     required this.items,
     required this.amount,
@@ -151,115 +154,116 @@ class _UserOrderCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      margin: EdgeInsets.only(bottom: 14.h),
-      padding: EdgeInsets.all(16.w),
-      decoration: BoxDecoration(
-        color: AppColors.whiteColor,
-        borderRadius: BorderRadius.circular(12),
-        boxShadow: [
-          BoxShadow(
-            blurRadius: 12,
-            color: Colors.black.withOpacity(0.04),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          /// ORDER ID + STATUS
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                "#$orderId",
-                style: TextStyle(
-                  fontSize: 14.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textColor,
-                ),
-              ),
-              Container(
-                padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
-                decoration: BoxDecoration(
-                  color: _statusColor().withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Text(
-                  status,
+    return GestureDetector(
+      onTap: (){
+        Get.to(()=>AdminOrderDetailView(orderId: orderId,));
+      },
+      child: Container(
+        margin: EdgeInsets.only(bottom: 14.h),
+        padding: EdgeInsets.all(16.w),
+        decoration: BoxDecoration(
+          color: AppColors.whiteColor,
+          borderRadius: BorderRadius.circular(12),
+          boxShadow: [
+            BoxShadow(
+              blurRadius: 12,
+              color: Colors.black.withOpacity(0.04),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            /// ORDER ID + STATUS
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  "#$orderId",
                   style: TextStyle(
-                    fontSize: 12.sp,
-                    fontWeight: FontWeight.w600,
-                    color: _statusColor(),
+                    fontSize: 14.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textColor,
                   ),
                 ),
-              ),
-            ],
-          ),
-
-          SizedBox(height: 8.h),
-
-          /// DATE
-          Text(
-            date,
-            style: TextStyle(
-              fontSize: 12.sp,
-              color: AppColors.grayTextColor,
-            ),
-          ),
-
-          SizedBox(height: 10.h),
-
-          /// ITEMS
-          Text(
-            items,
-            style: TextStyle(
-              fontSize: 14.sp,
-              fontWeight: FontWeight.w500,
-              color: AppColors.textColor,
-            ),
-          ),
-
-          SizedBox(height: 14.h),
-
-          /// AMOUNT + VIEW DETAILS
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              Text(
-                amount,
-                style: TextStyle(
-                  fontSize: 16.sp,
-                  fontWeight: FontWeight.w700,
-                  color: AppColors.textColor,
-                ),
-              ),
-              GestureDetector(
-                onTap: () {
-                  Get.to(()=>AdminOrderDetailView(orderId: orderId,));
-                },
-                child: Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 14.w,
-                    vertical: 6.h,
-                  ),
+                Container(
+                  padding: EdgeInsets.symmetric(horizontal: 12.w, vertical: 6.h),
                   decoration: BoxDecoration(
-                    borderRadius: BorderRadius.circular(6),
-                    border: Border.all(color: AppColors.primary),
+                    color: _statusColor().withOpacity(0.15),
+                    borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
-                    "View Details",
+                    status,
                     style: TextStyle(
-                      fontSize: 13.sp,
+                      fontSize: 12.sp,
                       fontWeight: FontWeight.w600,
-                      color: AppColors.primary,
+                      color: _statusColor(),
                     ),
                   ),
                 ),
+              ],
+            ),
+
+            SizedBox(height: 8.h),
+
+            /// DATE
+            Text(
+              date,
+              style: TextStyle(
+                fontSize: 12.sp,
+                color: AppColors.grayTextColor,
               ),
-            ],
-          ),
-        ],
+            ),
+
+            SizedBox(height: 10.h),
+
+            /// ITEMS
+            Text(
+              items,
+              style: TextStyle(
+                fontSize: 14.sp,
+                fontWeight: FontWeight.w500,
+                color: AppColors.textColor,
+              ),
+            ),
+
+            SizedBox(height: 14.h),
+
+            /// AMOUNT + VIEW DETAILS
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                Text(
+                  amount,
+                  style: TextStyle(
+                    fontSize: 16.sp,
+                    fontWeight: FontWeight.w700,
+                    color: AppColors.textColor,
+                  ),
+                ),
+                 Container(
+                    padding: EdgeInsets.symmetric(
+                      horizontal: 14.w,
+                      vertical: 6.h,
+                    ),
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(6),
+                      border: Border.all(color: AppColors.primary),
+                    ),
+                    child: Text(
+                      "View Details",
+                      style: TextStyle(
+                        fontSize: 13.sp,
+                        fontWeight: FontWeight.w600,
+                        color: AppColors.primary,
+                      ),
+                    ),
+                  ),
+
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

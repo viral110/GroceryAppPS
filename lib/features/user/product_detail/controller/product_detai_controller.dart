@@ -1,88 +1,115 @@
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
-import 'package:online_groceries_app/utils/product_pricing_extension.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 
 class ProductDetailController extends GetxController {
   final ProductModel product;
 
   ProductDetailController(this.product);
+  List<String> get sortedPackaging =>
+      packagingList.map((p) => p.label).toList();
 
-  /// Observables
-  var selectedWeightIndex = 0.obs;
-  var quantity = 1.obs;
-  var totalPrice = 0.0.obs;
+  final RxInt selectedWeightIndex = 0.obs;
+  final RxInt quantity = 1.obs;
+  final RxDouble totalPrice = 0.0.obs;
 
   final PageController pageController = PageController();
   final RxInt currentIndex = 0.obs;
 
-  // List<String> sortedPackaging = [];
-  final RxList<String> sortedPackaging = <String>[].obs;
+  /// ================= PACKAGING =================
+  late final List<PackagingModel> packagingList;
+  int get availableStock =>
+      selectedPackaging.quantity ?? 0;
 
+  bool get isSoldOut => availableStock <= 0;
+  PackagingModel get selectedPackaging =>
+      packagingList[selectedWeightIndex.value];
+
+  double get unitPrice => selectedPackaging.price;
+  int get discount => selectedPackaging.discount;
+  bool get isLowStock => availableStock > 0 && availableStock <= 5;
+
+  /// ================= INIT =================
   @override
   void onInit() {
     super.onInit();
+    /// 🔹 store config (user store)
+    final storeConfig = product.storeConfigs.firstWhere(
+          (s) => s.storeId == UserService.getUserFromHive().storeId,
+      orElse: () => product.storeConfigs.first,
+    );
 
-    sortedPackaging.value = product.sortedPackaging;
+    packagingList = storeConfig.packaging;
 
-    if (sortedPackaging.isNotEmpty) {
-      selectedWeightIndex.value = sortedPackaging.length - 1;
-    } else {
-      selectedWeightIndex.value = 0;
-    }
+    /// 🔹 auto select default packaging
+    final defaultIndex =
+    packagingList.indexWhere((p) => p.isDefault);
 
-    everAll([selectedWeightIndex, quantity], (_) => _updatePrice());
-    _updatePrice();
+    selectedWeightIndex.value =
+    defaultIndex != -1 ? defaultIndex : 0;
+
+    /// 🔹 listeners
+    everAll([selectedWeightIndex, quantity], (_) {
+      _updateTotalPrice();
+    });
+
+    _updateTotalPrice();
   }
 
-  // @override
-  // void onInit() {
-  //   super.onInit();
-  //   sortedPackaging = product.sortedPackaging;
-  //   selectedWeightIndex.value = sortedPackaging.length - 1;
-  //   everAll([selectedWeightIndex, quantity], (_) => _updatePrice());
-  //   _updatePrice();
-  // }
-  void _updatePrice() {
-    if (sortedPackaging.isEmpty) {
-      // Packet / Piece / Box
-      totalPrice.value = product.price * quantity.value;
+
+  /// ================= PRICE CALC =================
+  void _updateTotalPrice() {
+    if (isSoldOut) {
+      totalPrice.value = 0.0;
       return;
     }
 
-    final packaging = sortedPackaging[selectedWeightIndex.value];
-    totalPrice.value = product.unitPriceFor(packaging) * quantity.value;
+    final double discountedUnitPrice = discount > 0
+        ? unitPrice - (unitPrice * discount / 100)
+        : unitPrice;
+
+    totalPrice.value = discountedUnitPrice * quantity.value;
   }
 
-  // void _updatePrice() {
-  //   final packaging = sortedPackaging[selectedWeightIndex.value];
-  //   totalPrice.value = product.unitPriceFor(packaging) * quantity.value;
-  // }
 
-  String get selectedPackaging => sortedPackaging.isEmpty
-      ? product.priceUnit
-      : sortedPackaging[selectedWeightIndex.value];
-  //sortedPackaging[selectedWeightIndex.value];
-
-  double get unitPrice => sortedPackaging.isEmpty
-      ? product.price
-      : product.unitPriceFor(selectedPackaging);
-  //product.unitPriceFor(selectedPackaging);
-
-  double get multiplier =>
-      sortedPackaging.isEmpty ? 1 : product.multiplierFor(selectedPackaging);
-  // product.multiplierFor(selectedPackaging);
-
+  /// ================= ACTIONS =================
   void incrementQuantity() {
+    if (isSoldOut) {
+      CommonToast.show(
+        "Product is sold out",
+        type: ToastType.error,
+      );
+      return;
+    }
+
+    if (quantity.value >= availableStock) {
+      CommonToast.show(
+        "Only $availableStock item(s) available",
+        type: ToastType.warning,
+      );
+      return;
+    }
+
     quantity.value++;
   }
 
+
   void decrementQuantity() {
-    if (quantity.value > 1) quantity.value--;
+    if (quantity.value > 1) {
+      quantity.value--;
+    }
   }
 
   void selectWeight(int index) {
     selectedWeightIndex.value = index;
-    quantity.value = 1; // reset quantity on weight change
+    quantity.value = 1; // reset on packaging change
+  }
+
+  @override
+  void onClose() {
+    pageController.dispose();
+    super.onClose();
   }
 }

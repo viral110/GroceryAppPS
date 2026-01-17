@@ -13,6 +13,7 @@ class CommonTextField extends StatelessWidget {
   final int? maxLines;
   final bool isReadOnly;
   final void Function(String)? onChanged;
+  final void Function(String)? onSubmitted;
 
   const CommonTextField({
     super.key,
@@ -24,7 +25,7 @@ class CommonTextField extends StatelessWidget {
     this.onToggle,
     this.keyboardType = TextInputType.text, this.maxLines,
     this.onChanged,
-    this.isReadOnly = false,
+    this.isReadOnly = false, this.onSubmitted,
   });
 
   @override
@@ -54,7 +55,9 @@ class CommonTextField extends StatelessWidget {
           readOnly: isReadOnly,
           style: TextStyle(fontSize: 18.sp, color: Color(0xff181725)),
           onChanged:onChanged ,
+          onSubmitted: onSubmitted,
           decoration: InputDecoration(
+
             hintText: hint,
             hintStyle: TextStyle(fontSize: 18.sp, color: Colors.grey.shade400),
             border: const UnderlineInputBorder(),

@@ -85,8 +85,8 @@ class AdminProductsView extends StatelessWidget {
         children:  [
           Expanded(child: Text("Product Name", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
           Expanded(child: Text("Category", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
-          Expanded(child: Text("Price", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
-          Expanded(child: Text("Discount", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
+          Expanded(child: Text("Brand", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
+          Expanded(child: Text("Available Stores", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
           SizedBox(width: 40),
         ],
       ),
@@ -105,16 +105,20 @@ class AdminProductsView extends StatelessWidget {
         children: [
           Expanded(child: Text(product.name,style: TextStyle(fontSize: 17.sp),)),
           Expanded(child: Text(product.categoryName,style: TextStyle(fontSize: 17.sp))),
-          Expanded(child: Text("₹${product.price}",style: TextStyle(fontSize: 17.sp))),
+          Expanded(child: Text(product.brand,style: TextStyle(fontSize: 17.sp))),
           Expanded(
             child: Text(
-              "${product.discount}%",
+              product.storeConfigs
+                  .map((e) => e.storeName)
+                  .toSet()           // remove duplicates
+                  .join(', '),       // clean display
               style: TextStyle(
                 fontWeight: FontWeight.w600,
-                fontSize: 17.sp
+                fontSize: 17.sp,
               ),
             ),
           ),
+
 
           /// ================= ACTION MENU =================
           PopupMenuButton<String>(

@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrderModel {
   final String? orderId;
+  final String? shortOrderId;
   final String? userId;
   final String? storeId;
   final String? orderStatus; // "Pending","Ongoing","Completed","Cancelled",
@@ -14,17 +15,20 @@ class OrderModel {
   final double discount;
   final double totalAmount;
   final DeliveryAddressModel? deliveryAddress;
+  final String? deliveryDate;
   final DateTime? createdAt;
   final DateTime? updatedAt;
 
   OrderModel({
     this.orderId,
+    this.shortOrderId,
     this.userId,
     this.storeId,
     this.orderStatus,
     this.paymentStatus,
     this.paymentMethod,
     this.appliedPromoCode,
+    this.deliveryDate,
     this.items = const [],
     this.subtotal = 0.0,
     this.deliveryCharge = 0.0,
@@ -40,10 +44,12 @@ class OrderModel {
 
     return OrderModel(
       orderId: map['order_id'],
+      shortOrderId: map['short_order_id'],
       userId: map['user_id'],
       storeId: map['store_id'],
       orderStatus: map['order_status'],
       paymentStatus: map['payment_status'],
+      deliveryDate: map['delivery_date'],
       paymentMethod: map['payment_method'],
       appliedPromoCode: map['applied_promo_code'],
       items:
@@ -66,6 +72,7 @@ class OrderModel {
   Map<String, dynamic> toMap() {
     return {
       if (orderId != null) 'order_id': orderId,
+      if (shortOrderId != null) 'short_order_id': shortOrderId,
       if (userId != null) 'user_id': userId,
       if (storeId != null) 'store_id': storeId,
       if (orderStatus != null) 'order_status': orderStatus,
@@ -76,6 +83,7 @@ class OrderModel {
       'subtotal': subtotal,
       'delivery_charge': deliveryCharge,
       'discount': discount,
+      'delivery_date': deliveryDate,
       'total_amount': totalAmount,
       if (deliveryAddress != null) 'delivery_address': deliveryAddress!.toMap(),
       'created_at': createdAt ?? FieldValue.serverTimestamp(),
