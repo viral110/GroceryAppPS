@@ -90,16 +90,20 @@ class ExploreView extends StatelessWidget {
                         ),
                     itemBuilder: (context, index) {
                       final item = controller.searchedProducts[index];
-                      final storeConfig = item.storeConfigs
-                          .firstWhereOrNull((s) => s.storeId == UserService.getUserFromHive().storeId);
+                      final storeConfig = item.storeConfigs.firstWhereOrNull(
+                        (s) =>
+                            s.storeId == UserService.getUserFromHive().storeId,
+                      );
 
-                      final PackagingModel? userPackaging = storeConfig?.packaging
+                      final PackagingModel? userPackaging = storeConfig
+                          ?.packaging
                           .firstWhereOrNull((p) => p.isDefault);
 
                       final int quantity = userPackaging?.quantity ?? 0;
                       final bool isSoldOut = quantity <= 0;
                       final double mrp = userPackaging?.price ?? 0.0;
                       final int discount = userPackaging?.discount ?? 0;
+
                       /// ✅ DISCOUNTED PRICE (MINUS)
                       final double sellingPrice = discount > 0
                           ? mrp - (mrp * discount / 100)
@@ -129,6 +133,45 @@ class ExploreView extends StatelessWidget {
                                         fit: BoxFit.contain,
                                         height: 100.h,
                                         width: 100.h,
+                                        errorBuilder:
+                                            (context, error, stackTrace) {
+                                              return Container(
+                                                height: 100.h,
+                                                width: 100.h,
+                                                decoration: BoxDecoration(
+                                                  color: Colors.grey.shade200,
+                                                  borderRadius:
+                                                      BorderRadius.circular(12),
+                                                ),
+                                                child: Icon(
+                                                  Icons.shopping_bag_outlined,
+                                                  size: 40,
+                                                  color: Colors.grey.shade400,
+                                                ),
+                                              );
+                                            },
+                                        loadingBuilder: (context, child, loadingProgress) {
+                                          if (loadingProgress == null)
+                                            return child;
+                                          return Container(
+                                            height: 100.h,
+                                            width: 100.h,
+                                            child: Center(
+                                              child: CircularProgressIndicator(
+                                                strokeWidth: 2,
+                                                value:
+                                                    loadingProgress
+                                                            .expectedTotalBytes !=
+                                                        null
+                                                    ? loadingProgress
+                                                              .cumulativeBytesLoaded /
+                                                          loadingProgress
+                                                              .expectedTotalBytes!
+                                                    : null,
+                                              ),
+                                            ),
+                                          );
+                                        },
                                       ),
                                     ),
                                   ),
@@ -139,10 +182,14 @@ class ExploreView extends StatelessWidget {
                                       left: 8,
                                       child: Container(
                                         padding: const EdgeInsets.symmetric(
-                                            horizontal: 8, vertical: 4),
+                                          horizontal: 8,
+                                          vertical: 4,
+                                        ),
                                         decoration: BoxDecoration(
                                           color: Colors.red,
-                                          borderRadius: BorderRadius.circular(6),
+                                          borderRadius: BorderRadius.circular(
+                                            6,
+                                          ),
                                         ),
                                         child: const Text(
                                           "SOLD OUT",
@@ -157,74 +204,99 @@ class ExploreView extends StatelessWidget {
                                 ],
                               ),
 
-                              const SizedBox(height: 10),
+                              const SizedBox(height: 8),
 
                               /// TITLE
-                              Text(
-                                item.name,
-                                style: TextStyle(
-                                  color: AppColors.textColor,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 16.sp,
+                              Flexible(
+                                child: Text(
+                                  item.name,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: TextStyle(
+                                    color: AppColors.textColor,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 16.sp,
+                                  ),
                                 ),
                               ),
 
-                              const SizedBox(height: 4),
+                              const SizedBox(height: 2),
 
                               Text(
                                 userPackaging?.label ?? "-",
-                                style: const TextStyle(color: Color(0xff7C7C7C)),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: const TextStyle(
+                                  color: Color(0xff7C7C7C),
+                                ),
                               ),
 
-
-                              const SizedBox(height: 10),
+                              const Spacer(),
 
                               /// PRICE + ADD BUTTON
                               Row(
                                 mainAxisAlignment:
                                     MainAxisAlignment.spaceBetween,
                                 children: [
-                                  Column(
-                                    crossAxisAlignment: CrossAxisAlignment.start,
-                                    children: [
-                                      Text(
-                                        "₹${sellingPrice.toStringAsFixed(2)}",
-                                        style: TextStyle(
-                                          fontWeight: FontWeight.w600,
-                                          fontSize: 18.sp,
-                                          color:
-                                          isSoldOut ? Colors.grey : Colors.black,
-                                        ),
-                                      ),
-
-                                      if (discount > 0)
+                                  Flexible(
+                                    child: Column(
+                                      crossAxisAlignment:
+                                          CrossAxisAlignment.start,
+                                      mainAxisSize: MainAxisSize.min,
+                                      children: [
                                         Text(
-                                          "₹${mrp.toStringAsFixed(2)}",
+                                          "₹${sellingPrice.toStringAsFixed(2)}",
                                           style: TextStyle(
-                                            fontSize: 14.sp,
-                                            color: Colors.grey,
-                                            decoration:
-                                            TextDecoration.lineThrough,
+                                            fontWeight: FontWeight.w600,
+                                            fontSize: 18.sp,
+                                            color: isSoldOut
+                                                ? Colors.grey
+                                                : Colors.black,
                                           ),
+                                          maxLines: 1,
+                                          overflow: TextOverflow.ellipsis,
                                         ),
-                                    ],
+
+                                        if (discount > 0)
+                                          Text(
+                                            "₹${mrp.toStringAsFixed(2)}",
+                                            style: TextStyle(
+                                              fontSize: 14.sp,
+                                              color: Colors.grey,
+                                              decoration:
+                                                  TextDecoration.lineThrough,
+                                            ),
+                                            maxLines: 1,
+                                            overflow: TextOverflow.ellipsis,
+                                          ),
+                                      ],
+                                    ),
                                   ),
+
+                                  const SizedBox(width: 8),
+
                                   GestureDetector(
                                     onTap: isSoldOut
-                                        ? (){
-                                      Get.to(() => ProductDetailView(product: item));
-                                    }
-                                        :() async {
-                                      final homeController =
-                                      Get.find<HomeController>();
-                                      await homeController.addProductToCart(
-                                        item,
-                                        UserService.getUserFromHive().storeId,
-                                      );
+                                        ? () {
+                                            Get.to(
+                                              () => ProductDetailView(
+                                                product: item,
+                                              ),
+                                            );
+                                          }
+                                        : () async {
+                                            final homeController =
+                                                Get.find<HomeController>();
+                                            await homeController
+                                                .addProductToCart(
+                                                  item,
+                                                  UserService.getUserFromHive()
+                                                      .storeId,
+                                                );
 
-                                      Get.find<BottomNavController>()
-                                          .changeTab(2);
-                                    },
+                                            Get.find<BottomNavController>()
+                                                .changeTab(2);
+                                          },
                                     child: Container(
                                       height: 45.h,
                                       width: 45.h,

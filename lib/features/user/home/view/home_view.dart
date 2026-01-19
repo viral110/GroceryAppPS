@@ -130,6 +130,19 @@ class GroceryHomeScreen extends StatelessWidget {
                             banner.image,
                             fit: BoxFit.cover,
                             width: double.infinity,
+                            // ✅ Add error handling for banner images
+                            errorBuilder: (context, error, stackTrace) {
+                              return Container(
+                                color: Colors.grey.shade200,
+                                child: Center(
+                                  child: Icon(
+                                    Icons.image_not_supported,
+                                    size: 60,
+                                    color: Colors.grey.shade400,
+                                  ),
+                                ),
+                              );
+                            },
                           ),
                         );
                       },
@@ -175,7 +188,6 @@ class GroceryHomeScreen extends StatelessWidget {
                   ],
                 );
               }),
-
 
               /// ⭐ Exclusive Offers
               Obx(() {
@@ -395,9 +407,8 @@ class ProductCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final storeConfig = product.storeConfigs
-        .firstWhereOrNull(
-          (s) => s.storeId == UserService.getUserFromHive().storeId,
+    final storeConfig = product.storeConfigs.firstWhereOrNull(
+      (s) => s.storeId == UserService.getUserFromHive().storeId,
     );
 
     final PackagingModel? userPackaging = storeConfig?.packaging
@@ -406,8 +417,9 @@ class ProductCard extends StatelessWidget {
     final double mrp = userPackaging?.price ?? 0.0;
     final int discount = userPackaging?.discount ?? 0;
 
-    final double sellingPrice =
-    discount > 0 ? mrp - (mrp * discount / 100) : mrp;
+    final double sellingPrice = discount > 0
+        ? mrp - (mrp * discount / 100)
+        : mrp;
 
     /// 🔴 STOCK CHECK
     final int quantity = userPackaging?.quantity ?? 0;
@@ -438,7 +450,38 @@ class ProductCard extends StatelessWidget {
                       product.thumbnail,
                       fit: BoxFit.contain,
                       height: 100.h,
-                      width: 100.h,
+                      width: 100.h, // ✅ Add error handling for product images
+                      errorBuilder: (context, error, stackTrace) {
+                        return Container(
+                          height: 100.h,
+                          width: 100.h,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.shade200,
+                            borderRadius: BorderRadius.circular(12),
+                          ),
+                          child: Icon(
+                            Icons.shopping_bag_outlined,
+                            size: 40,
+                            color: Colors.grey.shade400,
+                          ),
+                        );
+                      },
+                      loadingBuilder: (context, child, loadingProgress) {
+                        if (loadingProgress == null) return child;
+                        return Container(
+                          height: 100.h,
+                          width: 100.h,
+                          child: Center(
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              value: loadingProgress.expectedTotalBytes != null
+                                  ? loadingProgress.cumulativeBytesLoaded /
+                                        loadingProgress.expectedTotalBytes!
+                                  : null,
+                            ),
+                          ),
+                        );
+                      },
                     ),
                   ),
                 ),
@@ -449,7 +492,9 @@ class ProductCard extends StatelessWidget {
                     left: 8,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                          horizontal: 8, vertical: 4),
+                        horizontal: 8,
+                        vertical: 4,
+                      ),
                       decoration: BoxDecoration(
                         color: Colors.red,
                         borderRadius: BorderRadius.circular(6),
@@ -473,8 +518,7 @@ class ProductCard extends StatelessWidget {
               product.name,
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
-              style:
-              TextStyle(fontWeight: FontWeight.w800, fontSize: 16.sp),
+              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16.sp),
             ),
 
             const SizedBox(height: 4),
@@ -498,8 +542,7 @@ class ProductCard extends StatelessWidget {
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
                         fontSize: 18.sp,
-                        color:
-                        isSoldOut ? Colors.grey : Colors.black,
+                        color: isSoldOut ? Colors.grey : Colors.black,
                       ),
                     ),
 
@@ -509,8 +552,7 @@ class ProductCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14.sp,
                           color: Colors.grey,
-                          decoration:
-                          TextDecoration.lineThrough,
+                          decoration: TextDecoration.lineThrough,
                         ),
                       ),
                   ],
@@ -519,33 +561,27 @@ class ProductCard extends StatelessWidget {
                 /// ➕ ADD BUTTON
                 GestureDetector(
                   onTap: isSoldOut
-                      ? (){
-                    Get.to(() => ProductDetailView(product: product));
-                  }
+                      ? () {
+                          Get.to(() => ProductDetailView(product: product));
+                        }
                       : () async {
-                    CommonLoader.show();
-                    final homeController =
-                    Get.find<HomeController>();
-                    await homeController.addProductToCart(
-                      product,
-                      UserService.getUserFromHive().storeId,
-                    );
-                    Get.find<BottomNavController>()
-                        .changeTab(2);
-                    CommonLoader.hide();
-                  },
+                          CommonLoader.show();
+                          final homeController = Get.find<HomeController>();
+                          await homeController.addProductToCart(
+                            product,
+                            UserService.getUserFromHive().storeId,
+                          );
+                          Get.find<BottomNavController>().changeTab(2);
+                          CommonLoader.hide();
+                        },
                   child: Container(
                     height: 45.h,
                     width: 45.h,
                     decoration: BoxDecoration(
-                      color:  AppColors.primary,
+                      color: AppColors.primary,
                       borderRadius: BorderRadius.circular(15),
                     ),
-                    child: Icon(
-                     Icons.add,
-                      color: Colors.white,
-                      size: 20,
-                    ),
+                    child: Icon(Icons.add, color: Colors.white, size: 20),
                   ),
                 ),
               ],

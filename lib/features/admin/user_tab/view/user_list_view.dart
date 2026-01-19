@@ -11,7 +11,7 @@ import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 
 class UserListView extends StatelessWidget {
-   UserListView({super.key});
+  UserListView({super.key});
   final controller = Get.put(UserListController());
   @override
   Widget build(BuildContext context) {
@@ -47,13 +47,13 @@ class UserListView extends StatelessWidget {
                 ),
               ),
             ),
-            SizedBox(width: 20.w,),
+            SizedBox(width: 20.w),
             SizedBox(
               width: 140.w,
               child: CommonButton(
                 title: "Add User",
                 onTap: () {
-                  Get.to(() =>  AdminAddAdminView());
+                  Get.to(() => AdminAddAdminView());
                 },
               ),
             ),
@@ -77,8 +77,7 @@ class UserListView extends StatelessWidget {
             }
 
             return Obx(() {
-              final filteredUsers =
-              controller.filterUsers(snapshot.data!);
+              final filteredUsers = controller.filterUsers(snapshot.data!);
 
               if (filteredUsers.isEmpty) {
                 return const Center(child: Text("No matching users"));
@@ -87,98 +86,89 @@ class UserListView extends StatelessWidget {
               return Column(
                 children: filteredUsers.map((user) {
                   return GestureDetector(
-                    onTap: (){
-                      Get.to(()=>AdminUserDetailView(userModel: user,));
+                    onTap: () {
+                      Get.to(() => AdminUserDetailView(userModel: user));
                     },
-                    child: _userRow(
-                     user
-                    ),
+                    child: _userRow(user),
                   );
                 }).toList(),
               );
             });
           },
         ),
-
       ],
     );
   }
 
-   Widget _tableHeader() {
-     return Container(
-       padding: EdgeInsets.all(14.w),
-       decoration: _cardDecoration(),
-       child: Row(
-         children: [
-           Expanded(child: Text("Name", style: _headerText())),
-           Expanded(child: Text("Email", style: _headerText())),
-           Expanded(child: Text("Mobile", style: _headerText())),
-           Expanded(child: Text("Credit", style: _headerText())),
-           SizedBox(
-             width: 90.w,
-             child: Text("Dashboard Access", style: _headerText()),
-           ),
-         ],
-       ),
-     );
-   }
+  Widget _tableHeader() {
+    return Container(
+      padding: EdgeInsets.all(14.w),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          Expanded(child: Text("Name", style: _headerText())),
+          Expanded(child: Text("Email", style: _headerText())),
+          Expanded(child: Text("Mobile", style: _headerText())),
+          Expanded(child: Text("Credit", style: _headerText())),
+          SizedBox(
+            width: 90.w,
+            child: Text("User Access", style: _headerText()),
+          ),
+        ],
+      ),
+    );
+  }
 
-   TextStyle _headerText() =>
-       TextStyle(fontWeight: FontWeight.w600, fontSize: 17.sp);
+  TextStyle _headerText() =>
+      TextStyle(fontWeight: FontWeight.w600, fontSize: 17.sp);
 
-   Widget _userRow(UserModel user) {
-     return Container(
-       margin: EdgeInsets.only(bottom: 10.h),
-       padding: EdgeInsets.all(14.w),
-       decoration: _cardDecoration(),
-       child: Row(
-         children: [
-           Expanded(child: Text("${user.firstName} ${user.lastName}")),
-           Expanded(child: Text(user.email ?? "")),
-           Expanded(child: Text(user.mobileNumber ?? "")),
-           Expanded(child: Text("₹${user.credit}")),
+  Widget _userRow(UserModel user) {
+    return Container(
+      margin: EdgeInsets.only(bottom: 10.h),
+      padding: EdgeInsets.all(14.w),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          Expanded(child: Text("${user.firstName} ${user.lastName}")),
+          Expanded(child: Text(user.email ?? "")),
+          Expanded(child: Text(user.mobileNumber ?? "")),
+          Expanded(child: Text("₹${user.credit}")),
 
-           // ===== ENABLE / DISABLE SWITCH =====
-           SizedBox(
-             width: 90.w,
-             child: Switch(
-               value: user.isEnable,
-               activeColor: AppColors.primary,
-               onChanged: (value) {
-                 _updateUserStatus(
-                   userId: user.uid!,
-                   isActive: value,
-                 );
-               },
-             ),
-           ),
-         ],
-       ),
-     );
-   }
-   Future<void> _updateUserStatus({
-     required String userId,
-     required bool isActive,
-   }) async {
-     await FirebaseFirestore.instance
-         .collection(AppConstantStrings.userCollection)
-         .doc(userId)
-         .update({
-       "isEnable": isActive,
-       "updatedAt": FieldValue.serverTimestamp(),
-     });
-   }
+          // ===== ENABLE / DISABLE SWITCH =====
+          SizedBox(
+            width: 90.w,
+            child: Switch(
+              value: user.isEnable,
+              activeColor: AppColors.primary,
+              onChanged: (value) {
+                _updateUserStatus(userId: user.uid!, isActive: value);
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
 
+  Future<void> _updateUserStatus({
+    required String userId,
+    required bool isActive,
+  }) async {
+    await FirebaseFirestore.instance
+        .collection(AppConstantStrings.userCollection)
+        .doc(userId)
+        .update({
+          "isEnable": isActive,
+          "updatedAt": FieldValue.serverTimestamp(),
+        });
+  }
 
-   BoxDecoration _cardDecoration() {
+  BoxDecoration _cardDecoration() {
     return BoxDecoration(
       color: AppColors.whiteColor,
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
-        BoxShadow(
-          blurRadius: 16,
-          color: Colors.black.withOpacity(0.05),
-        ),
+        BoxShadow(blurRadius: 16, color: Colors.black.withOpacity(0.05)),
       ],
     );
   }

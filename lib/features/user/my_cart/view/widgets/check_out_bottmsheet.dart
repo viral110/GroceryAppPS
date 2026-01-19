@@ -16,7 +16,7 @@ import 'package:online_groceries_app/utils/app_constant.dart';
 
 class CheckoutBottomSheet extends StatelessWidget {
   // final String totalPrice;
-   CheckoutBottomSheet({super.key});
+  CheckoutBottomSheet({super.key});
   final orderController = Get.find<OrderController>();
 
   @override
@@ -81,7 +81,7 @@ class CheckoutBottomSheet extends StatelessWidget {
                   const Divider(height: 35),
 
                   Obx(
-                        () => _rowItem(
+                    () => _rowItem(
                       title: "Delivery Date",
                       value: orderController.formattedDate,
                       onTap: () => showSelectDate(context),
@@ -168,7 +168,7 @@ class CheckoutBottomSheet extends StatelessWidget {
 
                       return Text(
                         "• Your available credit is ${AppConstantStrings.rupeeSymbol} "
-                            "${credit.toStringAsFixed(2)}",
+                        "${credit.toStringAsFixed(2)}",
                         style: TextStyle(
                           fontSize: 15.sp,
                           fontWeight: FontWeight.w500,
@@ -177,7 +177,6 @@ class CheckoutBottomSheet extends StatelessWidget {
                       );
                     },
                   ),
-
 
                   const SizedBox(height: 10),
                   CommonButton(
@@ -215,12 +214,11 @@ class CheckoutBottomSheet extends StatelessWidget {
                         } else if (selectedMethod == "Online Payment") {
                           var sucess = await orderController
                               .processRazorpayPayment();
-
                         } else if (selectedMethod == "Pay on Credit") {
                           final double orderAmount =
                               orderController.finalPayable;
                           final double availableCredit =
-                          await getAvailableCreditFromFirebase();
+                              await getAvailableCreditFromFirebase();
 
                           if (orderAmount > availableCredit) {
                             CommonToast.show(
@@ -228,8 +226,7 @@ class CheckoutBottomSheet extends StatelessWidget {
                               type: ToastType.error,
                             );
                             return;
-                          }
-                          else{
+                          } else {
                             await orderController.payUsingCredit(
                               orderController.finalPayable,
                             );
@@ -238,10 +235,9 @@ class CheckoutBottomSheet extends StatelessWidget {
                               paymentMethod: "Credit",
                             );
                             await orderController.onOrderSuccess();
-
                           }
                         }
-                      } catch (e,s) {
+                      } catch (e, s) {
                         print(e);
                         print(s);
                         CommonLoader.hide(); // ✅ ALWAYS HIDE LOADER
@@ -261,20 +257,20 @@ class CheckoutBottomSheet extends StatelessWidget {
         ),
       ),
     );
-
   }
-   Future<void> showSelectDate(BuildContext context) async {
-     final pickedDate = await showDatePicker(
-       context: context,
-       initialDate: DateTime.now(),
-       firstDate: DateTime.now(),
-       lastDate: DateTime.now().add(const Duration(days: 365)),
-     );
 
-     if (pickedDate != null) {
-       orderController.selectedDate.value = pickedDate;
-     }
-   }
+  Future<void> showSelectDate(BuildContext context) async {
+    final pickedDate = await showDatePicker(
+      context: context,
+      initialDate: DateTime.now(),
+      firstDate: DateTime.now(),
+      lastDate: DateTime.now().add(const Duration(days: 365)),
+    );
+
+    if (pickedDate != null) {
+      orderController.selectedDate.value = pickedDate;
+    }
+  }
 
   double _getAvailableCredit() {
     final user = UserService.getUserFromHive();
@@ -464,22 +460,20 @@ class CheckoutBottomSheet extends StatelessWidget {
       },
     );
   }
-   Future<double> getAvailableCreditFromFirebase() async {
-     final userId = UserService.getUserFromHive().uid;
 
-     final doc = await FirebaseFirestore.instance
-         .collection('users')
-         .doc(userId)
-         .get();
+  Future<double> getAvailableCreditFromFirebase() async {
+    final userId = UserService.getUserFromHive().uid;
 
-     if (!doc.exists) return 0.0;
+    final doc = await FirebaseFirestore.instance
+        .collection('users')
+        .doc(userId)
+        .get();
 
-     final data = doc.data()!;
-     final remainingCredit =
-     (data['remaining_credits'] ?? 0).toDouble();
+    if (!doc.exists) return 0.0;
 
-     return remainingCredit;
-   }
+    final data = doc.data()!;
+    final remainingCredit = (data['remaining_credits'] ?? 0).toDouble();
 
-
+    return remainingCredit;
+  }
 }

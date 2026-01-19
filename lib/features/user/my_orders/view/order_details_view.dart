@@ -228,7 +228,7 @@ class OrderDetailsView extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                order.orderId ?? "-",
+                order.shortOrderId ?? "-",
                 style: const TextStyle(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -619,7 +619,7 @@ class OrderDetailsView extends StatelessWidget {
             style: TextStyle(fontSize: 16, fontWeight: FontWeight.w600),
           ),
           const SizedBox(height: 16),
-          _buildInfoRow("Order ID", order.orderId ?? "-"),
+          _buildInfoRow("Order ID", order.shortOrderId ?? "-"),
           const SizedBox(height: 10),
           _buildInfoRow(
             "Order Date",
@@ -627,7 +627,8 @@ class OrderDetailsView extends StatelessWidget {
                 ? "${order.createdAt!.day}/${order.createdAt!.month}/${order.createdAt!.year}"
                 : "-",
           ),
-          if (order.appliedPromoCode != null) ...[
+          if (order.appliedPromoCode != null &&
+              order.appliedPromoCode!.isNotEmpty) ...[
             const SizedBox(height: 10),
             _buildInfoRow("Promo Code", order.appliedPromoCode!),
           ],

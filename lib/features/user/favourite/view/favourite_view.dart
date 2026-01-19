@@ -19,18 +19,17 @@ class FavouriteView extends StatefulWidget {
 
 class _FavouriteViewState extends State<FavouriteView> {
   final controller = Get.put(FavouriteController());
-@override
+  @override
   void initState() {
     // TODO: implement initState
     super.initState();
     WidgetsBinding.instance.addPostFrameCallback((_) {
-      if(UserService.getUserFromHive().uid.isNotEmpty){
+      if (UserService.getUserFromHive().uid.isNotEmpty) {
         controller.loadFavourites();
-
       }
     });
-
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -83,12 +82,12 @@ class _FavouriteViewState extends State<FavouriteView> {
                 separatorBuilder: (_, __) => const Divider(height: 38),
                 itemBuilder: (context, index) {
                   final item = favItems[index];
-                  final storeConfig = item.storeConfigs
-                      .firstWhereOrNull((s) => s.storeId == UserService.getUserFromHive().storeId);
+                  final storeConfig = item.storeConfigs.firstWhereOrNull(
+                    (s) => s.storeId == UserService.getUserFromHive().storeId,
+                  );
 
                   final PackagingModel? userPackaging = storeConfig?.packaging
                       .firstWhereOrNull((p) => p.isDefault);
-
 
                   final double mrp = userPackaging?.price ?? 0.0;
                   final int discount = userPackaging?.discount ?? 0;
@@ -103,7 +102,42 @@ class _FavouriteViewState extends State<FavouriteView> {
                     },
                     child: Row(
                       children: [
-                        Image.network(item.thumbnail, height: 45),
+                        Image.network(
+                          item.thumbnail,
+                          height: 45,
+                          errorBuilder: (context, error, stackTrace) {
+                            return Container(
+                              height: 45.h,
+                              width: 45.h,
+                              decoration: BoxDecoration(
+                                color: Colors.grey.shade200,
+                                borderRadius: BorderRadius.circular(12),
+                              ),
+                              child: Icon(
+                                Icons.shopping_bag_outlined,
+                                size: 30,
+                                color: Colors.grey.shade400,
+                              ),
+                            );
+                          },
+                          loadingBuilder: (context, child, loadingProgress) {
+                            if (loadingProgress == null) return child;
+                            return Container(
+                              height: 45.h,
+                              width: 45.h,
+                              child: Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
+                                  value:
+                                      loadingProgress.expectedTotalBytes != null
+                                      ? loadingProgress.cumulativeBytesLoaded /
+                                            loadingProgress.expectedTotalBytes!
+                                      : null,
+                                ),
+                              ),
+                            );
+                          },
+                        ),
                         const SizedBox(width: 12),
                         Expanded(
                           child: Column(
@@ -121,7 +155,7 @@ class _FavouriteViewState extends State<FavouriteView> {
                               const SizedBox(height: 4),
                               Text(
                                 // item.priceUnit,
-                                userPackaging?.label ??"-",
+                                userPackaging?.label ?? "-",
                                 style: const TextStyle(
                                   color: Colors.grey,
                                   fontSize: 12,
@@ -146,13 +180,15 @@ class _FavouriteViewState extends State<FavouriteView> {
             }),
           ),
 
-          controller.favouriteProducts.isEmpty? SizedBox():   Padding(
-            padding: const EdgeInsets.all(16),
-            child: CommonButton(
-              title: "Add All To Cart ",
-              onTap: controller.addAllToCart,
-            ),
-          ),
+          controller.favouriteProducts.isEmpty
+              ? SizedBox()
+              : Padding(
+                  padding: const EdgeInsets.all(16),
+                  child: CommonButton(
+                    title: "Add All To Cart ",
+                    onTap: controller.addAllToCart,
+                  ),
+                ),
         ],
       ),
     );

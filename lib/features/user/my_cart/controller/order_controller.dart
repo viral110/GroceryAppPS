@@ -315,11 +315,10 @@ class OrderController extends GetxController {
   }
 
   Future<void> _decreaseStockAfterOrder(
-      List<CartItem> cartItems,
-      String storeId,
-      ) async {
+    List<CartItem> cartItems,
+    String storeId,
+  ) async {
     await _firestore.runTransaction((transaction) async {
-
       /// ================= STEP 1: AGGREGATE REQUIRED QTY =================
       /// key = productId|packagingLabel
       final Map<String, int> requiredQtyMap = {};
@@ -328,8 +327,7 @@ class OrderController extends GetxController {
         if (item.quantity <= 0) continue;
 
         final key = '${item.product.id}|${item.packagingLabel}';
-        requiredQtyMap[key] =
-            (requiredQtyMap[key] ?? 0) + item.quantity;
+        requiredQtyMap[key] = (requiredQtyMap[key] ?? 0) + item.quantity;
       }
 
       /// ================= STEP 2: READ ALL UNIQUE PRODUCTS =================
@@ -363,43 +361,39 @@ class OrderController extends GetxController {
 
         final product = ProductModel.fromDoc(snap);
 
-        final storeIndex = product.storeConfigs
-            .indexWhere((s) => s.storeId == storeId);
+        final storeIndex = product.storeConfigs.indexWhere(
+          (s) => s.storeId == storeId,
+        );
         if (storeIndex == -1) continue;
 
         final storeConfig = product.storeConfigs[storeIndex];
 
-        final packagingIndex = storeConfig.packaging
-            .indexWhere((p) => p.label == packagingLabel);
+        final packagingIndex = storeConfig.packaging.indexWhere(
+          (p) => p.label == packagingLabel,
+        );
         if (packagingIndex == -1) continue;
 
         final currentQty = storeConfig.packaging[packagingIndex].quantity;
 
-        final newQty =
-        (currentQty - requiredQty).clamp(0, currentQty);
+        final newQty = (currentQty - requiredQty).clamp(0, currentQty);
 
         debugPrint(
           'STOCK UPDATE → '
-              'Product:$productId | '
-              'Pack:$packagingLabel | '
-              'Old:$currentQty | '
-              'Minus:$requiredQty | '
-              'New:$newQty',
+          'Product:$productId | '
+          'Pack:$packagingLabel | '
+          'Old:$currentQty | '
+          'Minus:$requiredQty | '
+          'New:$newQty',
         );
 
         /// ✅ UPDATE IN MEMORY
         storeConfig.packaging[packagingIndex].quantity = newQty;
 
         /// ✅ WRITE FULL store_configs ARRAY (CRITICAL)
-        transaction.update(
-          snap.reference,
-          {
-            'store_configs':
-            product.storeConfigs.map((e) => e.toJson()).toList(),
-          },
-        );
+        transaction.update(snap.reference, {
+          'store_configs': product.storeConfigs.map((e) => e.toJson()).toList(),
+        });
       }
-
     });
   }
 
@@ -410,9 +404,36 @@ class OrderController extends GetxController {
         List.generate(6, (_) => chars[rand.nextInt(chars.length)]).join();
   }
 
+  /// ================= GENERATE SEQUENTIAL ORDER ID =================
+  /// Returns a sequential order ID like: ORD-000001, ORD-000002, etc.
+  Future<String> _generateSequentialOrderId() async {
+    final counterRef = _firestore
+        .collection(AppConstantStrings.appMetaDataCollection)
+        .doc('order_counter');
 
+    String? generatedOrderId;
 
+    await _firestore.runTransaction((transaction) async {
+      final snapshot = await transaction.get(counterRef);
 
+      int currentCounter = 1;
+
+      if (snapshot.exists) {
+        currentCounter = (snapshot.data()?['counter'] ?? 0) + 1;
+      }
+
+      // Update counter
+      transaction.set(counterRef, {
+        'counter': currentCounter,
+        'last_updated': FieldValue.serverTimestamp(),
+      }, SetOptions(merge: true));
+
+      // Generate order ID with padding (6 digits)
+      generatedOrderId = 'ORD-${currentCounter.toString().padLeft(6, '0')}';
+    });
+
+    return generatedOrderId!;
+  }
 
   /// ================= PLACE ORDER =================
   Future<void> placeOrder({
@@ -431,6 +452,10 @@ class OrderController extends GetxController {
         throw Exception("Cart is empty");
       }
 
+      /// ================= GENERATE SEQUENTIAL ORDER ID =================
+      final shortOrderId = await _generateSequentialOrderId();
+      log('Generated Sequential Order ID: $shortOrderId');
+
       /// ================= CREATE ORDER DOC =================
       final orderDoc = _firestore
           .collection(AppConstantStrings.orderCollection)
@@ -448,7 +473,7 @@ class OrderController extends GetxController {
           image: item.product.thumbnail,
         );
       }).toList();
-      final shortOrderId = generateOrderCode();
+      // final shortOrderId = generateOrderCode();
 
       /// ================= BUILD ORDER MODEL =================
       final order = OrderModel(
@@ -493,22 +518,23 @@ class OrderController extends GetxController {
       }
 
       await orderDoc.set(orderData);
-      await _decreaseStockAfterOrder(
-        cartController.cartItems,
-        user.storeId,
-      );
+      await _decreaseStockAfterOrder(cartController.cartItems, user.storeId);
+
       /// ================= CLEAR CART =================
       await _clearCart(cartController, user.uid);
+
       /// ================= RESET =================
       resetCheckout();
       final homeController = Get.find<HomeController>();
-await homeController.fetchProducts();
+      await homeController.fetchProducts();
       Get.back(closeOverlays: true); // close checkout
-      Get.to(() => OrderSuccessView(orderId: shortOrderId,paymentMethod: paymentMethod,));
-      CommonToast.show(
-        "Order placed successfully",
-        type: ToastType.success,
+      Get.to(
+        () => OrderSuccessView(
+          orderId: shortOrderId,
+          paymentMethod: paymentMethod,
+        ),
       );
+      CommonToast.show("Order placed successfully", type: ToastType.success);
     } catch (e) {
       CommonToast.show(
         e.toString().replaceAll('Exception: ', ''),
@@ -520,7 +546,6 @@ await homeController.fetchProducts();
       isPlacingOrder.value = false;
     }
   }
-
 
   Future<void> onOrderSuccess() async {
     if (isPromoApplied.value) {
@@ -545,10 +570,7 @@ await homeController.fetchProducts();
   }
 
   /// ================= CLEAR CART =================
-  Future<void> _clearCart(
-      CartController cartController,
-      String userId,
-      ) async {
+  Future<void> _clearCart(CartController cartController, String userId) async {
     final cartRef = _firestore
         .collection(AppConstantStrings.userCollection)
         .doc(userId)
@@ -593,10 +615,8 @@ await homeController.fetchProducts();
 
       final data = snapshot.data()!;
 
-      final int remainingCredit =
-      (data['remaining_credits'] ?? 0) as int;
-      final int usedCredit =
-      (data['used_credits'] ?? 0) as int;
+      final int remainingCredit = (data['remaining_credits'] ?? 0) as int;
+      final int usedCredit = (data['used_credits'] ?? 0) as int;
 
       if (remainingCredit <= 0) {
         throw Exception("No credit available");
@@ -615,10 +635,8 @@ await homeController.fetchProducts();
     });
 
     /// ✅ SYNC LOCAL (Hive) AFTER SUCCESS
-    user.remainingCredits =
-        (user.remainingCredits ?? 0) - creditToDeduct;
-    user.usedCredits =
-        (user.usedCredits ?? 0) + creditToDeduct;
+    user.remainingCredits = (user.remainingCredits ?? 0) - creditToDeduct;
+    user.usedCredits = (user.usedCredits ?? 0) + creditToDeduct;
 
     await UserService.setUserInHive(user);
   }

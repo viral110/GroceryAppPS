@@ -56,11 +56,11 @@ class SubcategoryView extends StatelessWidget {
               childAspectRatio: 0.72,
             ),
             itemBuilder: (context, index) {
-
               final item = controller.products[index];
 
-              final storeConfig = item.storeConfigs
-                  .firstWhereOrNull((s) => s.storeId == UserService.getUserFromHive().storeId);
+              final storeConfig = item.storeConfigs.firstWhereOrNull(
+                (s) => s.storeId == UserService.getUserFromHive().storeId,
+              );
 
               final PackagingModel? userPackaging = storeConfig?.packaging
                   .firstWhereOrNull((p) => p.isDefault);
@@ -100,6 +100,44 @@ class SubcategoryView extends StatelessWidget {
                                 fit: BoxFit.contain,
                                 height: 100.h,
                                 width: 100.h,
+
+                                errorBuilder: (context, error, stackTrace) {
+                                  return Container(
+                                    height: 100.h,
+                                    width: 100.h,
+                                    decoration: BoxDecoration(
+                                      color: Colors.grey.shade200,
+                                      borderRadius: BorderRadius.circular(12),
+                                    ),
+                                    child: Icon(
+                                      Icons.shopping_bag_outlined,
+                                      size: 40,
+                                      color: Colors.grey.shade400,
+                                    ),
+                                  );
+                                },
+                                loadingBuilder:
+                                    (context, child, loadingProgress) {
+                                      if (loadingProgress == null) return child;
+                                      return Container(
+                                        height: 100.h,
+                                        width: 100.h,
+                                        child: Center(
+                                          child: CircularProgressIndicator(
+                                            strokeWidth: 2,
+                                            value:
+                                                loadingProgress
+                                                        .expectedTotalBytes !=
+                                                    null
+                                                ? loadingProgress
+                                                          .cumulativeBytesLoaded /
+                                                      loadingProgress
+                                                          .expectedTotalBytes!
+                                                : null,
+                                          ),
+                                        ),
+                                      );
+                                    },
                               ),
                             ),
                           ),
@@ -110,7 +148,9 @@ class SubcategoryView extends StatelessWidget {
                               left: 8,
                               child: Container(
                                 padding: const EdgeInsets.symmetric(
-                                    horizontal: 8, vertical: 4),
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.red,
                                   borderRadius: BorderRadius.circular(6),
@@ -128,79 +168,98 @@ class SubcategoryView extends StatelessWidget {
                         ],
                       ),
 
-                      const SizedBox(height: 10),
+                      const SizedBox(height: 8),
 
                       /// TITLE
-                      Text(
-                        item.name,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: TextStyle(
-                          color: AppColors.textColor,
-                          fontWeight: FontWeight.w600,
-                          fontSize: 16.sp,
+                      Flexible(
+                        child: Text(
+                          item.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: AppColors.textColor,
+                            fontWeight: FontWeight.w600,
+                            fontSize: 16.sp,
+                          ),
                         ),
                       ),
 
-                      const SizedBox(height: 4),
+                      const SizedBox(height: 2),
 
                       /// SUBTITLE
                       Text(
-                        userPackaging?.label ??"-",
+                        userPackaging?.label ?? "-",
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
                         style: TextStyle(color: Colors.grey, fontSize: 14.sp),
                       ),
 
-                      const SizedBox(height: 10),
+                      const Spacer(),
 
                       /// PRICE + ADD BUTTON
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
-                          Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              // Discounted Price
-                              Text(
-                                // "${AppConstantStrings.rupeeSymbol} ${discountedPrice.toStringAsFixed(2)}",
-                                "${AppConstantStrings.rupeeSymbol} ${sellingPrice.toStringAsFixed(2)}",
-                                style: TextStyle(
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 18.sp,
-                                ),
-                              ),
-
-                              // Original Price (only if discount exists)
-                              if (userPackaging!.discount > 0)
+                          Flexible(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                // Discounted Price
                                 Text(
-                                  "${AppConstantStrings.rupeeSymbol} ${mrp.toStringAsFixed(2)}",
-                                  // "${AppConstantStrings.rupeeSymbol} ${item.price.toStringAsFixed(2)}",
+                                  // "${AppConstantStrings.rupeeSymbol} ${discountedPrice.toStringAsFixed(2)}",
+                                  "${AppConstantStrings.rupeeSymbol} ${sellingPrice.toStringAsFixed(2)}",
                                   style: TextStyle(
-                                    fontWeight: FontWeight.w400,
-                                    fontSize: 14.sp,
-                                    color: Colors.grey.shade600,
-                                    decoration: TextDecoration.lineThrough,
+                                    fontWeight: FontWeight.w600,
+                                    fontSize: 18.sp,
                                   ),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
                                 ),
-                            ],
+
+                                // Original Price (only if discount exists)
+                                if (userPackaging!.discount > 0)
+                                  Text(
+                                    "${AppConstantStrings.rupeeSymbol} ${mrp.toStringAsFixed(2)}",
+                                    // "${AppConstantStrings.rupeeSymbol} ${item.price.toStringAsFixed(2)}",
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w400,
+                                      fontSize: 14.sp,
+                                      color: Colors.grey.shade600,
+                                      decoration: TextDecoration.lineThrough,
+                                    ),
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                  ),
+                              ],
+                            ),
                           ),
+
+                          const SizedBox(width: 8),
 
                           GestureDetector(
                             onTap: isSoldOut
-                                ? (){
-                              Get.to(() => ProductDetailView(product: item));
-                            }
-                                :() async {
-                              log("Clicked");
+                                ? () {
+                                    Get.to(
+                                      () => ProductDetailView(product: item),
+                                    );
+                                  }
+                                : () async {
+                                    log("Clicked");
 
-                              Get.back(closeOverlays: true);
-                              CommonLoader.show();
-                              final homeController = Get.find<HomeController>();
-                              await homeController.addProductToCart(item,UserService.getUserFromHive().storeId);
-                              Get.find<BottomNavController>().changeTab(2);
-                              CommonLoader.hide();
-                            },
+                                    Get.back(closeOverlays: true);
+                                    CommonLoader.show();
+                                    final homeController =
+                                        Get.find<HomeController>();
+                                    await homeController.addProductToCart(
+                                      item,
+                                      UserService.getUserFromHive().storeId,
+                                    );
+                                    Get.find<BottomNavController>().changeTab(
+                                      2,
+                                    );
+                                    CommonLoader.hide();
+                                  },
                             child: Container(
                               height: 45.h,
                               width: 45.h,

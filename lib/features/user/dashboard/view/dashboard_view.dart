@@ -148,7 +148,7 @@ class DashboardBlockedPage extends StatelessWidget {
               Icon(Icons.block, size: 80, color: Colors.red),
               SizedBox(height: 20),
               Text(
-                "Dashboard Access Disabled",
+                "User Access Disabled",
                 style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
               ),
               SizedBox(height: 10),

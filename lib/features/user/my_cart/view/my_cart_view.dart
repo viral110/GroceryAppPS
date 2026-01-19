@@ -46,6 +46,7 @@ class _MyCartViewState extends State<MyCartView> {
       controller.loadCart();
     }
   }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -96,11 +97,15 @@ class _MyCartViewState extends State<MyCartView> {
                             Row(
                               mainAxisAlignment: MainAxisAlignment.spaceBetween,
                               children: [
-                                Text(
-                                  item.product.name,
-                                  style: TextStyle(
-                                    fontWeight: FontWeight.w600,
-                                    fontSize: 16.sp,
+                                Expanded(
+                                  child: Text(
+                                    item.product.name,
+                                    maxLines: 2,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: TextStyle(
+                                      fontWeight: FontWeight.w600,
+                                      fontSize: 16.sp,
+                                    ),
                                   ),
                                 ),
                                 GestureDetector(
@@ -124,7 +129,6 @@ class _MyCartViewState extends State<MyCartView> {
                               ),
                             ),
 
-
                             const SizedBox(height: 10),
 
                             /// QTY + PRICE
@@ -135,14 +139,19 @@ class _MyCartViewState extends State<MyCartView> {
                                   children: [
                                     GestureDetector(
                                       onTap: () => controller.decrement(index),
-                                      child: MyCartView._qtyButton(Icons.remove),
+                                      child: MyCartView._qtyButton(
+                                        Icons.remove,
+                                      ),
                                     ),
                                     const SizedBox(width: 10),
                                     Text(item.quantity.toString()),
                                     const SizedBox(width: 10),
                                     GestureDetector(
                                       onTap: () => controller.increment(index),
-                                      child: MyCartView._qtyButton(Icons.add, isAdd: true),
+                                      child: MyCartView._qtyButton(
+                                        Icons.add,
+                                        isAdd: true,
+                                      ),
                                     ),
                                   ],
                                 ),
@@ -196,7 +205,7 @@ class _MyCartViewState extends State<MyCartView> {
                     context: context,
                     isScrollControlled: true,
                     backgroundColor: Colors.transparent,
-                    builder: (_) =>  CheckoutBottomSheet(),
+                    builder: (_) => CheckoutBottomSheet(),
                   ).then((_) {
                     orderController.selectedPaymentMethod.value =
                         "Select Method";

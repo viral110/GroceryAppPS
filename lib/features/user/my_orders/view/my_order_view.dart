@@ -66,7 +66,7 @@ Widget _orderCard(OrderModel order) {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               Text(
-                order.orderId ?? "-",
+                order.shortOrderId ?? "-",
                 style: const TextStyle(
                   fontWeight: FontWeight.w600,
                   fontSize: 15,
