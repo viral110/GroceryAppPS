@@ -93,7 +93,7 @@ class HomeController extends GetxController {
 
   int _maxDiscountForStore(ProductModel product, String storeId) {
     final store = product.storeConfigs.firstWhere(
-          (s) => s.storeId == storeId,
+      (s) => s.storeId == storeId,
       orElse: () => StoreProductConfig(
         storeId: '',
         storeName: '',
@@ -113,7 +113,7 @@ class HomeController extends GetxController {
 
   int _totalStockForStore(ProductModel product, String storeId) {
     final store = product.storeConfigs.firstWhere(
-          (s) => s.storeId == storeId,
+      (s) => s.storeId == storeId,
       orElse: () => StoreProductConfig(
         storeId: '',
         storeName: '',
@@ -129,10 +129,6 @@ class HomeController extends GetxController {
     return total;
   }
 
-
-
-
-
   /// 🔥 PRODUCTS FETCH
   Future<void> fetchProducts() async {
     if (selectedStoreId.value.isEmpty) {
@@ -147,8 +143,7 @@ class HomeController extends GetxController {
         .where('store_ids', arrayContains: storeId)
         .get();
 
-    final products =
-    snapshot.docs.map((e) => ProductModel.fromDoc(e)).toList();
+    final products = snapshot.docs.map((e) => ProductModel.fromDoc(e)).toList();
 
     allProducts.assignAll(products);
 
@@ -161,14 +156,14 @@ class HomeController extends GetxController {
     );
 
     /// 🔥 BEST SELLING (LOW STOCK FIRST)
-    final bestSellingList = products
-        .where((p) => _totalStockForStore(p, storeId) > 0)
-        .toList()
-      ..sort(
-            (a, b) =>
-            _totalStockForStore(a, storeId)
-                .compareTo(_totalStockForStore(b, storeId)),
-      );
+    final bestSellingList =
+        products.where((p) => _totalStockForStore(p, storeId) > 0).toList()
+          ..sort(
+            (a, b) => _totalStockForStore(
+              a,
+              storeId,
+            ).compareTo(_totalStockForStore(b, storeId)),
+          );
 
     bestSelling.assignAll(bestSellingList);
 
@@ -201,6 +196,7 @@ class HomeController extends GetxController {
       await doc.reference.delete();
     }
   }
+
   Future<void> clearUserFavourites(String userId) async {
     final favRef = FirebaseFirestore.instance
         .collection('users')
@@ -214,16 +210,16 @@ class HomeController extends GetxController {
     }
   }
 
-
   /// ✅ SINGLE SOURCE OF ADD TO CART
   Future<void> addProductToCart(ProductModel product, String storeId) async {
-    final cartController = Get.find<CartController>();
+    final cartController = Get.put(CartController());
+    //Get.find<CartController>();
 
     /// 1️⃣ Get store config
     final StoreProductConfig? storeConfig = product.storeConfigs
         .firstWhereOrNull((s) => s.storeId == storeId);
-print("ADDPRODUCT");
-print(storeConfig?.packaging.toString());
+    print("ADDPRODUCT");
+    print(storeConfig?.packaging.toString());
     if (storeConfig == null) {
       CommonToast.show(
         "Product not available in this store",
@@ -233,8 +229,9 @@ print(storeConfig?.packaging.toString());
     }
 
     /// 2️⃣ Get default packaging
-    final PackagingModel? packaging = storeConfig.packaging
-        .firstWhereOrNull((p) => p.isDefault);
+    final PackagingModel? packaging = storeConfig.packaging.firstWhereOrNull(
+      (p) => p.isDefault,
+    );
 
     if (packaging == null) {
       CommonToast.show(
