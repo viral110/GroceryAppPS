@@ -10,6 +10,7 @@ import 'package:online_groceries_app/features/admin/settings/view/add_banner_vie
 import 'package:online_groceries_app/features/admin/settings/view/admin_about_view.dart';
 import 'package:online_groceries_app/features/admin/settings/view/admin_feedbacks_view.dart';
 import 'package:online_groceries_app/features/admin/settings/view/admin_help_view.dart';
+import 'package:online_groceries_app/features/admin/settings/view/admin_home_section_view.dart';
 import 'package:online_groceries_app/features/admin/settings/view/manage_category.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
@@ -18,7 +19,6 @@ class AdminSettingsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -33,39 +33,48 @@ class AdminSettingsView extends StatelessWidget {
 
         SizedBox(height: 20.h),
 
-       Expanded(child: SingleChildScrollView(
-         child: Column(
-           children: [
-             _settingItem(
-               title: "Categories",
-               subtitle: "Manage category name & image",
-               onTap: () => Get.to(() =>AdminManageCategoryView()),
-             ),
+        Expanded(
+          child: SingleChildScrollView(
+            child: Column(
+              children: [
+                _settingItem(
+                  title: "Categories",
+                  subtitle: "Manage category name & image",
+                  onTap: () => Get.to(() => AdminManageCategoryView()),
+                ),
 
-             _settingItem(
-               title: "Banner",
-               subtitle: "Manage home banner",
-               onTap: () => Get.to(() => const AdminBannerView()),
-             ),
+                _settingItem(
+                  title: "Banner",
+                  subtitle: "Manage home banner",
+                  onTap: () => Get.to(() => const AdminBannerView()),
+                ),
 
-             _settingItem(
-               title: "About Us",
-               subtitle: "Edit about us content",
-               onTap: () => Get.to(() => const AdminAboutAppView()),
-             ),
+                _settingItem(
+                  title: "About Us",
+                  subtitle: "Edit about us content",
+                  onTap: () => Get.to(() => const AdminAboutAppView()),
+                ),
 
-             _settingItem(
-               title: "Help",
-               subtitle: "Manage help & support details",
-               onTap: () => Get.to(() => const AdminHelpManageView()),
-             ), _settingItem(
-               title: "Feedbacks",
-               subtitle: "View user feedback and ratings",
-               onTap: () => Get.to(() => const AdminFeedbacksView()),
-             ),
-           ],
-         ),
-       ))
+                _settingItem(
+                  title: "Help",
+                  subtitle: "Manage help & support details",
+                  onTap: () => Get.to(() => const AdminHelpManageView()),
+                ),
+                _settingItem(
+                  title: "Feedbacks",
+                  subtitle: "View user feedback and ratings",
+                  onTap: () => Get.to(() => const AdminFeedbacksView()),
+                ),
+
+                _settingItem(
+                  title: "Home Sections",
+                  subtitle: "Customize home screen sections",
+                  onTap: () => Get.to(() => const ManageHomeSectionsView()),
+                ),
+              ],
+            ),
+          ),
+        ),
       ],
     );
   }
@@ -82,27 +91,18 @@ class AdminSettingsView extends StatelessWidget {
         color: AppColors.whiteColor,
         borderRadius: BorderRadius.circular(12),
         boxShadow: [
-          BoxShadow(
-            blurRadius: 14,
-            color: Colors.black.withOpacity(0.05),
-          ),
+          BoxShadow(blurRadius: 14, color: Colors.black.withOpacity(0.05)),
         ],
       ),
       child: ListTile(
         contentPadding: EdgeInsets.zero,
         title: Text(
           title,
-          style: TextStyle(
-            fontSize: 16.sp,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 16.sp, fontWeight: FontWeight.w600),
         ),
         subtitle: Text(
           subtitle,
-          style: TextStyle(
-            fontSize: 13.sp,
-            color: AppColors.grayTextColor,
-          ),
+          style: TextStyle(fontSize: 13.sp, color: AppColors.grayTextColor),
         ),
         trailing: const Icon(Icons.arrow_forward_ios, size: 16),
         onTap: onTap,
@@ -110,11 +110,3 @@ class AdminSettingsView extends StatelessWidget {
     );
   }
 }
-
-
-
-
-
-
-
-

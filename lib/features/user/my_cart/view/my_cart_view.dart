@@ -38,14 +38,14 @@ class _MyCartViewState extends State<MyCartView> {
   final CartController controller = Get.put(CartController());
 
   final orderController = Get.put(OrderController(), permanent: false);
-  @override
-  void initState() {
-    // TODO: implement initState
-    super.initState();
-    if (UserService.getUserFromHive().uid.isNotEmpty) {
-      controller.loadCart();
-    }
-  }
+  // @override
+  // void initState() {
+  //   // TODO: implement initState
+  //   super.initState();
+  //   if (UserService.getUserFromHive().uid.isNotEmpty) {
+  //     controller.loadCart();
+  //   }
+  // }
 
   @override
   Widget build(BuildContext context) {
@@ -57,6 +57,9 @@ class _MyCartViewState extends State<MyCartView> {
           /// CART LIST
           Expanded(
             child: Obx(() {
+              if (controller.isLoading.value) {
+                return const SizedBox.shrink();
+              }
               if (controller.cartItems.isEmpty) {
                 return const Center(
                   child: Text(
@@ -109,7 +112,8 @@ class _MyCartViewState extends State<MyCartView> {
                                   ),
                                 ),
                                 GestureDetector(
-                                  onTap: () => controller.removeItem(index),
+                                  onTap: () async =>
+                                      await controller.removeItem(index),
                                   child: const Icon(
                                     Icons.close,
                                     color: Colors.grey,
@@ -189,7 +193,7 @@ class _MyCartViewState extends State<MyCartView> {
                     return;
                   }
 
-                  final orderController = Get.find<OrderController>();
+                  final orderController = Get.put(OrderController());
                   orderController.initCheckout(
                     total: controller.subtotal,
                     uid: UserService.getUserFromHive().uid,

@@ -65,7 +65,7 @@ class CheckoutBottomSheet extends StatelessWidget {
                 children: [
                   Obx(
                     () => _rowItem(
-                      title: "Delivery",
+                      title: "Payment",
                       value: orderController.selectedPaymentMethod.value,
                       onTap: () => showDeliveryMethodSheet(context),
                     ),
@@ -260,11 +260,13 @@ class CheckoutBottomSheet extends StatelessWidget {
   }
 
   Future<void> showSelectDate(BuildContext context) async {
+    final now = DateTime.now();
+
     final pickedDate = await showDatePicker(
       context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime.now(),
-      lastDate: DateTime.now().add(const Duration(days: 365)),
+      initialDate: now.add(const Duration(days: 1)),
+      firstDate: now.add(const Duration(days: 1)),
+      lastDate: now.add(const Duration(days: 365)),
     );
 
     if (pickedDate != null) {

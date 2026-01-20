@@ -17,11 +17,14 @@ class HomeController extends GetxController {
   var banners = <BannerModel>[].obs;
   var isBannerLoading = false.obs;
 
+  final homeSectionTitles = <int, String>{}.obs;
+
   @override
   void onInit() {
     super.onInit();
     fetchStores();
     fetchBanners();
+    fetchHomeSectionTitles();
   }
 
   void onPageChanged(int index) {
@@ -42,6 +45,16 @@ class HomeController extends GetxController {
       log("Banner fetch error: $e");
     } finally {
       isBannerLoading.value = false;
+    }
+  }
+
+  Future<void> fetchHomeSectionTitles() async {
+    final snapshot = await FirebaseFirestore.instance
+        .collection('home_sections')
+        .get();
+
+    for (final doc in snapshot.docs) {
+      homeSectionTitles[doc['order']] = doc['title'];
     }
   }
 
@@ -91,7 +104,7 @@ class HomeController extends GetxController {
   final bestSelling = <ProductModel>[].obs;
   final randomProducts = <ProductModel>[].obs;
 
-  int _maxDiscountForStore(ProductModel product, String storeId) {
+  int maxDiscountForStore(ProductModel product, String storeId) {
     final store = product.storeConfigs.firstWhere(
       (s) => s.storeId == storeId,
       orElse: () => StoreProductConfig(
@@ -111,7 +124,7 @@ class HomeController extends GetxController {
     return maxDiscount;
   }
 
-  int _totalStockForStore(ProductModel product, String storeId) {
+  int totalStockForStore(ProductModel product, String storeId) {
     final store = product.storeConfigs.firstWhere(
       (s) => s.storeId == storeId,
       orElse: () => StoreProductConfig(
@@ -150,19 +163,19 @@ class HomeController extends GetxController {
     /// ⭐ EXCLUSIVE (20–30% discount)
     exclusiveOffers.assignAll(
       products.where((product) {
-        final discount = _maxDiscountForStore(product, storeId);
+        final discount = maxDiscountForStore(product, storeId);
         return discount >= 20 && discount <= 30;
       }).toList(),
     );
 
     /// 🔥 BEST SELLING (LOW STOCK FIRST)
     final bestSellingList =
-        products.where((p) => _totalStockForStore(p, storeId) > 0).toList()
+        products.where((p) => totalStockForStore(p, storeId) > 0).toList()
           ..sort(
-            (a, b) => _totalStockForStore(
+            (a, b) => totalStockForStore(
               a,
               storeId,
-            ).compareTo(_totalStockForStore(b, storeId)),
+            ).compareTo(totalStockForStore(b, storeId)),
           );
 
     bestSelling.assignAll(bestSellingList);
@@ -210,10 +223,23 @@ class HomeController extends GetxController {
     }
   }
 
+  /// ✅ Get products for a specific section type
+  List<ProductModel> getProductsForSection(String type) {
+    switch (type) {
+      case 'exclusive':
+        return exclusiveOffers;
+      case 'bestSelling':
+        return bestSelling;
+      case 'groceries':
+        return randomProducts;
+      default:
+        return [];
+    }
+  }
+
   /// ✅ SINGLE SOURCE OF ADD TO CART
   Future<void> addProductToCart(ProductModel product, String storeId) async {
     final cartController = Get.put(CartController());
-    //Get.find<CartController>();
 
     /// 1️⃣ Get store config
     final StoreProductConfig? storeConfig = product.storeConfigs

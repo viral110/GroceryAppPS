@@ -9,7 +9,6 @@ import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view
 import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
 import 'package:online_groceries_app/features/user/home/controller/see_product_controller.dart';
 import 'package:online_groceries_app/features/user/home/view/see_products_view.dart';
-import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
@@ -201,37 +200,44 @@ class GroceryHomeScreen extends StatelessWidget {
                 }
 
                 return Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _sectionHeader(
-                      "Exclusive Offer",
+                      controller.homeSectionTitles[1] ?? "Exclusive Offer",
                       onSeeAll: () {
                         Get.to(
-                          () => const SeeAllProductsView(
+                          () => SeeAllProductsView(
                             type: SeeAllType.exclusive,
-                            title: "Exclusive Offers",
+                            title:
+                                controller.homeSectionTitles[1] ??
+                                "Exclusive Offers",
                           ),
                         );
                       },
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 260.h,
-                      child: ListView.builder(
-                        scrollDirection: Axis.horizontal,
-                        itemCount: controller.exclusiveOffers.length,
-                        itemBuilder: (_, index) {
-                          final product = controller.exclusiveOffers[index];
-                          return Padding(
-                            padding: EdgeInsets.only(right: 20.w),
-                            child: ProductCard(product: product),
-                          );
-                        },
+
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: IntrinsicHeight(
+                        child: Row(
+                          children: List.generate(
+                            controller.exclusiveOffers.length,
+                            (index) {
+                              final product = controller.exclusiveOffers[index];
+                              return Padding(
+                                padding: EdgeInsets.only(right: 20.w),
+                                child: ProductCard(product: product),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ),
                   ],
                 );
               }),
-
+              SizedBox(height: 14),
               Obx(() {
                 if (controller.bestSelling.isEmpty) {
                   return Column(
@@ -246,31 +252,35 @@ class GroceryHomeScreen extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     _sectionHeader(
-                      "Best Selling",
+                      controller.homeSectionTitles[2] ?? "Best Selling",
                       onSeeAll: () {
                         Get.to(
-                          () => const SeeAllProductsView(
+                          () => SeeAllProductsView(
                             type: SeeAllType.bestSelling,
-                            title: "Best Selling",
+                            title:
+                                controller.homeSectionTitles[2] ??
+                                "Best Selling",
                           ),
                         );
                       },
                     ),
-                    const SizedBox(height: 12),
-                    SizedBox(
-                      height: 260.h,
-                      child: ListView.builder(
-                        itemCount: controller.bestSelling.length,
-                        shrinkWrap: true,
-                        physics: AlwaysScrollableScrollPhysics(),
-                        scrollDirection: Axis.horizontal,
-                        itemBuilder: (context, index) {
-                          final product = controller.bestSelling[index];
-                          return Padding(
-                            padding: EdgeInsets.only(right: 20.w),
-                            child: ProductCard(product: product),
-                          );
-                        },
+
+                    const SizedBox(height: 8),
+                    SingleChildScrollView(
+                      scrollDirection: Axis.horizontal,
+                      child: IntrinsicHeight(
+                        child: Row(
+                          children: List.generate(
+                            controller.bestSelling.length,
+                            (index) {
+                              final product = controller.bestSelling[index];
+                              return Padding(
+                                padding: EdgeInsets.only(right: 20.w),
+                                child: ProductCard(product: product),
+                              );
+                            },
+                          ),
+                        ),
                       ),
                     ),
                   ],
@@ -279,17 +289,19 @@ class GroceryHomeScreen extends StatelessWidget {
               const SizedBox(height: 20),
 
               /// 🛒 Groceries
-              _sectionHeader(
-                "Groceries",
-                onSeeAll: () {
-                  Get.to(
-                    () => const SeeAllProductsView(
-                      type: SeeAllType.random,
-                      title: "Groceries",
-                    ),
-                  );
-                },
-              ),
+              Obx(() {
+                return _sectionHeader(
+                  controller.homeSectionTitles[3] ?? "Groceries",
+                  onSeeAll: () {
+                    Get.to(
+                      () => SeeAllProductsView(
+                        type: SeeAllType.random,
+                        title: controller.homeSectionTitles[3] ?? "Groceries",
+                      ),
+                    );
+                  },
+                );
+              }),
               const SizedBox(height: 12),
 
               SizedBox(
@@ -313,21 +325,21 @@ class GroceryHomeScreen extends StatelessWidget {
                 if (controller.randomProducts.isEmpty) {
                   return Text("NO PRODUCT FOUND");
                 }
-
-                return SizedBox(
-                  height: 260.h,
-                  child: ListView.builder(
-                    itemCount: controller.randomProducts.length,
-                    shrinkWrap: true,
-                    physics: AlwaysScrollableScrollPhysics(),
-                    scrollDirection: Axis.horizontal,
-                    itemBuilder: (context, index) {
-                      final product = controller.randomProducts[index];
-                      return Padding(
-                        padding: EdgeInsets.only(right: 20.w),
-                        child: ProductCard(product: product),
-                      );
-                    },
+                return SingleChildScrollView(
+                  scrollDirection: Axis.horizontal,
+                  child: IntrinsicHeight(
+                    child: Row(
+                      children: List.generate(
+                        controller.randomProducts.length,
+                        (index) {
+                          final product = controller.randomProducts[index];
+                          return Padding(
+                            padding: EdgeInsets.only(right: 20.w),
+                            child: ProductCard(product: product),
+                          );
+                        },
+                      ),
+                    ),
                   ),
                 );
               }),
@@ -437,6 +449,7 @@ class ProductCard extends StatelessWidget {
           border: Border.all(color: Colors.grey.shade300),
         ),
         child: Column(
+          mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             /// 🖼 IMAGE + SOLD OUT TAG
@@ -468,7 +481,7 @@ class ProductCard extends StatelessWidget {
                       },
                       loadingBuilder: (context, child, loadingProgress) {
                         if (loadingProgress == null) return child;
-                        return Container(
+                        return SizedBox(
                           height: 100.h,
                           width: 100.h,
                           child: Center(
@@ -514,18 +527,30 @@ class ProductCard extends StatelessWidget {
 
             SizedBox(height: 10.h),
 
-            Text(
-              product.name,
-              maxLines: 2,
-              overflow: TextOverflow.ellipsis,
-              style: TextStyle(fontWeight: FontWeight.w800, fontSize: 16.sp),
+            SizedBox(
+              height: 42.h,
+              child: Text(
+                product.name,
+                maxLines: 2,
+                overflow: TextOverflow.ellipsis,
+                style: TextStyle(
+                  fontWeight: FontWeight.w800,
+                  fontSize: 16.sp,
+                  height: 1.3,
+                ),
+              ),
             ),
 
             const SizedBox(height: 4),
 
-            Text(
-              userPackaging?.label ?? "-",
-              style: const TextStyle(color: Color(0xff7C7C7C)),
+            SizedBox(
+              height: 18.h,
+              child: Text(
+                userPackaging?.label ?? "-",
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: const TextStyle(color: Color(0xff7C7C7C)),
+              ),
             ),
 
             const SizedBox(height: 10),
@@ -541,7 +566,7 @@ class ProductCard extends StatelessWidget {
                       "₹${sellingPrice.toStringAsFixed(2)}",
                       style: TextStyle(
                         fontWeight: FontWeight.w600,
-                        fontSize: 18.sp,
+                        fontSize: 17.sp,
                         color: isSoldOut ? Colors.grey : Colors.black,
                       ),
                     ),
@@ -565,13 +590,16 @@ class ProductCard extends StatelessWidget {
                           Get.to(() => ProductDetailView(product: product));
                         }
                       : () async {
+                          FocusScope.of(context).unfocus();
                           CommonLoader.show();
+
                           final homeController = Get.find<HomeController>();
                           await homeController.addProductToCart(
                             product,
                             UserService.getUserFromHive().storeId,
                           );
-                          Get.find<BottomNavController>().changeTab(2);
+                          // Get.find<BottomNavController>().changeTab(2);
+
                           CommonLoader.hide();
                         },
                   child: Container(

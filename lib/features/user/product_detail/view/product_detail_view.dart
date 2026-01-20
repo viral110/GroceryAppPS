@@ -46,7 +46,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
               color: Color(0xffF2F3F2),
               borderRadius: BorderRadius.vertical(bottom: Radius.circular(25)),
             ),
-            child: SafeArea(child: _buildImageSlider()), // ✅ Remove Obx here
+            child: SafeArea(child: _buildImageSlider()),
           ),
 
           /// ================= DETAILS =================
@@ -57,38 +57,59 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: 20.h),
+                  // ✅ IMPROVED: Show loading state on favorite icon
+                  Obx(() {
+                    final isFav = favouriteController.isFavourite(
+                      widget.product.id,
+                    );
+                    final isProcessing = favouriteController.isProcessing(
+                      widget.product.id,
+                    );
 
-                  /// TITLE + FAV
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                    children: [
-                      Expanded(
-                        child: Text(
-                          widget.product.name,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                          ),
+                    return Align(
+                      alignment: Alignment.centerRight,
+                      child: GestureDetector(
+                        onTap: isProcessing
+                            ? null // Disable tap when processing
+                            : () => favouriteController.toggleFavourite(
+                                widget.product,
+                              ),
+                        child: Container(
+                          width: 40,
+                          height: 40,
+                          alignment: Alignment.center,
+                          child: isProcessing
+                              ? SizedBox(
+                                  width: 20,
+                                  height: 20,
+                                  child: CircularProgressIndicator(
+                                    strokeWidth: 2,
+                                    valueColor: AlwaysStoppedAnimation<Color>(
+                                      AppColors.primary,
+                                    ),
+                                  ),
+                                )
+                              : Icon(
+                                  isFav
+                                      ? Icons.favorite
+                                      : Icons.favorite_border,
+                                  color: isFav ? Colors.red : Colors.grey,
+                                  size: 28,
+                                ),
                         ),
                       ),
-                      Obx(() {
-                        final isFav = favouriteController.isFavourite(
-                          widget.product.id,
-                        );
-                        return GestureDetector(
-                          onTap: () => favouriteController.toggleFavourite(
-                            widget.product,
-                          ),
-                          child: Icon(
-                            isFav ? Icons.favorite : Icons.favorite_border,
-                            color: isFav ? Colors.red : Colors.grey,
-                            size: 28,
-                          ),
-                        );
-                      }),
-                    ],
+                    );
+                  }),
+
+                  /// TITLE + FAV
+                  Text(
+                    widget.product.name,
+                    maxLines: 2,
+                    overflow: TextOverflow.ellipsis,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                    ),
                   ),
 
                   const SizedBox(height: 6),
@@ -231,7 +252,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                           type: ToastType.warning,
                         );
                       } else {
-                        Get.back();
+                        // Get.back();
                         Get.back();
                         CommonLoader.show();
                         final cartController = Get.put(CartController());
@@ -241,7 +262,7 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                           unitPrice: controller.unitPrice,
                           quantity: controller.quantity.value,
                         );
-                        Get.find<BottomNavController>().changeTab(2);
+                        // Get.find<BottomNavController>().changeTab(2);
                         CommonLoader.hide();
                       }
                     },
@@ -259,79 +280,79 @@ class _ProductDetailViewState extends State<ProductDetailView> {
 
   /// ================= IMAGE SLIDER =================
   Widget _buildImageSlider() {
-    // ✅ Handle null or empty images
     final images = widget.product.images ?? [];
     final hasImages = images.isNotEmpty;
 
-    return Column(
-      children: [
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            GestureDetector(
-              onTap: () => Get.back(),
-              child: SvgPicture.asset("assets/svg/back_arrow_icon.svg"),
-            ),
-            const SizedBox(),
-          ],
-        ),
-        const SizedBox(height: 20),
-        SizedBox(
-          height: 220.h,
-          child: hasImages
-              ? PageView.builder(
-                  controller: controller.pageController,
-                  itemCount: images.length,
-                  onPageChanged: (index) =>
-                      controller.currentIndex.value = index,
-                  itemBuilder: (_, index) {
-                    return Image.network(
-                      images[index],
-                      fit: BoxFit.contain,
-                      errorBuilder: (context, error, stackTrace) {
-                        return const Center(
-                          child: Icon(
-                            Icons.broken_image,
-                            size: 80,
-                            color: Colors.grey,
-                          ),
-                        );
-                      },
-                    );
-                  },
-                )
-              : const Center(
-                  child: Icon(
-                    Icons.image_not_supported,
-                    size: 80,
-                    color: Colors.grey,
-                  ),
-                ),
-        ),
-        const SizedBox(height: 20),
-        // ✅ Only show indicators if there are images
-        if (hasImages && images.length > 1)
+    return SingleChildScrollView(
+      child: Column(
+        children: [
           Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: List.generate(
-              images.length,
-              (index) => Obx(
-                () => AnimatedContainer(
-                  duration: const Duration(milliseconds: 300),
-                  margin: const EdgeInsets.symmetric(horizontal: 3),
-                  height: 5,
-                  width: controller.currentIndex.value == index ? 15 : 5,
-                  decoration: BoxDecoration(
-                    color: controller.currentIndex.value == index
-                        ? AppColors.primary
-                        : const Color(0xffB3B3B3),
-                    borderRadius: BorderRadius.circular(10),
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              GestureDetector(
+                onTap: () => Get.back(),
+                child: SvgPicture.asset("assets/svg/back_arrow_icon.svg"),
+              ),
+              const SizedBox(),
+            ],
+          ),
+          const SizedBox(height: 20),
+          SizedBox(
+            height: 220.h,
+            child: hasImages
+                ? PageView.builder(
+                    controller: controller.pageController,
+                    itemCount: images.length,
+                    onPageChanged: (index) =>
+                        controller.currentIndex.value = index,
+                    itemBuilder: (_, index) {
+                      return Image.network(
+                        images[index],
+                        fit: BoxFit.contain,
+                        errorBuilder: (context, error, stackTrace) {
+                          return const Center(
+                            child: Icon(
+                              Icons.broken_image,
+                              size: 80,
+                              color: Colors.grey,
+                            ),
+                          );
+                        },
+                      );
+                    },
+                  )
+                : const Center(
+                    child: Icon(
+                      Icons.image_not_supported,
+                      size: 80,
+                      color: Colors.grey,
+                    ),
+                  ),
+          ),
+          const SizedBox(height: 20),
+          if (hasImages && images.length > 1)
+            Row(
+              mainAxisAlignment: MainAxisAlignment.center,
+              children: List.generate(
+                images.length,
+                (index) => Obx(
+                  () => AnimatedContainer(
+                    duration: const Duration(milliseconds: 300),
+                    margin: const EdgeInsets.symmetric(horizontal: 3),
+                    height: 5,
+                    width: controller.currentIndex.value == index ? 15 : 5,
+                    decoration: BoxDecoration(
+                      color: controller.currentIndex.value == index
+                          ? AppColors.primary
+                          : const Color(0xffB3B3B3),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-      ],
+        ],
+      ),
     );
   }
 

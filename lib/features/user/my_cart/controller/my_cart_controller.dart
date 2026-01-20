@@ -1,5 +1,9 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/material.dart';
 import 'package:get/get.dart';
+import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
 import 'package:online_groceries_app/models/cart_tems_model.dart';
@@ -18,72 +22,103 @@ class CartController extends GetxController {
   void onInit() {
     super.onInit();
 
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (_userId != null) {
+        loadCart();
+      }
+    });
   }
 
   /// ================= LOAD CART =================
   Future<void> loadCart() async {
     try {
       isLoading.value = true;
+      CommonLoader.show();
       cartItems.clear();
-
       final cartSnap = await _firestore
           .collection(AppConstantStrings.userCollection)
           .doc(_userId)
           .collection(AppConstantStrings.cartCollection)
           .get();
 
+      final productIds = cartSnap.docs
+          .map((e) => e['product_id'] as String)
+          .toSet()
+          .toList();
+      if (productIds.isEmpty) {
+        cartItems.clear();
+        isLoading.value = false;
+        CommonLoader.hide();
+        return;
+      }
+      final productSnap = await _firestore
+          .collection(AppConstantStrings.productsCollection)
+          .where(FieldPath.documentId, whereIn: productIds)
+          .get();
+
+      final productMap = {
+        for (var doc in productSnap.docs) doc.id: ProductModel.fromDoc(doc),
+      };
+
       for (final doc in cartSnap.docs) {
-        final data = doc.data();
+        final product = productMap[doc['product_id']];
+        if (product == null) continue;
 
-        final productDoc = await _firestore
-            .collection(AppConstantStrings.productsCollection)
-            .doc(data['product_id'])
-            .get();
-
-        if (!productDoc.exists) continue;
-
-        final product = ProductModel.fromDoc(productDoc);
-
-        /// ✅ CREATE CART ITEM FIRST
-        final cartItem = CartItem.fromJson(product, data);
-
-        /// 🔹 CHECK AVAILABLE STOCK
-        final availableStock = _getAvailableStock(
-          product,
-          cartItem.packagingLabel,
-        );
-
-        /// ❌ SOLD OUT → REMOVE
-        if (availableStock <= 0) {
-          await _firestore
-              .collection(AppConstantStrings.userCollection)
-              .doc(_userId)
-              .collection(AppConstantStrings.cartCollection)
-              .doc("${product.id}_${cartItem.packagingLabel}")
-              .delete();
-          continue;
-        }
-
-        /// ⚠️ REDUCE QTY IF STOCK LOW
-        if (cartItem.quantity > availableStock) {
-          cartItem.quantity = availableStock;
-
-          await _firestore
-              .collection(AppConstantStrings.userCollection)
-              .doc(_userId)
-              .collection(AppConstantStrings.cartCollection)
-              .doc("${product.id}_${cartItem.packagingLabel}")
-              .update({'quantity': availableStock});
-        }
-
+        final cartItem = CartItem.fromJson(product, doc.data());
         cartItems.add(cartItem);
       }
+
+      // for (final doc in cartSnap.docs) {
+      //   final data = doc.data();
+
+      //   final productDoc = await _firestore
+      //       .collection(AppConstantStrings.productsCollection)
+      //       .doc(data['product_id'])
+      //       .get();
+
+      //   if (!productDoc.exists) continue;
+
+      //   final product = ProductModel.fromDoc(productDoc);
+
+      //   /// ✅ CREATE CART ITEM FIRST
+      //   final cartItem = CartItem.fromJson(product, data);
+
+      //   /// 🔹 CHECK AVAILABLE STOCK
+      //   final availableStock = _getAvailableStock(
+      //     product,
+      //     cartItem.packagingLabel,
+      //   );
+
+      //   /// ❌ SOLD OUT → REMOVE
+      //   if (availableStock <= 0) {
+      //     await _firestore
+      //         .collection(AppConstantStrings.userCollection)
+      //         .doc(_userId)
+      //         .collection(AppConstantStrings.cartCollection)
+      //         .doc("${product.id}_${cartItem.packagingLabel}")
+      //         .delete();
+      //     continue;
+      //   }
+
+      //   /// ⚠️ REDUCE QTY IF STOCK LOW
+      //   if (cartItem.quantity > availableStock) {
+      //     cartItem.quantity = availableStock;
+
+      //     await _firestore
+      //         .collection(AppConstantStrings.userCollection)
+      //         .doc(_userId)
+      //         .collection(AppConstantStrings.cartCollection)
+      //         .doc("${product.id}_${cartItem.packagingLabel}")
+      //         .update({'quantity': availableStock});
+      //   }
+
+      //   cartItems.add(cartItem);
+      // }
     } catch (e) {
-      CommonToast.show(
-        'Failed to load cart',
-        type: ToastType.error,
-      );
+      log("FAILED TO LOAD CART: ${e.toString()}");
+      CommonToast.show('Failed to load cart', type: ToastType.error);
     } finally {
+      CommonLoader.hide();
       isLoading.value = false;
     }
   }
@@ -96,29 +131,108 @@ class CartController extends GetxController {
     }
     return total;
   }
+
   int _getAvailableStock(ProductModel product, String packagingLabel) {
-    try{
+    try {
       final storeId = UserService.getUserFromHive().storeId;
 
-      final storeConfig = product.storeConfigs
-          .firstWhereOrNull((s) => s.storeId == storeId);
+      final storeConfig = product.storeConfigs.firstWhereOrNull(
+        (s) => s.storeId == storeId,
+      );
 
-      final packaging = storeConfig?.packaging
-          .firstWhereOrNull((p) {
-            print("PRODUCTSS");
-            print(p.label);
-            return p.label == packagingLabel;
-      } );
+      final packaging = storeConfig?.packaging.firstWhereOrNull((p) {
+        print("PRODUCTSS");
+        print(p.label);
+        return p.label == packagingLabel;
+      });
 
       return packaging?.quantity ?? 0;
-    }catch(e,s){
+    } catch (e, s) {
       print(e);
       print(s);
       return 0;
-
     }
   }
 
+  Future<void> newaddToCart({
+    required ProductModel product,
+    required PackagingModel packaging,
+    required double unitPrice,
+    int quantity = 1,
+  }) async {
+    final availableStock = _getAvailableStock(product, packaging.label);
+
+    if (availableStock <= 0) {
+      CommonToast.show("Product is Sold Out", type: ToastType.error);
+      return;
+    }
+
+    final index = cartItems.indexWhere(
+      (item) =>
+          item.product.id == product.id &&
+          item.packagingLabel == packaging.label,
+    );
+
+    final int currentQty = index != -1 ? cartItems[index].quantity : 0;
+
+    if (currentQty + quantity > availableStock) {
+      CommonToast.show(
+        "Only $availableStock item(s) available",
+        type: ToastType.error,
+      );
+      return;
+    }
+
+    final discount = packaging.discount;
+    final discountedUnitPrice = discount > 0
+        ? unitPrice - (unitPrice * discount / 100)
+        : unitPrice;
+
+    // ✅ 1️⃣ Update UI instantly
+    if (index != -1) {
+      cartItems[index].quantity += quantity;
+      cartItems.refresh();
+    } else {
+      cartItems.add(
+        CartItem(
+          product: product,
+          packagingLabel: packaging.label,
+          multiplier: 1,
+          unitPrice: discountedUnitPrice,
+          quantity: quantity,
+        ),
+      );
+    }
+
+    // ✅ 2️⃣ Firestore sync in background
+    _syncCartToFirestore(product, packaging, quantity, discountedUnitPrice);
+
+    CommonToast.show("Added to Cart", type: ToastType.success);
+  }
+
+  Future<void> _syncCartToFirestore(
+    ProductModel product,
+    PackagingModel packaging,
+    int quantity,
+    double unitPrice,
+  ) async {
+    try {
+      final docId = "${product.id}_${packaging.label}";
+      await _firestore
+          .collection(AppConstantStrings.userCollection)
+          .doc(_userId)
+          .collection(AppConstantStrings.cartCollection)
+          .doc(docId)
+          .set({
+            'product_id': product.id,
+            'packaging_label': packaging.label,
+            'quantity': FieldValue.increment(quantity),
+            'unit_price': unitPrice,
+          }, SetOptions(merge: true));
+    } catch (e) {
+      debugPrint("Cart sync failed: $e");
+    }
+  }
 
   Future<void> addToCart({
     required ProductModel product,
@@ -128,22 +242,19 @@ class CartController extends GetxController {
   }) async {
     try {
       isLoading.value = true;
-      final int availableStock =
-      _getAvailableStock(product, packaging.label);
+      final int availableStock = _getAvailableStock(product, packaging.label);
       if (availableStock <= 0) {
-        CommonToast.show("Product is Sold Out",
-            type: ToastType.error);
+        CommonToast.show("Product is Sold Out", type: ToastType.error);
         return;
       }
 
       final index = cartItems.indexWhere(
-            (item) =>
-        item.product.id == product.id &&
+        (item) =>
+            item.product.id == product.id &&
             item.packagingLabel == packaging.label,
       );
 
-      final int currentQty =
-      index != -1 ? cartItems[index].quantity : 0;
+      final int currentQty = index != -1 ? cartItems[index].quantity : 0;
 
       if (currentQty + quantity > availableStock) {
         CommonToast.show(
@@ -189,24 +300,22 @@ class CartController extends GetxController {
             .set(cartItem.toJson());
       }
 
-      CommonToast.show("Added to Cart",
-          type: ToastType.success);
+      CommonToast.show("Added to Cart", type: ToastType.success);
     } catch (e) {
-      CommonToast.show("Failed to add to cart",
-          type: ToastType.error);
+      CommonToast.show("Failed to add to cart", type: ToastType.error);
     } finally {
       isLoading.value = false;
     }
   }
 
-
-
   /// ================= QUANTITY =================
   void increment(int index) {
     final item = cartItems[index];
 
-    final availableStock =
-    _getAvailableStock(item.product, item.packagingLabel);
+    final availableStock = _getAvailableStock(
+      item.product,
+      item.packagingLabel,
+    );
 
     if (item.quantity >= availableStock) {
       CommonToast.show(
@@ -221,14 +330,13 @@ class CartController extends GetxController {
     _updateQuantity(item);
   }
 
-
-  void decrement(int index) {
+  Future<void> decrement(int index) async {
     if (cartItems[index].quantity > 1) {
       cartItems[index].quantity--;
       cartItems.refresh();
       _updateQuantity(cartItems[index]);
     } else {
-      removeItem(index);
+      await removeItem(index);
     }
   }
 
@@ -243,17 +351,20 @@ class CartController extends GetxController {
   }
 
   /// ================= REMOVE ITEM =================
-  void removeItem(int index) {
-    final item = cartItems[index];
-    final docId = "${item.product.id}_${item.packagingLabel}";
+  Future<void> removeItem(int index) async {
+    try {
+      final item = cartItems[index];
+      final docId = "${item.product.id}_${item.packagingLabel}";
 
-    cartItems.removeAt(index);
-
-    _firestore
-        .collection(AppConstantStrings.userCollection)
-        .doc(_userId)
-        .collection(AppConstantStrings.cartCollection)
-        .doc(docId)
-        .delete();
+      cartItems.removeAt(index);
+      await _firestore
+          .collection(AppConstantStrings.userCollection)
+          .doc(_userId)
+          .collection(AppConstantStrings.cartCollection)
+          .doc(docId)
+          .delete();
+    } catch (e) {
+      log("REMOVE ERRRO: ${e.toString()}");
+    }
   }
 }

@@ -13,6 +13,7 @@ class AppConstantStrings {
   static const String orderCollection = "orders";
   static const String appConfigCollection = "app_config";
   static const String appMetaDataCollection = "app_metadata";
+  static const String homeSectionsCollection = "home_sections";
 
   static const String rupeeSymbol = "\u{20B9}";
 
