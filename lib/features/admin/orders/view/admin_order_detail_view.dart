@@ -1,9 +1,11 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:intl/intl.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
+import 'package:online_groceries_app/features/admin/orders/controller/admin_orderview_controller.dart';
 import 'package:online_groceries_app/models/order_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
@@ -21,13 +23,11 @@ class AdminOrderDetailView extends StatelessWidget {
     "Cancelled",
   ];
 
-  static const List<String> paymentStatuses = [
-    "pending",
-    "paid",
-  ];
+  static const List<String> paymentStatuses = ["pending", "paid"];
 
   @override
   Widget build(BuildContext context) {
+    final controller = Get.put(AdminOrdersController());
     return Scaffold(
       backgroundColor: const Color(0xffF5F5F5),
       appBar: CommonAppBar(title: "Order Details"),
@@ -59,8 +59,10 @@ class AdminOrderDetailView extends StatelessWidget {
                     const SizedBox(height: 20),
                     _priceSection(order),
                     const SizedBox(height: 20),
-                    if (order.deliveryAddress != null)
-                      _addressSection(order),
+                    if (order.deliveryAddress != null) _addressSection(order),
+                    const SizedBox(height: 30),
+                    _downloadInvoiceButton(controller, order),
+                    const SizedBox(height: 20),
                   ],
                 ),
               );
@@ -71,16 +73,62 @@ class AdminOrderDetailView extends StatelessWidget {
     );
   }
 
+  Widget _downloadInvoiceButton(
+    AdminOrdersController controller,
+    OrderModel order,
+  ) {
+    return Obx(
+      () => Row(
+        children: [
+          Expanded(
+            child: ElevatedButton.icon(
+              onPressed: controller.isDownloading.value
+                  ? null
+                  : () => controller.downloadInvoice(order),
+              icon: controller.isDownloading.value
+                  ? const SizedBox(
+                      width: 20,
+                      height: 20,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: Colors.white,
+                      ),
+                    )
+                  : const Icon(Icons.download, color: Colors.white),
+              label: Text(
+                controller.isDownloading.value
+                    ? "Downloading..."
+                    : "Download Invoice",
+                style: const TextStyle(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white,
+                ),
+              ),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: AppColors.primary,
+                padding: const EdgeInsets.symmetric(vertical: 16),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10),
+                ),
+                elevation: 2,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   // ================= ORDER HEADER =================
   Widget _orderHeader(OrderModel order) {
     final bool isEditable =
-        order.orderStatus != "Completed" &&
-            order.orderStatus != "Cancelled";
+        order.orderStatus != "Completed" && order.orderStatus != "Cancelled";
 
     return _card(
       Column(
         children: [
-          _row("Order ID", order.orderId),
+          _row("Order ID", order.shortOrderId),
 
           /// ORDER STATUS
           Row(
@@ -89,15 +137,12 @@ class AdminOrderDetailView extends StatelessWidget {
               Text("Order Status", style: _grayText),
               isEditable
                   ? _dropdown(
-                value: order.orderStatus,
-                items: orderStatuses,
-                onChanged: (val) {
-                  _updateStatus(
-                    field: "order_status",
-                    value: val,
-                  );
-                },
-              )
+                      value: order.orderStatus,
+                      items: orderStatuses,
+                      onChanged: (val) {
+                        _updateStatus(field: "order_status", value: val);
+                      },
+                    )
                   : _statusText(order.orderStatus),
             ],
           ),
@@ -109,15 +154,12 @@ class AdminOrderDetailView extends StatelessWidget {
               Text("Payment Status", style: _grayText),
               isEditable
                   ? _dropdown(
-                value: order.paymentStatus,
-                items: paymentStatuses,
-                onChanged: (val) {
-                  _updateStatus(
-                    field: "payment_status",
-                    value: val,
-                  );
-                },
-              )
+                      value: order.paymentStatus,
+                      items: paymentStatuses,
+                      onChanged: (val) {
+                        _updateStatus(field: "payment_status", value: val);
+                      },
+                    )
                   : _statusText(order.paymentStatus),
             ],
           ),
@@ -127,10 +169,10 @@ class AdminOrderDetailView extends StatelessWidget {
           _row(
             "Created At",
             order.createdAt != null
-                ? DateFormat("dd MMM yyyy, hh:mm a")
-                .format(order.createdAt!)
+                ? DateFormat("dd MMM yyyy, hh:mm a").format(order.createdAt!)
                 : "-",
           ),
+          _row("Delivery Date", order.deliveryDate ?? "-"),
         ],
       ),
     );
@@ -144,7 +186,7 @@ class AdminOrderDetailView extends StatelessWidget {
         _title("Items"),
         const SizedBox(height: 10),
         ...order.items.map(
-              (item) => _card(
+          (item) => _card(
             Row(
               children: [
                 if (item.image != null)
@@ -175,9 +217,7 @@ class AdminOrderDetailView extends StatelessWidget {
                       const SizedBox(height: 4),
                       Text(
                         "${item.unitValue} × ${item.quantity}",
-                        style: const TextStyle(
-                          color: AppColors.grayTextColor,
-                        ),
+                        style: const TextStyle(color: AppColors.grayTextColor),
                       ),
                     ],
                   ),
@@ -219,7 +259,7 @@ class AdminOrderDetailView extends StatelessWidget {
       Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          SizedBox(width: Get.width,),
+          SizedBox(width: Get.width),
           _title("Delivery Address"),
           const SizedBox(height: 8),
           Text(a.name ?? "", style: _normalText),
@@ -246,16 +286,16 @@ class AdminOrderDetailView extends StatelessWidget {
       items: items
           .map(
             (e) => DropdownMenuItem(
-          value: e,
-          child: Text(
-            e,
-            style: TextStyle(
-              fontWeight: FontWeight.w600,
-              color: _statusColor(e),
+              value: e,
+              child: Text(
+                e,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: _statusColor(e),
+                ),
+              ),
             ),
-          ),
-        ),
-      )
+          )
           .toList(),
       onChanged: (val) {
         if (val != null) onChanged(val);
@@ -270,10 +310,7 @@ class AdminOrderDetailView extends StatelessWidget {
     await FirebaseFirestore.instance
         .collection(AppConstantStrings.orderCollection)
         .doc(orderId)
-        .update({
-      field: value,
-      "updatedAt": FieldValue.serverTimestamp(),
-    });
+        .update({field: value, "updatedAt": FieldValue.serverTimestamp()});
   }
 
   // ================= HELPERS =================
@@ -282,10 +319,7 @@ class AdminOrderDetailView extends StatelessWidget {
       elevation: 2,
       color: AppColors.whiteColor,
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
-      child: Padding(
-        padding: const EdgeInsets.all(14),
-        child: child,
-      ),
+      child: Padding(padding: const EdgeInsets.all(14), child: child),
     );
   }
 
@@ -324,10 +358,7 @@ class AdminOrderDetailView extends StatelessWidget {
   Widget _title(String text) {
     return Text(
       text,
-      style: const TextStyle(
-        fontSize: 18,
-        fontWeight: FontWeight.bold,
-      ),
+      style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
     );
   }
 
@@ -360,9 +391,7 @@ class AdminOrderDetailView extends StatelessWidget {
     }
   }
 
-  TextStyle get _normalText =>
-      const TextStyle(fontWeight: FontWeight.w500);
+  TextStyle get _normalText => const TextStyle(fontWeight: FontWeight.w500);
 
-  TextStyle get _grayText =>
-      const TextStyle(color: AppColors.grayTextColor);
+  TextStyle get _grayText => const TextStyle(color: AppColors.grayTextColor);
 }

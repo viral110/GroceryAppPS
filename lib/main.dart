@@ -5,6 +5,7 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_navigation/src/root/get_material_app.dart';
 import 'package:hive_flutter/adapters.dart';
+import 'package:online_groceries_app/features/user/help/controller/customer_support_controller.dart';
 import 'package:online_groceries_app/features/user/splash_screen.dart';
 import 'package:online_groceries_app/firebase_options.dart';
 import 'package:online_groceries_app/services/razorpay_service.dart';
@@ -16,6 +17,7 @@ void main() async {
 
   // Initialize Razorpay Payment Service
   Get.put(RazorpayPaymentService());
+  Get.put(CustomerSupportController(), permanent: true);
   await Hive.initFlutter();
   await Hive.openBox(boxName);
   runApp(const MyApp());

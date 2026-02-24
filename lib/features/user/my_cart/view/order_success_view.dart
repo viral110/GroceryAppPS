@@ -13,7 +13,11 @@ import 'package:online_groceries_app/utils/app_colors.dart';
 class OrderSuccessView extends StatelessWidget {
   final String orderId;
   final String paymentMethod;
-  const OrderSuccessView({super.key, required this.orderId, required this.paymentMethod});
+  const OrderSuccessView({
+    super.key,
+    required this.orderId,
+    required this.paymentMethod,
+  });
 
   @override
   Widget build(BuildContext context) {
@@ -66,6 +70,8 @@ class OrderSuccessView extends StatelessWidget {
                   _infoRow("Order ID", orderId),
                   SizedBox(height: 8.h),
                   _infoRow("Payment Method", paymentMethod),
+                  SizedBox(height: 8.h),
+                  _infoRow("Delivery Date", orderController.formattedDate),
                 ],
               ),
             ),
@@ -101,23 +107,18 @@ class OrderSuccessView extends StatelessWidget {
       ),
     );
   }
+
   Widget _infoRow(String title, String value) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
         Text(
           title,
-          style: TextStyle(
-            fontSize: 14.sp,
-            color: AppColors.grayTextColor,
-          ),
+          style: TextStyle(fontSize: 14.sp, color: AppColors.grayTextColor),
         ),
         Text(
           value,
-          style: TextStyle(
-            fontSize: 14.sp,
-            fontWeight: FontWeight.w600,
-          ),
+          style: TextStyle(fontSize: 14.sp, fontWeight: FontWeight.w600),
         ),
       ],
     );

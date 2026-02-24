@@ -3,7 +3,7 @@ import 'package:flutter/material.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
-import 'package:online_groceries_app/features/user/my_orders/view/order_details_controller.dart';
+import 'package:online_groceries_app/features/user/my_orders/controller/order_details_controller.dart';
 import 'package:online_groceries_app/models/order_model.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
@@ -25,7 +25,28 @@ class OrderDetailsView extends StatelessWidget {
       },
       child: Scaffold(
         backgroundColor: Colors.grey.shade50,
-        appBar: CommonAppBar(title: "Order Details"),
+        appBar: CommonAppBar(
+          title: "Order Details",
+
+          actions: [
+            // ✅ PDF Download Button
+            IconButton(
+              icon: const Icon(Icons.download),
+              onPressed: () async {
+                await controller.downloadInvoice();
+              },
+              tooltip: "Download PDF",
+            ),
+            // ✅ PDF Share Button
+            IconButton(
+              icon: const Icon(Icons.share),
+              onPressed: () async {
+                await controller.shareInvoice();
+              },
+              tooltip: "Share PDF",
+            ),
+          ],
+        ),
         body: SingleChildScrollView(
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -627,6 +648,8 @@ class OrderDetailsView extends StatelessWidget {
                 ? "${order.createdAt!.day}/${order.createdAt!.month}/${order.createdAt!.year}"
                 : "-",
           ),
+          const SizedBox(height: 10),
+          _buildInfoRow("Delivery Date", order.deliveryDate ?? "-"),
           if (order.appliedPromoCode != null &&
               order.appliedPromoCode!.isNotEmpty) ...[
             const SizedBox(height: 10),

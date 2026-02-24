@@ -14,65 +14,91 @@ class AdminProductsView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        /// ================= HEADER =================
-        Row(
-          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-          children: [
-            Text(
-              "Products",
-              style: TextStyle(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textColor,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// ================= HEADER =================
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                "Products",
+                style: TextStyle(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textColor,
+                ),
               ),
-            ),
-            SizedBox(
-              width: 160.w,
-              child: CommonButton(
-                title: "Add Product",
-                onTap: () {
-                  Get.to(() => AdminAddProductView())?.then(
-                        (_) => controller.fetchProducts(),
-                  );
-                },
+
+              Row(
+                children: [
+                  SizedBox(
+                    width: 400.w,
+                    child: TextField(
+                      onChanged: controller.updateSearch, // 🔥 CONNECT
+                      decoration: InputDecoration(
+                        hintText: "Search Product (Name / Category)",
+                        prefixIcon: const Icon(Icons.search),
+                        filled: true,
+                        fillColor: AppColors.whiteColor,
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(12),
+                          borderSide: BorderSide.none,
+                        ),
+                      ),
+                    ),
+                  ),
+                  SizedBox(width: 10),
+                  SizedBox(
+                    width: 160.w,
+                    child: CommonButton(
+                      title: "Add Product",
+                      onTap: () {
+                        Get.to(
+                          () => AdminAddProductView(),
+                        )?.then((_) => controller.fetchProducts());
+                      },
+                    ),
+                  ),
+                ],
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
 
-        SizedBox(height: 20.h),
+          SizedBox(height: 20.h),
 
-        /// ================= TABLE HEADER =================
-        _tableHeader(),
+          /// ================= TABLE HEADER =================
+          _tableHeader(),
 
-        SizedBox(height: 12.h),
+          SizedBox(height: 12.h),
 
-        /// ================= PRODUCT LIST =================
-        Obx(() {
-          if (controller.isLoading.value) {
-            return  Padding(
-              padding:  EdgeInsets.only(top: 200.h),
-              child: Center(child: CircularProgressIndicator(color: AppColors.primary,)),
+          /// ================= PRODUCT LIST =================
+          Obx(() {
+            if (controller.isLoading.value) {
+              return Padding(
+                padding: EdgeInsets.only(top: 200.h),
+                child: Center(
+                  child: CircularProgressIndicator(color: AppColors.primary),
+                ),
+              );
+            }
+
+            if (controller.products.isEmpty) {
+              return Padding(
+                padding: EdgeInsets.only(top: 200.h),
+                child: Center(child: Text("No products found")),
+              );
+            }
+
+            return Column(
+              children: controller.products
+                  .map((product) => _productRow(product))
+                  .toList(),
             );
-          }
-
-          if (controller.products.isEmpty) {
-            return  Padding(
-              padding: EdgeInsets.only(top: 200.h),
-              child: Center(child: Text("No products found")),
-            );
-          }
-
-          return Column(
-            children: controller.products
-                .map((product) => _productRow(product))
-                .toList(),
-          );
-        }),
-      ],
+          }),
+        ],
+      ),
     );
   }
 
@@ -82,11 +108,31 @@ class AdminProductsView extends StatelessWidget {
       padding: EdgeInsets.all(14.w),
       decoration: _cardDecoration(),
       child: Row(
-        children:  [
-          Expanded(child: Text("Product Name", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
-          Expanded(child: Text("Category", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
-          Expanded(child: Text("Brand", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
-          Expanded(child: Text("Available Stores", style: TextStyle(fontWeight: FontWeight.w600,fontSize: 17.sp))),
+        children: [
+          Expanded(
+            child: Text(
+              "Product Name",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17.sp),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              "Category",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17.sp),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              "Brand",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17.sp),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              "Available Stores",
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17.sp),
+            ),
+          ),
           SizedBox(width: 40),
         ],
       ),
@@ -95,34 +141,37 @@ class AdminProductsView extends StatelessWidget {
 
   // ---------------- PRODUCT ROW ----------------
   Widget _productRow(ProductModel product) {
-
-
     return Container(
       margin: EdgeInsets.only(bottom: 10.h),
       padding: EdgeInsets.all(14.w),
       decoration: _cardDecoration(),
       child: Row(
         children: [
-          Expanded(child: Text(product.name,style: TextStyle(fontSize: 17.sp),)),
-          Expanded(child: Text(product.categoryName,style: TextStyle(fontSize: 17.sp))),
-          Expanded(child: Text(product.brand,style: TextStyle(fontSize: 17.sp))),
+          Expanded(
+            child: Text(product.name, style: TextStyle(fontSize: 17.sp)),
+          ),
+          Expanded(
+            child: Text(
+              product.categoryName,
+              style: TextStyle(fontSize: 17.sp),
+            ),
+          ),
+          Expanded(
+            child: Text(product.brand, style: TextStyle(fontSize: 17.sp)),
+          ),
           Expanded(
             child: Text(
               product.storeConfigs
                   .map((e) => e.storeName)
-                  .toSet()           // remove duplicates
-                  .join(', '),       // clean display
-              style: TextStyle(
-                fontWeight: FontWeight.w600,
-                fontSize: 17.sp,
-              ),
+                  .toSet() // remove duplicates
+                  .join(', '), // clean display
+              style: TextStyle(fontWeight: FontWeight.w600, fontSize: 17.sp),
             ),
           ),
 
-
           /// ================= ACTION MENU =================
           PopupMenuButton<String>(
-            icon:  Icon(Icons.more_vert, size: 30.h),
+            icon: Icon(Icons.more_vert, size: 30.h),
             color: Colors.white,
             itemBuilder: (context) => const [
               PopupMenuItem(
@@ -150,7 +199,7 @@ class AdminProductsView extends StatelessWidget {
               if (value == "update") {
                 /// 👉 OPEN EDIT SCREEN
                 Get.to(
-                      () => AdminAddProductView(),
+                  () => AdminAddProductView(),
                   arguments: product,
                 )?.then((_) => controller.fetchProducts());
               } else if (value == "delete") {
@@ -170,19 +219,13 @@ class AdminProductsView extends StatelessWidget {
         title: const Text("Delete Product"),
         content: Text("Are you sure you want to delete ${product.name}?"),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text("Cancel"),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text("Cancel")),
           TextButton(
             onPressed: () {
               Get.back();
               controller.deleteProduct(product);
             },
-            child: const Text(
-              "Delete",
-              style: TextStyle(color: Colors.red),
-            ),
+            child: const Text("Delete", style: TextStyle(color: Colors.red)),
           ),
         ],
       ),
@@ -194,10 +237,7 @@ class AdminProductsView extends StatelessWidget {
       color: AppColors.whiteColor,
       borderRadius: BorderRadius.circular(12),
       boxShadow: [
-        BoxShadow(
-          blurRadius: 16,
-          color: Colors.black.withOpacity(0.05),
-        ),
+        BoxShadow(blurRadius: 16, color: Colors.black.withOpacity(0.05)),
       ],
     );
   }

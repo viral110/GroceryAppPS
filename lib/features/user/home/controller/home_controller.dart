@@ -164,7 +164,8 @@ class HomeController extends GetxController {
     exclusiveOffers.assignAll(
       products.where((product) {
         final discount = maxDiscountForStore(product, storeId);
-        return discount >= 20 && discount <= 30;
+        return discount >= AppConstantStrings.minDiscount &&
+            discount <= AppConstantStrings.maxDiscount;
       }).toList(),
     );
 
@@ -201,7 +202,7 @@ class HomeController extends GetxController {
     final cartRef = FirebaseFirestore.instance
         .collection(AppConstantStrings.userCollection)
         .doc(userId)
-        .collection('cart');
+        .collection(AppConstantStrings.cartCollection);
 
     final snapshot = await cartRef.get();
 
@@ -212,9 +213,9 @@ class HomeController extends GetxController {
 
   Future<void> clearUserFavourites(String userId) async {
     final favRef = FirebaseFirestore.instance
-        .collection('users')
+        .collection(AppConstantStrings.userCollection)
         .doc(userId)
-        .collection('favourites');
+        .collection(AppConstantStrings.favouritesCollection);
 
     final snapshot = await favRef.get();
 
@@ -270,11 +271,16 @@ class HomeController extends GetxController {
     /// 3️⃣ Selling price (already discounted)
     final double unitPrice = packaging.price;
 
+    final int discount = packaging.discount;
+    final double sellingPrice = discount > 0
+        ? unitPrice - (unitPrice * discount / 100)
+        : unitPrice;
+
     /// 5️⃣ Add to cart
     await cartController.addToCart(
       product: product,
       packaging: packaging,
-      unitPrice: unitPrice,
+      unitPrice: sellingPrice,
       quantity: 1,
     );
   }

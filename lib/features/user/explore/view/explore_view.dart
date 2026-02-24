@@ -2,10 +2,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
+import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
 import 'package:online_groceries_app/features/user/explore/controller/explore_controller.dart';
 import 'package:online_groceries_app/features/user/explore/filter_bottom_sheet.dart';
 import 'package:online_groceries_app/features/user/explore/view/subcategory_view.dart';
 import 'package:online_groceries_app/features/user/home/view/home_view.dart';
+import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
+import 'package:online_groceries_app/utils/app_colors.dart';
 
 class ExploreView extends StatelessWidget {
   const ExploreView({super.key});
@@ -13,10 +16,70 @@ class ExploreView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(ExploreController());
+    final cartController = Get.put(CartController());
 
     return Scaffold(
       backgroundColor: Colors.white,
-      appBar: CommonAppBar(title: "Find Products", showBack: false),
+      appBar: AppBar(
+        backgroundColor: Colors.white,
+        elevation: 0,
+        automaticallyImplyLeading: false,
+        title: const Text(
+          "Find Products",
+          style: TextStyle(fontWeight: FontWeight.w600, color: Colors.black),
+        ),
+        centerTitle: true,
+        // ✅ Cart Icon in AppBar
+        actions: [
+          GestureDetector(
+            onTap: () {
+              Get.find<BottomNavController>().changeTab(2);
+            },
+            child: Stack(
+              clipBehavior: Clip.none,
+              children: [
+                const Padding(
+                  padding: EdgeInsets.all(16.0),
+                  child: Icon(
+                    Icons.shopping_cart_outlined,
+                    size: 26,
+                    color: Colors.black87,
+                  ),
+                ),
+                Obx(() {
+                  final itemCount = cartController.cartItems.length;
+                  if (itemCount == 0) return const SizedBox.shrink();
+
+                  return Positioned(
+                    right: 8,
+                    top: 8,
+                    child: Container(
+                      padding: const EdgeInsets.all(4),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        shape: BoxShape.circle,
+                      ),
+                      constraints: const BoxConstraints(
+                        minWidth: 18,
+                        minHeight: 18,
+                      ),
+                      child: Text(
+                        itemCount > 99 ? '99+' : itemCount.toString(),
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 10,
+                          fontWeight: FontWeight.bold,
+                        ),
+                        textAlign: TextAlign.center,
+                      ),
+                    ),
+                  );
+                }),
+              ],
+            ),
+          ),
+        ],
+      ),
 
       body: Padding(
         padding: const EdgeInsets.all(16),
@@ -112,7 +175,6 @@ class ExploreView extends StatelessWidget {
                   return const Center(child: Text("No categories found."));
                 }
                 if (controller.isLoading.value) {
-                  // Already showing CommonLoader, so return empty container
                   return const SizedBox.shrink();
                 }
 
@@ -135,7 +197,7 @@ class ExploreView extends StatelessWidget {
                       },
                       child: Container(
                         decoration: BoxDecoration(
-                          color: baseColor.shade50, //item.color,
+                          color: baseColor.shade50,
                           borderRadius: BorderRadius.circular(18),
                           border: Border.all(
                             color: baseColor.shade400,

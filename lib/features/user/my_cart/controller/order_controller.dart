@@ -604,7 +604,7 @@ class OrderController extends GetxController {
         .collection(AppConstantStrings.userCollection)
         .doc(user.uid);
 
-    final int creditToDeduct = creditToUse.round(); // keep integers
+    final double creditToDeduct = creditToUse; // keep as double
 
     await FirebaseFirestore.instance.runTransaction((transaction) async {
       final snapshot = await transaction.get(userRef);
@@ -615,8 +615,10 @@ class OrderController extends GetxController {
 
       final data = snapshot.data()!;
 
-      final int remainingCredit = (data['remaining_credits'] ?? 0) as int;
-      final int usedCredit = (data['used_credits'] ?? 0) as int;
+      /// ✅ SAFE CONVERSION (INT OR DOUBLE)
+      final double remainingCredit = (data['remaining_credits'] ?? 0)
+          .toDouble();
+      final double usedCredit = (data['used_credits'] ?? 0).toDouble();
 
       if (remainingCredit <= 0) {
         throw Exception("No credit available");
@@ -634,9 +636,10 @@ class OrderController extends GetxController {
       });
     });
 
-    /// ✅ SYNC LOCAL (Hive) AFTER SUCCESS
-    user.remainingCredits = (user.remainingCredits ?? 0) - creditToDeduct;
-    user.usedCredits = (user.usedCredits ?? 0) + creditToDeduct;
+    /// ✅ SYNC LOCAL USER (HIVE)
+    user.remainingCredits =
+        (user.remainingCredits ?? 0).toDouble() - creditToDeduct;
+    user.usedCredits = (user.usedCredits ?? 0).toDouble() + creditToDeduct;
 
     await UserService.setUserInHive(user);
   }
@@ -644,7 +647,7 @@ class OrderController extends GetxController {
   Rx<DateTime?> selectedDate = Rx<DateTime?>(null);
 
   String get formattedDate {
-    if (selectedDate.value == null) return "Select Date";
+    if (selectedDate.value == null) return "-";
 
     final date = selectedDate.value!;
     return DateFormat('dd MMM yyyy, EEEE').format(date);

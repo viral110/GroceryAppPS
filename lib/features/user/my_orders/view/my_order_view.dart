@@ -22,7 +22,7 @@ class MyOrdersView extends StatelessWidget {
         stream: FirebaseFirestore.instance
             .collection(AppConstantStrings.orderCollection)
             .where('user_id', isEqualTo: userId)
-            .orderBy('created_at', descending: true)
+            .orderBy('created_at', descending: false)
             .snapshots(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {

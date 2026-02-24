@@ -9,6 +9,7 @@ import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view
 import 'package:online_groceries_app/features/user/home/controller/home_controller.dart';
 import 'package:online_groceries_app/features/user/home/controller/see_product_controller.dart';
 import 'package:online_groceries_app/features/user/home/view/see_products_view.dart';
+import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
@@ -20,6 +21,8 @@ class GroceryHomeScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final controller = Get.put(HomeController());
+    final cartController = Get.put(CartController());
+
     return Scaffold(
       backgroundColor: Colors.white,
       body: SafeArea(
@@ -28,9 +31,61 @@ class GroceryHomeScreen extends StatelessWidget {
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Center(
-                child: SvgPicture.asset("assets/svg/logo_2.svg", height: 27.h),
+              // ✅ LOGO + CART ICON
+              Row(
+                mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                children: [
+                  const SizedBox(width: 40), // Spacer for alignment
+                  SvgPicture.asset("assets/svg/logo_2.svg", height: 27.h),
+
+                  // ✅ Cart Icon with Badge
+                  GestureDetector(
+                    onTap: () {
+                      Get.find<BottomNavController>().changeTab(2);
+                    },
+                    child: Stack(
+                      clipBehavior: Clip.none,
+                      children: [
+                        Icon(
+                          Icons.shopping_cart_outlined,
+                          size: 28,
+                          color: Colors.black87,
+                        ),
+                        Obx(() {
+                          final itemCount = cartController.cartItems.length;
+                          if (itemCount == 0) return const SizedBox.shrink();
+
+                          return Positioned(
+                            right: -8,
+                            top: -8,
+                            child: Container(
+                              padding: const EdgeInsets.all(4),
+                              decoration: BoxDecoration(
+                                color: AppColors.primary,
+                                shape: BoxShape.circle,
+                              ),
+                              constraints: const BoxConstraints(
+                                minWidth: 18,
+                                minHeight: 18,
+                              ),
+                              child: Text(
+                                itemCount > 99 ? '99+' : itemCount.toString(),
+                                style: const TextStyle(
+                                  color: Colors.white,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.bold,
+                                ),
+                                textAlign: TextAlign.center,
+                              ),
+                            ),
+                          );
+                        }),
+                      ],
+                    ),
+                  ),
+                ],
               ),
+
               SizedBox(height: 8.h),
               Row(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -66,7 +121,7 @@ class GroceryHomeScreen extends StatelessWidget {
                           return DropdownMenuItem<String>(
                             value: store.id,
                             child: Text(
-                              store.address, // 👈 shows Firestore address
+                              store.address,
                               overflow: TextOverflow.ellipsis,
                             ),
                           );
@@ -75,10 +130,6 @@ class GroceryHomeScreen extends StatelessWidget {
                         onChanged: (value) async {
                           if (value == null) return;
                           await controller.onStoreChanged(value);
-                          // controller.selectedStoreId.value = value!;
-                          // final user = UserService.getUserFromHive();
-                          // user.storeId = controller.selectedStoreId.value;
-                          // UserService().updateUser(user);
                         },
                       ),
                     );
@@ -115,7 +166,7 @@ class GroceryHomeScreen extends StatelessWidget {
                 }
 
                 if (controller.banners.isEmpty) {
-                  return const SizedBox.shrink(); // 👈 no data → nothing shown
+                  return const SizedBox.shrink();
                 }
                 return Column(
                   children: [
@@ -129,7 +180,6 @@ class GroceryHomeScreen extends StatelessWidget {
                             banner.image,
                             fit: BoxFit.cover,
                             width: double.infinity,
-                            // ✅ Add error handling for banner images
                             errorBuilder: (context, error, stackTrace) {
                               return Container(
                                 color: Colors.grey.shade200,
@@ -452,7 +502,7 @@ class ProductCard extends StatelessWidget {
           mainAxisSize: MainAxisSize.max,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            /// 🖼 IMAGE + SOLD OUT TAG
+            /// 🖼 IMAGE + SOLD OUT TAG + DISCOUNT BADGE
             Stack(
               children: [
                 Align(
@@ -463,7 +513,7 @@ class ProductCard extends StatelessWidget {
                       product.thumbnail,
                       fit: BoxFit.contain,
                       height: 100.h,
-                      width: 100.h, // ✅ Add error handling for product images
+                      width: 100.h,
                       errorBuilder: (context, error, stackTrace) {
                         return Container(
                           height: 100.h,
@@ -499,14 +549,40 @@ class ProductCard extends StatelessWidget {
                   ),
                 ),
 
-                if (isSoldOut)
+                // ✅ DISCOUNT BADGE (TOP LEFT)
+                if (!isSoldOut && discount > 0)
                   Positioned(
-                    top: 8,
-                    left: 8,
+                    top: 4,
+                    left: 4,
                     child: Container(
                       padding: const EdgeInsets.symmetric(
-                        horizontal: 8,
-                        vertical: 4,
+                        horizontal: 6,
+                        vertical: 3,
+                      ),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: Text(
+                        "${discount}% OFF",
+                        style: const TextStyle(
+                          color: Colors.white,
+                          fontSize: 9,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                    ),
+                  ),
+
+                // SOLD OUT TAG (TOP RIGHT)
+                if (isSoldOut)
+                  Positioned(
+                    top: 4,
+                    right: 4,
+                    child: Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 6,
+                        vertical: 3,
                       ),
                       decoration: BoxDecoration(
                         color: Colors.red,
@@ -516,7 +592,7 @@ class ProductCard extends StatelessWidget {
                         "SOLD OUT",
                         style: TextStyle(
                           color: Colors.white,
-                          fontSize: 10,
+                          fontSize: 9,
                           fontWeight: FontWeight.bold,
                         ),
                       ),
@@ -598,7 +674,6 @@ class ProductCard extends StatelessWidget {
                             product,
                             UserService.getUserFromHive().storeId,
                           );
-                          // Get.find<BottomNavController>().changeTab(2);
 
                           CommonLoader.hide();
                         },

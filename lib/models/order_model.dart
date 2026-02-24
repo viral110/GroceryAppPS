@@ -7,13 +7,14 @@ class OrderModel {
   final String? storeId;
   final String? orderStatus; // "Pending","Ongoing","Completed","Cancelled",
   final String? paymentStatus;
-  final String? paymentMethod;
+  final String? paymentMethod; // "COD","Credit","Online"
   final String? appliedPromoCode;
   final List<OrderItemModel> items;
   final double subtotal;
   final double deliveryCharge;
   final double discount;
   final double totalAmount;
+  final double squaredOffAmount; // ✅ NEW: Track how much has been squared off
   final DeliveryAddressModel? deliveryAddress;
   final String? deliveryDate;
   final DateTime? createdAt;
@@ -34,6 +35,7 @@ class OrderModel {
     this.deliveryCharge = 0.0,
     this.discount = 0.0,
     this.totalAmount = 0.0,
+    this.squaredOffAmount = 0.0, // ✅ Default to 0
     this.deliveryAddress,
     this.createdAt,
     this.updatedAt,
@@ -61,6 +63,8 @@ class OrderModel {
       deliveryCharge: (map['delivery_charge'] as num?)?.toDouble() ?? 0,
       discount: (map['discount'] as num?)?.toDouble() ?? 0,
       totalAmount: (map['total_amount'] as num?)?.toDouble() ?? 0,
+      squaredOffAmount:
+          (map['squared_off_amount'] as num?)?.toDouble() ?? 0.0, // ✅ NEW
       deliveryAddress: map['delivery_address'] != null
           ? DeliveryAddressModel.fromMap(map['delivery_address'])
           : null,
@@ -85,6 +89,7 @@ class OrderModel {
       'discount': discount,
       'delivery_date': deliveryDate,
       'total_amount': totalAmount,
+      'squared_off_amount': squaredOffAmount, // ✅ NEW
       if (deliveryAddress != null) 'delivery_address': deliveryAddress!.toMap(),
       'created_at': createdAt ?? FieldValue.serverTimestamp(),
       'updated_at': updatedAt ?? FieldValue.serverTimestamp(),

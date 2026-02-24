@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -14,6 +15,9 @@ class UserService {
   static const userKey = "userDetails";
   FirebaseFirestore firestore = FirebaseFirestore.instance;
 
+  /// ✅ Real-time credit sync subscription
+  static StreamSubscription<DocumentSnapshot>? _creditSyncSubscription;
+
   //========Hive============
   static Future setUserInHive(UserModel user) async {
     await _box.put(userKey, user.toJson(setInHive: true));
@@ -28,11 +32,14 @@ class UserService {
       return UserModel();
     }
   }
+
   //======== Logout / Clear Local User ============
 
   static Future<void> clearUserFromHive() async {
     try {
       await _box.delete(userKey);
+      // ✅ Cancel credit sync when user logs out
+      await _cancelCreditSync();
     } catch (e) {
       print("Error clearing user from Hive: $e");
     }
@@ -51,6 +58,79 @@ class UserService {
       final updatedUser = UserModel.fromJson(doc.data()!, id: doc.id);
       await setUserInHive(updatedUser);
       log("User data refreshed from Firestore: ${updatedUser.toJson()}");
+    }
+  }
+
+  /// ✅ START REAL-TIME CREDIT SYNC
+  /// This listens to Firestore changes and updates local storage automatically
+  static void startCreditSync(String userId) {
+    // Cancel any existing subscription
+    _cancelCreditSync();
+
+    log("Starting real-time credit sync for user: $userId");
+
+    _creditSyncSubscription = FirebaseFirestore.instance
+        .collection(AppConstantStrings.userCollection)
+        .doc(userId)
+        .snapshots()
+        .listen(
+          (snapshot) async {
+            if (!snapshot.exists) {
+              log("User document not found");
+              return;
+            }
+
+            final firestoreData = snapshot.data()!;
+            final localUser = getUserFromHive();
+
+            // Check if credits have changed
+            final double firestoreCredit =
+                (firestoreData['credit'] as num?)?.toDouble() ?? 0.0;
+            final double firestoreUsedCredits =
+                (firestoreData['used_credits'] as num?)?.toDouble() ?? 0.0;
+            final double firestoreRemainingCredits =
+                (firestoreData['remaining_credits'] as num?)?.toDouble() ?? 0.0;
+
+            final double localCredit = localUser.credit ?? 0.0;
+            final double localUsedCredits = localUser.usedCredits ?? 0.0;
+            final double localRemainingCredits =
+                localUser.remainingCredits ?? 0.0;
+
+            // ✅ If any credit values differ, update local storage
+            if (firestoreCredit != localCredit ||
+                firestoreUsedCredits != localUsedCredits ||
+                firestoreRemainingCredits != localRemainingCredits) {
+              log("🔄 Credits changed in Firestore. Syncing...");
+              log(
+                "Old: credit=$localCredit, used=$localUsedCredits, remaining=$localRemainingCredits",
+              );
+              log(
+                "New: credit=$firestoreCredit, used=$firestoreUsedCredits, remaining=$firestoreRemainingCredits",
+              );
+
+              // Update local user model with new credit values
+              localUser.credit = firestoreCredit;
+              localUser.usedCredits = firestoreUsedCredits;
+              localUser.remainingCredits = firestoreRemainingCredits;
+
+              // Save updated user to Hive
+              await setUserInHive(localUser);
+
+              log("✅ User credits synced successfully");
+            }
+          },
+          onError: (error) {
+            log("❌ Error in credit sync listener: $error");
+          },
+        );
+  }
+
+  /// ✅ CANCEL CREDIT SYNC
+  static Future<void> _cancelCreditSync() async {
+    if (_creditSyncSubscription != null) {
+      await _creditSyncSubscription!.cancel();
+      _creditSyncSubscription = null;
+      log("Credit sync subscription cancelled");
     }
   }
 
@@ -75,6 +155,9 @@ class UserService {
         .doc(user.uid)
         .set(user.toJson());
     setUserInHive(user);
+
+    // ✅ Start credit sync after user login
+    startCreditSync(user.uid);
   }
 
   Future<void> setAdminUserinDb(UserModel user) async {
@@ -101,6 +184,10 @@ class UserService {
     }
 
     await _box.delete(userKey);
+
+    // ✅ Cancel credit sync on logout
+    await _cancelCreditSync();
+
     await FirebaseAuth.instance.signOut();
 
     CommonLoader.hide();

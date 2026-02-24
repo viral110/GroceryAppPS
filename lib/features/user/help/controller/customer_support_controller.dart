@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/widgets.dart';
 import 'package:get/get.dart';
@@ -29,6 +31,7 @@ class CustomerSupportController extends GetxController {
 
       if (doc.exists && doc.data() != null) {
         support.value = SupportModel.fromMap(doc.data()!);
+        log("SUPPORT: ${support.value}");
       } else {
         isNoData.value = true;
       }

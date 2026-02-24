@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
@@ -47,23 +49,24 @@ class AdminOrdersView extends StatelessWidget {
                 ),
               ),
             ),
-
           ],
         ),
 
         SizedBox(height: 20.h),
 
         /// 🔥 TABS (GetX)
-        Obx(() => Row(
-          children: List.generate(
-            controller.tabs.length,
-                (index) => _tabItem(
-              controller.tabs[index],
-              isActive: controller.selectedTab.value == index,
-              onTap: () => controller.changeTab(index),
+        Obx(
+          () => Row(
+            children: List.generate(
+              controller.tabs.length,
+              (index) => _tabItem(
+                controller.tabs[index],
+                isActive: controller.selectedTab.value == index,
+                onTap: () => controller.changeTab(index),
+              ),
             ),
           ),
-        ),),
+        ),
         SizedBox(height: 16.h),
         _tableHeader(),
         SizedBox(height: 8.h),
@@ -71,10 +74,9 @@ class AdminOrdersView extends StatelessWidget {
         /// 🔥 FIRESTORE DATA
         Expanded(
           child: Obx(
-                () => StreamBuilder<QuerySnapshot>(
+            () => StreamBuilder<QuerySnapshot>(
               stream: controller.ordersQuery.snapshots(),
               builder: (context, snapshot) {
-
                 // 1️⃣ Loader
                 if (snapshot.connectionState == ConnectionState.waiting) {
                   return const Center(child: CircularProgressIndicator());
@@ -83,43 +85,94 @@ class AdminOrdersView extends StatelessWidget {
                 // 2️⃣ Error
                 if (snapshot.hasError) {
                   return Center(
-                    child: Text("Error: ${snapshot.error}"),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(Icons.error_outline, size: 48, color: Colors.red),
+                        SizedBox(height: 16),
+                        Text(
+                          "Error loading orders",
+                          style: TextStyle(fontSize: 16.sp),
+                        ),
+                        SizedBox(height: 8),
+                        Text(
+                          "${snapshot.error}",
+                          style: TextStyle(fontSize: 12.sp, color: Colors.grey),
+                        ),
+                      ],
+                    ),
                   );
                 }
-
-                // 3️⃣ Docs extract
-                final docs = snapshot.data?.docs ?? [];
-
-                if (docs.isEmpty) {
-                  return const Center(child: Text("No orders found"));
+                if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
+                  return Center(
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Icon(
+                          Icons.inbox_outlined,
+                          size: 64,
+                          color: Colors.grey,
+                        ),
+                        SizedBox(height: 16),
+                        Text(
+                          "No orders found",
+                          style: TextStyle(fontSize: 16.sp, color: Colors.grey),
+                        ),
+                      ],
+                    ),
+                  );
                 }
+                final allOrders = snapshot.data!.docs
+                    .map((doc) {
+                      try {
+                        return OrderModel.fromMap(
+                          doc.data() as Map<String, dynamic>,
+                        );
+                      } catch (e) {
+                        log("Error parsing order: $e");
+                        return null;
+                      }
+                    })
+                    .whereType<OrderModel>()
+                    .toList();
 
                 // 🔥 SEARCH + LIST must be reactive
                 return Obx(() {
                   final query = controller.searchQuery.value;
+                  final filteredOrders = query.isEmpty
+                      ? allOrders
+                      : controller.filterOrders(allOrders, query);
 
-                  final orders = docs
-                      .map((e) =>
-                      OrderModel.fromMap(e.data() as Map<String, dynamic>))
-                      .where((order) {
-                    if (query.isEmpty) return true;
-
-                    final orderId = order.orderId?.toLowerCase() ?? '';
-                    final userName =
-                        order.deliveryAddress?.name?.toLowerCase() ?? '';
-
-                    return orderId.contains(query) ||
-                        userName.contains(query);
-                  })
-                      .toList();
-
-                  if (orders.isEmpty) {
-                    return const Center(child: Text("No matching orders"));
+                  if (filteredOrders.isEmpty) {
+                    return Center(
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          Icon(Icons.search_off, size: 64, color: Colors.grey),
+                          SizedBox(height: 16),
+                          Text(
+                            "No orders match your search",
+                            style: TextStyle(
+                              fontSize: 16.sp,
+                              color: Colors.grey,
+                            ),
+                          ),
+                          SizedBox(height: 8),
+                          Text(
+                            "Try different keywords",
+                            style: TextStyle(
+                              fontSize: 12.sp,
+                              color: Colors.grey.shade600,
+                            ),
+                          ),
+                        ],
+                      ),
+                    );
                   }
 
                   return ListView.builder(
-                    itemCount: orders.length,
-                    itemBuilder: (_, index) => _orderRow(orders[index]),
+                    itemCount: filteredOrders.length,
+                    itemBuilder: (_, index) => _orderRow(filteredOrders[index]),
                   );
                 });
               },
@@ -131,16 +184,20 @@ class AdminOrdersView extends StatelessWidget {
   }
 
   /// ---------------- TAB ITEM ----------------
-  Widget _tabItem(String title,
-      {required bool isActive, required VoidCallback onTap}) {
+  Widget _tabItem(
+    String title, {
+    required bool isActive,
+    required VoidCallback onTap,
+  }) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
         margin: EdgeInsets.only(right: 8.w),
         padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         decoration: BoxDecoration(
-          color:
-          isActive ? AppColors.primary.withOpacity(0.1) : Colors.transparent,
+          color: isActive
+              ? AppColors.primary.withOpacity(0.1)
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
             color: isActive ? AppColors.primary : Colors.grey.shade300,
@@ -165,12 +222,36 @@ class AdminOrdersView extends StatelessWidget {
       decoration: _cardDecoration(),
       child: const Row(
         children: [
-          Expanded(child: Text("Order ID", style: TextStyle(fontWeight: FontWeight.w600))),
-          Expanded(child: Text("Customer", style: TextStyle(fontWeight: FontWeight.w600))),
-          Expanded(child: Text("Date", style: TextStyle(fontWeight: FontWeight.w600))),
-          Expanded(child: Text("Items", style: TextStyle(fontWeight: FontWeight.w600))),
-          Expanded(child: Text("Amount", style: TextStyle(fontWeight: FontWeight.w600))),
-          Expanded(child: Text("Status", style: TextStyle(fontWeight: FontWeight.w600))),
+          Expanded(
+            child: Text(
+              "Order ID",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              "Customer",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: Text("Date", style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          Expanded(
+            child: Text("Items", style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+          Expanded(
+            child: Text(
+              "Amount",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
+          Expanded(
+            child: Text(
+              "Status",
+              style: TextStyle(fontWeight: FontWeight.w600),
+            ),
+          ),
           Expanded(child: SizedBox()),
         ],
       ),
@@ -179,8 +260,9 @@ class AdminOrdersView extends StatelessWidget {
 
   /// ---------------- ORDER ROW ----------------
   Widget _orderRow(OrderModel order) {
-    final itemsText =
-    order.items.map((e) => "${e.productName} ×${e.quantity}").join(", ");
+    final itemsText = order.items
+        .map((e) => "${e.productName} ×${e.quantity}")
+        .join(", ");
 
     Color statusColor = order.orderStatus == "Completed"
         ? Colors.green
@@ -189,8 +271,8 @@ class AdminOrdersView extends StatelessWidget {
         : AppColors.primary;
 
     return GestureDetector(
-      onTap: (){
-        Get.to(()=>AdminOrderDetailView(orderId: order.orderId ??"",));
+      onTap: () {
+        Get.to(() => AdminOrderDetailView(orderId: order.orderId ?? ""));
       },
       child: Container(
         margin: EdgeInsets.only(top: 8.h),
@@ -198,51 +280,80 @@ class AdminOrdersView extends StatelessWidget {
         decoration: _cardDecoration(),
         child: Row(
           children: [
-            Expanded(child: Padding(
-              padding:  EdgeInsets.only(left: 10),
-              child: Text("#${order.shortOrderId}"),
-            )),
-            Expanded(child: Padding(
-              padding:  EdgeInsets.only(left: 10),
-              child: Text(order.deliveryAddress?.name ?? "User"),
-            )),
             Expanded(
               child: Padding(
-                padding:  EdgeInsets.only(left: 10),
-                child: Text(
-                  DateFormat('dd MMM yyyy').format(order.createdAt!),
-                ),
+                padding: EdgeInsets.only(left: 10),
+                child: Text("#${order.shortOrderId}"),
               ),
             ),
-            Expanded(child: Padding(
-              padding:  EdgeInsets.only(left: 10),
-              child: Text(itemsText),
-            )),
-            Expanded(child: Padding(
-              padding:  EdgeInsets.only(left: 10),
-              child: Text("₹ ${order.totalAmount.toStringAsFixed(0)}"),
-            )),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: 10),
+                child: Text(order.deliveryAddress?.name ?? "User"),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: 10),
+                child: Text(DateFormat('dd MMM yyyy').format(order.createdAt!)),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: 10),
+                child: Text(itemsText),
+              ),
+            ),
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(left: 10),
+                child: Text("₹ ${order.totalAmount.toStringAsFixed(0)}"),
+              ),
+            ),
             Expanded(
               child: Text(
                 order.orderStatus!,
-                style: TextStyle(color: statusColor, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  color: statusColor,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             Expanded(
-              child: GestureDetector(
-                onTap: () => _showStatusDialog(order),
-                child: Container(
-                  padding: EdgeInsets.symmetric(vertical: 6.h),
-                  alignment: Alignment.center,
-                  decoration: BoxDecoration(
-                    color: AppColors.primary,
-                    borderRadius: BorderRadius.circular(6),
+              child: Column(
+                children: [
+                  GestureDetector(
+                    onTap: () => _showPaymentStatusDialog(order),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 6.h),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        "Change Payment Status",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ),
-                  child: const Text(
-                    "Change Status",
-                    style: TextStyle(color: Colors.white),
+                  SizedBox(height: 12),
+                  GestureDetector(
+                    onTap: () => _showStatusDialog(order),
+                    child: Container(
+                      padding: EdgeInsets.symmetric(vertical: 6.h),
+                      alignment: Alignment.center,
+                      decoration: BoxDecoration(
+                        color: AppColors.primary,
+                        borderRadius: BorderRadius.circular(6),
+                      ),
+                      child: const Text(
+                        "Change Order Status",
+                        style: TextStyle(color: Colors.white),
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ),
           ],
@@ -252,6 +363,62 @@ class AdminOrdersView extends StatelessWidget {
   }
 
   /// ---------------- STATUS DIALOG ----------------
+  void _showPaymentStatusDialog(OrderModel order) {
+    RxString selectedPaymentStatus = order.paymentStatus!.toLowerCase().obs;
+
+    Get.dialog(
+      AlertDialog(
+        title: const Text("Change Payment Status"),
+        backgroundColor: Colors.white,
+        content: Obx(
+          () => Wrap(
+            spacing: 10,
+            children: controller.paymentStaus.map((status) {
+              log("Status:${selectedPaymentStatus.value}");
+              final isSelected = selectedPaymentStatus.value == status;
+              log("SELECTED: $isSelected");
+              return GestureDetector(
+                onTap: () => selectedPaymentStatus.value = status,
+                child: Chip(
+                  label: Text(status),
+                  backgroundColor: isSelected
+                      ? AppColors.primary.withOpacity(0.2)
+                      : Colors.white,
+                ),
+              );
+            }).toList(),
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: Get.back,
+            child: Text(
+              "Cancel",
+              style: TextStyle(fontSize: 17.sp, color: Colors.black),
+            ),
+          ),
+
+          SizedBox(
+            width: 140.w,
+            child: CommonButton(
+              height: 50,
+
+              borderRadius: 12,
+              title: "Update",
+              onTap: () async {
+                await controller.updatePaymentStaus(
+                  orderId: order.orderId!,
+                  paymentStatus: selectedPaymentStatus.value,
+                );
+                Get.back();
+              },
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
   void _showStatusDialog(OrderModel order) {
     RxString selectedStatus = order.orderStatus!.obs;
 
@@ -260,7 +427,7 @@ class AdminOrdersView extends StatelessWidget {
         title: const Text("Change Order Status"),
         backgroundColor: Colors.white,
         content: Obx(
-              () => Wrap(
+          () => Wrap(
             spacing: 10,
             children: controller.orderStatusList.map((status) {
               final isSelected = selectedStatus.value == status;
@@ -277,23 +444,27 @@ class AdminOrdersView extends StatelessWidget {
           ),
         ),
         actions: [
-          TextButton(onPressed: Get.back, child:  Text("Cancel",style: TextStyle(
-            fontSize: 17.sp,
-            color: Colors.black,
-          ),)),
+          TextButton(
+            onPressed: Get.back,
+            child: Text(
+              "Cancel",
+              style: TextStyle(fontSize: 17.sp, color: Colors.black),
+            ),
+          ),
 
           SizedBox(
             width: 150.w,
-            child: CommonButton(title: "Update", onTap: ()
-            async {
-              await controller.updateOrderStatus(
-                orderId: order.orderId!,
-                status: selectedStatus.value,
-              );
-              Get.back();
-            },),
-          )
-
+            child: CommonButton(
+              title: "Update",
+              onTap: () async {
+                await controller.updateOrderStatus(
+                  orderId: order.orderId!,
+                  status: selectedStatus.value,
+                );
+                Get.back();
+              },
+            ),
+          ),
         ],
       ),
     );
@@ -304,10 +475,7 @@ class AdminOrdersView extends StatelessWidget {
       color: AppColors.whiteColor,
       borderRadius: BorderRadius.circular(10),
       boxShadow: [
-        BoxShadow(
-          blurRadius: 12,
-          color: Colors.black.withOpacity(0.04),
-        ),
+        BoxShadow(blurRadius: 12, color: Colors.black.withOpacity(0.04)),
       ],
     );
   }

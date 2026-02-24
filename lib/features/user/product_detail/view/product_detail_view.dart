@@ -57,59 +57,64 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   SizedBox(height: 20.h),
-                  // ✅ IMPROVED: Show loading state on favorite icon
-                  Obx(() {
-                    final isFav = favouriteController.isFavourite(
-                      widget.product.id,
-                    );
-                    final isProcessing = favouriteController.isProcessing(
-                      widget.product.id,
-                    );
 
-                    return Align(
-                      alignment: Alignment.centerRight,
-                      child: GestureDetector(
-                        onTap: isProcessing
-                            ? null // Disable tap when processing
-                            : () => favouriteController.toggleFavourite(
-                                widget.product,
-                              ),
-                        child: Container(
-                          width: 40,
-                          height: 40,
-                          alignment: Alignment.center,
-                          child: isProcessing
-                              ? SizedBox(
-                                  width: 20,
-                                  height: 20,
-                                  child: CircularProgressIndicator(
-                                    strokeWidth: 2,
-                                    valueColor: AlwaysStoppedAnimation<Color>(
-                                      AppColors.primary,
-                                    ),
-                                  ),
-                                )
-                              : Icon(
-                                  isFav
-                                      ? Icons.favorite
-                                      : Icons.favorite_border,
-                                  color: isFav ? Colors.red : Colors.grey,
-                                  size: 28,
-                                ),
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      /// TITLE
+                      Expanded(
+                        child: Text(
+                          widget.product.name,
+                          maxLines: 2,
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                            fontSize: 22,
+                            fontWeight: FontWeight.w700,
+                          ),
                         ),
                       ),
-                    );
-                  }),
 
-                  /// TITLE + FAV
-                  Text(
-                    widget.product.name,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: const TextStyle(
-                      fontSize: 22,
-                      fontWeight: FontWeight.w700,
-                    ),
+                      /// FAVORITE ICON
+                      Obx(() {
+                        final isFav = favouriteController.isFavourite(
+                          widget.product.id,
+                        );
+                        final isProcessing = favouriteController.isProcessing(
+                          widget.product.id,
+                        );
+
+                        return GestureDetector(
+                          onTap: isProcessing
+                              ? null
+                              : () => favouriteController.toggleFavourite(
+                                  widget.product,
+                                ),
+                          child: Container(
+                            width: 40,
+                            height: 40,
+                            alignment: Alignment.center,
+                            child: isProcessing
+                                ? SizedBox(
+                                    width: 20,
+                                    height: 20,
+                                    child: CircularProgressIndicator(
+                                      strokeWidth: 2,
+                                      valueColor: AlwaysStoppedAnimation<Color>(
+                                        AppColors.primary,
+                                      ),
+                                    ),
+                                  )
+                                : Icon(
+                                    isFav
+                                        ? Icons.favorite
+                                        : Icons.favorite_border,
+                                    color: isFav ? Colors.red : Colors.grey,
+                                    size: 28,
+                                  ),
+                          ),
+                        );
+                      }),
+                    ],
                   ),
 
                   const SizedBox(height: 6),
@@ -198,16 +203,92 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                             ),
                           ],
                         ),
-                        Text(
-                          "₹${controller.totalPrice.value.toStringAsFixed(2)}",
-                          style: const TextStyle(
-                            fontSize: 22,
-                            fontWeight: FontWeight.w800,
-                          ),
+
+                        /// ✅ PRICE DISPLAY WITH DISCOUNT
+                        Column(
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: [
+                            Text(
+                              "₹${controller.totalPrice.value.toStringAsFixed(2)}",
+                              style: const TextStyle(
+                                fontSize: 22,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+
+                            // Show MRP if there's a discount
+                            if (controller.discount > 0)
+                              Text(
+                                "₹${(controller.unitPrice * controller.quantity.value).toStringAsFixed(2)}",
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  color: Colors.grey,
+                                  decoration: TextDecoration.lineThrough,
+                                ),
+                              ),
+                          ],
                         ),
                       ],
                     ),
                   ),
+
+                  // ✅ Show discount percentage if available
+                  Obx(() {
+                    if (controller.discount > 0) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Container(
+                          padding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 4,
+                          ),
+                          decoration: BoxDecoration(
+                            color: AppColors.primary.withOpacity(0.15),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Text(
+                            "You save ₹${((controller.unitPrice - controller.sellingPrice) * controller.quantity.value).toStringAsFixed(2)} (${controller.discount}% OFF)",
+                            style: TextStyle(
+                              color: AppColors.primary,
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }),
+
+                  // ✅ Stock availability indicator
+                  Obx(() {
+                    if (controller.isSoldOut) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          "Out of Stock",
+                          style: TextStyle(
+                            color: Colors.red,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    } else if (controller.isLowStock) {
+                      return Padding(
+                        padding: const EdgeInsets.only(top: 8),
+                        child: Text(
+                          "Only ${controller.availableStock} left in stock",
+                          style: TextStyle(
+                            color: Colors.orange,
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      );
+                    }
+                    return const SizedBox.shrink();
+                  }),
 
                   const Divider(height: 32),
 
@@ -230,8 +311,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                             child: Text(
                               widget.product.description,
                               textAlign: TextAlign.start,
-                              maxLines: 2,
-                              overflow: TextOverflow.ellipsis,
                               style: const TextStyle(color: Colors.grey),
                             ),
                           ),
@@ -248,21 +327,22 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     onTap: () {
                       if (controller.isSoldOut) {
                         CommonToast.show(
-                          "Your selected packaging Out Of stock",
+                          "Your selected packaging is Out Of Stock",
                           type: ToastType.warning,
                         );
                       } else {
-                        // Get.back();
                         Get.back();
                         CommonLoader.show();
                         final cartController = Get.put(CartController());
+
+                        // ✅ Pass the selling price (after discount)
                         cartController.addToCart(
                           product: widget.product,
                           packaging: controller.selectedPackaging,
-                          unitPrice: controller.unitPrice,
+                          unitPrice: controller.sellingPrice,
                           quantity: controller.quantity.value,
                         );
-                        // Get.find<BottomNavController>().changeTab(2);
+
                         CommonLoader.hide();
                       }
                     },
@@ -357,6 +437,6 @@ class _ProductDetailViewState extends State<ProductDetailView> {
   }
 
   Widget _qtyButton(IconData icon, {bool isAdd = false}) {
-    return Icon(icon, color: isAdd ? Colors.green : Colors.grey.shade600);
+    return Icon(icon, color: isAdd ? AppColors.primary : Colors.grey.shade600);
   }
 }

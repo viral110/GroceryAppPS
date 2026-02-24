@@ -12,7 +12,9 @@ import 'package:online_groceries_app/utils/app_constant.dart';
 class DashboardTab extends StatelessWidget {
   DashboardTab({super.key});
 
-  final AdminDashboardController controller = Get.put(AdminDashboardController());
+  final AdminDashboardController controller = Get.put(
+    AdminDashboardController(),
+  );
 
   @override
   Widget build(BuildContext context) {
@@ -78,7 +80,7 @@ class DashboardTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        _graphTitle("Recent Orders", "Latest 5 orders (all statuses)"),
+        _graphTitle("Recent Orders", "Latest 5 orders"),
         SizedBox(height: 12.h),
 
         /// TABLE HEADER
@@ -87,11 +89,36 @@ class DashboardTab extends StatelessWidget {
           decoration: _cardDecoration(),
           child: const Row(
             children: [
-              Expanded(child: Text("Order ID", style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(child: Text("Customer", style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(child: Text("Date", style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(child: Text("Amount", style: TextStyle(fontWeight: FontWeight.w600))),
-              Expanded(child: Text("Status", style: TextStyle(fontWeight: FontWeight.w600))),
+              Expanded(
+                child: Text(
+                  "Order ID",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  "Customer",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  "Date",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  "Amount",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
+              Expanded(
+                child: Text(
+                  "Status",
+                  style: TextStyle(fontWeight: FontWeight.w600),
+                ),
+              ),
             ],
           ),
         ),
@@ -134,7 +161,9 @@ class DashboardTab extends StatelessWidget {
 
                 return GestureDetector(
                   onTap: () {
-                    Get.to(()=>AdminOrderDetailView(orderId: data['order_id'],));
+                    Get.to(
+                      () => AdminOrderDetailView(orderId: data['order_id']),
+                    );
                   },
                   child: Container(
                     margin: EdgeInsets.only(top: 8.h),
@@ -215,39 +244,54 @@ class DashboardTab extends StatelessWidget {
           const Icon(Icons.filter_alt, size: 18),
           SizedBox(width: 10.w),
           Expanded(
-            child: Obx(() => DropdownButtonFormField<int>(
-              value: controller.selectedMonth.value,
-              decoration:  InputDecoration(
-                labelText: "Month",
-                border: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
-             isDense: true,
-              ),
-              items: List.generate(
-                12,
-                    (i) => DropdownMenuItem(
-                  value: i + 1,
-                  child: Text(DateFormat.MMMM().format(DateTime(0, i + 1))),
+            child: Obx(
+              () => DropdownButtonFormField<int>(
+                value: controller.selectedMonth.value,
+                decoration: InputDecoration(
+                  labelText: "Month",
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                  isDense: true,
                 ),
+                items: List.generate(
+                  12,
+                  (i) => DropdownMenuItem(
+                    value: i + 1,
+                    child: Text(DateFormat.MMMM().format(DateTime(0, i + 1))),
+                  ),
+                ),
+                onChanged: (v) => controller.changeMonth(v!),
               ),
-              onChanged: (v) => controller.changeMonth(v!),
-            )),
+            ),
           ),
           SizedBox(width: 14.w),
           Expanded(
-            child: Obx(() => DropdownButtonFormField<int>(
-              value: controller.selectedYear.value,
-              decoration: const InputDecoration(
-                labelText: "Year",
-                border: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
-                focusedBorder: OutlineInputBorder(borderSide: BorderSide(color: AppColors.primary)),
-                isDense: true,
+            child: Obx(
+              () => DropdownButtonFormField<int>(
+                value: controller.selectedYear.value,
+                decoration: const InputDecoration(
+                  labelText: "Year",
+                  border: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                  focusedBorder: OutlineInputBorder(
+                    borderSide: BorderSide(color: AppColors.primary),
+                  ),
+                  isDense: true,
+                ),
+                items: controller.years
+                    .map(
+                      (y) =>
+                          DropdownMenuItem(value: y, child: Text(y.toString())),
+                    )
+                    .toList(),
+                onChanged: (v) => controller.changeYear(v!),
               ),
-              items: controller.years
-                  .map((y) => DropdownMenuItem(value: y, child: Text(y.toString())))
-                  .toList(),
-              onChanged: (v) => controller.changeYear(v!),
-            )),
+            ),
           ),
         ],
       ),
@@ -286,17 +330,19 @@ class DashboardTab extends StatelessWidget {
       children: [
         _graphTitle(title, subtitle),
         SizedBox(height: 12.h),
-        Obx(() => FutureBuilder<Map<String, List<double>>>(
-          future: controller.fetchMonthlyChart(),
-          builder: (_, snapshot) {
-            if (!snapshot.hasData) return _graphLoader();
-            return _lineChart(
-              data: snapshot.data![dataKey]!.map((e) => e / divide).toList(),
-              color: color,
-              suffix: suffix,
-            );
-          },
-        )),
+        Obx(
+          () => FutureBuilder<Map<String, List<double>>>(
+            future: controller.fetchMonthlyChart(),
+            builder: (_, snapshot) {
+              if (!snapshot.hasData) return _graphLoader();
+              return _lineChart(
+                data: snapshot.data![dataKey]!.map((e) => e / divide).toList(),
+                color: color,
+                suffix: suffix,
+              );
+            },
+          ),
+        ),
       ],
     );
   }
@@ -307,10 +353,15 @@ class DashboardTab extends StatelessWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(title, style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700)),
+        Text(
+          title,
+          style: TextStyle(fontSize: 18.sp, fontWeight: FontWeight.w700),
+        ),
         SizedBox(height: 4.h),
-        Text(subtitle,
-            style: TextStyle(fontSize: 13.sp, color: AppColors.grayTextColor)),
+        Text(
+          subtitle,
+          style: TextStyle(fontSize: 13.sp, color: AppColors.grayTextColor),
+        ),
       ],
     );
   }
@@ -364,7 +415,7 @@ class DashboardTab extends StatelessWidget {
             LineChartBarData(
               spots: List.generate(
                 data.length,
-                    (i) => FlSpot(i.toDouble(), data[i]),
+                (i) => FlSpot(i.toDouble(), data[i]),
               ),
               isCurved: true,
               barWidth: 4,
@@ -372,10 +423,7 @@ class DashboardTab extends StatelessWidget {
               belowBarData: BarAreaData(
                 show: true,
                 gradient: LinearGradient(
-                  colors: [
-                    color.withOpacity(0.3),
-                    color.withOpacity(0.05),
-                  ],
+                  colors: [color.withOpacity(0.3), color.withOpacity(0.05)],
                 ),
               ),
               dotData: FlDotData(show: false),
@@ -385,7 +433,6 @@ class DashboardTab extends StatelessWidget {
       ),
     );
   }
-
 
   Widget _graphLoader() {
     return Container(
@@ -401,10 +448,7 @@ class DashboardTab extends StatelessWidget {
       color: AppColors.whiteColor,
       borderRadius: BorderRadius.circular(14),
       boxShadow: [
-        BoxShadow(
-          blurRadius: 20,
-          color: Colors.black.withOpacity(0.05),
-        ),
+        BoxShadow(blurRadius: 20, color: Colors.black.withOpacity(0.05)),
       ],
     );
   }

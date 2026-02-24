@@ -45,6 +45,7 @@ class CartController extends GetxController {
           .map((e) => e['product_id'] as String)
           .toSet()
           .toList();
+
       if (productIds.isEmpty) {
         cartItems.clear();
         isLoading.value = false;
@@ -68,27 +69,24 @@ class CartController extends GetxController {
         cartItems.add(cartItem);
       }
 
+      // ✅ Sort cart items alphabetically by product name
+      cartItems.sort((a, b) => a.product.name.compareTo(b.product.name));
+
       // for (final doc in cartSnap.docs) {
       //   final data = doc.data();
-
       //   final productDoc = await _firestore
       //       .collection(AppConstantStrings.productsCollection)
       //       .doc(data['product_id'])
       //       .get();
-
       //   if (!productDoc.exists) continue;
-
       //   final product = ProductModel.fromDoc(productDoc);
-
       //   /// ✅ CREATE CART ITEM FIRST
       //   final cartItem = CartItem.fromJson(product, data);
-
       //   /// 🔹 CHECK AVAILABLE STOCK
       //   final availableStock = _getAvailableStock(
       //     product,
       //     cartItem.packagingLabel,
       //   );
-
       //   /// ❌ SOLD OUT → REMOVE
       //   if (availableStock <= 0) {
       //     await _firestore
@@ -99,11 +97,9 @@ class CartController extends GetxController {
       //         .delete();
       //     continue;
       //   }
-
       //   /// ⚠️ REDUCE QTY IF STOCK LOW
       //   if (cartItem.quantity > availableStock) {
       //     cartItem.quantity = availableStock;
-
       //     await _firestore
       //         .collection(AppConstantStrings.userCollection)
       //         .doc(_userId)
@@ -111,7 +107,6 @@ class CartController extends GetxController {
       //         .doc("${product.id}_${cartItem.packagingLabel}")
       //         .update({'quantity': availableStock});
       //   }
-
       //   cartItems.add(cartItem);
       // }
     } catch (e) {
@@ -154,86 +149,6 @@ class CartController extends GetxController {
     }
   }
 
-  Future<void> newaddToCart({
-    required ProductModel product,
-    required PackagingModel packaging,
-    required double unitPrice,
-    int quantity = 1,
-  }) async {
-    final availableStock = _getAvailableStock(product, packaging.label);
-
-    if (availableStock <= 0) {
-      CommonToast.show("Product is Sold Out", type: ToastType.error);
-      return;
-    }
-
-    final index = cartItems.indexWhere(
-      (item) =>
-          item.product.id == product.id &&
-          item.packagingLabel == packaging.label,
-    );
-
-    final int currentQty = index != -1 ? cartItems[index].quantity : 0;
-
-    if (currentQty + quantity > availableStock) {
-      CommonToast.show(
-        "Only $availableStock item(s) available",
-        type: ToastType.error,
-      );
-      return;
-    }
-
-    final discount = packaging.discount;
-    final discountedUnitPrice = discount > 0
-        ? unitPrice - (unitPrice * discount / 100)
-        : unitPrice;
-
-    // ✅ 1️⃣ Update UI instantly
-    if (index != -1) {
-      cartItems[index].quantity += quantity;
-      cartItems.refresh();
-    } else {
-      cartItems.add(
-        CartItem(
-          product: product,
-          packagingLabel: packaging.label,
-          multiplier: 1,
-          unitPrice: discountedUnitPrice,
-          quantity: quantity,
-        ),
-      );
-    }
-
-    // ✅ 2️⃣ Firestore sync in background
-    _syncCartToFirestore(product, packaging, quantity, discountedUnitPrice);
-
-    CommonToast.show("Added to Cart", type: ToastType.success);
-  }
-
-  Future<void> _syncCartToFirestore(
-    ProductModel product,
-    PackagingModel packaging,
-    int quantity,
-    double unitPrice,
-  ) async {
-    try {
-      final docId = "${product.id}_${packaging.label}";
-      await _firestore
-          .collection(AppConstantStrings.userCollection)
-          .doc(_userId)
-          .collection(AppConstantStrings.cartCollection)
-          .doc(docId)
-          .set({
-            'product_id': product.id,
-            'packaging_label': packaging.label,
-            'quantity': FieldValue.increment(quantity),
-            'unit_price': unitPrice,
-          }, SetOptions(merge: true));
-    } catch (e) {
-      debugPrint("Cart sync failed: $e");
-    }
-  }
-
   Future<void> addToCart({
     required ProductModel product,
     required PackagingModel packaging,
@@ -264,15 +179,19 @@ class CartController extends GetxController {
         return;
       }
 
-      final int discount = packaging.discount;
-      final double discountedUnitPrice = discount > 0
-          ? unitPrice - (unitPrice * discount / 100)
-          : unitPrice;
+      // final int discount = packaging.discount;
+      // final double discountedUnitPrice = discount > 0
+      //     ? unitPrice - (unitPrice * discount / 100)
+      //     : unitPrice;
 
       final docId = "${product.id}_${packaging.label}";
 
       if (index != -1) {
         cartItems[index].quantity += quantity;
+        cartItems.refresh();
+
+        // ✅ Sort after update
+        cartItems.sort((a, b) => a.product.name.compareTo(b.product.name));
         cartItems.refresh();
 
         await _firestore
@@ -286,7 +205,7 @@ class CartController extends GetxController {
           product: product,
           packagingLabel: packaging.label,
           multiplier: 1,
-          unitPrice: discountedUnitPrice,
+          unitPrice: unitPrice,
           quantity: quantity,
         );
 

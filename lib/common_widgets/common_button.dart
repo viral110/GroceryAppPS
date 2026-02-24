@@ -13,8 +13,9 @@ class CommonButton extends StatelessWidget {
   final double fontSize;
   final FontWeight fontWeight;
   final EdgeInsets margin;
+  final EdgeInsets padding;
 
-   CommonButton({
+  CommonButton({
     super.key,
     required this.title,
     required this.onTap,
@@ -25,6 +26,7 @@ class CommonButton extends StatelessWidget {
     this.fontSize = 18,
     this.fontWeight = FontWeight.w600,
     this.margin = const EdgeInsets.symmetric(horizontal: 0),
+    this.padding = const EdgeInsets.symmetric(horizontal: 0),
   });
 
   @override
@@ -34,6 +36,7 @@ class CommonButton extends StatelessWidget {
       child: Container(
         height: height.h,
         margin: margin.w,
+        padding: padding.w,
         decoration: BoxDecoration(
           color: backgroundColor,
           borderRadius: BorderRadius.circular(borderRadius.r),

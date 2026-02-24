@@ -8,6 +8,7 @@ class ProductDetailController extends GetxController {
   final ProductModel product;
 
   ProductDetailController(this.product);
+
   List<String> get sortedPackaging =>
       packagingList.map((p) => p.label).toList();
 
@@ -20,10 +21,10 @@ class ProductDetailController extends GetxController {
 
   /// ================= PACKAGING =================
   late final List<PackagingModel> packagingList;
-  int get availableStock =>
-      selectedPackaging.quantity ?? 0;
 
+  int get availableStock => selectedPackaging.quantity ?? 0;
   bool get isSoldOut => availableStock <= 0;
+
   PackagingModel get selectedPackaging =>
       packagingList[selectedWeightIndex.value];
 
@@ -31,24 +32,39 @@ class ProductDetailController extends GetxController {
   int get discount => selectedPackaging.discount;
   bool get isLowStock => availableStock > 0 && availableStock <= 5;
 
+  // ✅ Calculate discounted selling price
+  double get sellingPrice {
+    if (discount > 0) {
+      return unitPrice - (unitPrice * discount / 100);
+    }
+    return unitPrice;
+  }
+
   /// ================= INIT =================
   @override
   void onInit() {
     super.onInit();
+
     /// 🔹 store config (user store)
-    final storeConfig = product.storeConfigs.firstWhere(
-          (s) => s.storeId == UserService.getUserFromHive().storeId,
-      orElse: () => product.storeConfigs.first,
+    final storeConfig = product.storeConfigs.firstWhereOrNull(
+      (s) => s.storeId == UserService.getUserFromHive().storeId,
     );
 
-    packagingList = storeConfig.packaging;
+    if (storeConfig == null && product.storeConfigs.isNotEmpty) {
+      packagingList = product.storeConfigs.first.packaging;
+    } else if (storeConfig != null) {
+      packagingList = storeConfig.packaging;
+    } else {
+      packagingList = [];
+    }
+
+    if (packagingList.isEmpty) {
+      return;
+    }
 
     /// 🔹 auto select default packaging
-    final defaultIndex =
-    packagingList.indexWhere((p) => p.isDefault);
-
-    selectedWeightIndex.value =
-    defaultIndex != -1 ? defaultIndex : 0;
+    final defaultIndex = packagingList.indexWhere((p) => p.isDefault);
+    selectedWeightIndex.value = defaultIndex != -1 ? defaultIndex : 0;
 
     /// 🔹 listeners
     everAll([selectedWeightIndex, quantity], (_) {
@@ -58,7 +74,6 @@ class ProductDetailController extends GetxController {
     _updateTotalPrice();
   }
 
-
   /// ================= PRICE CALC =================
   void _updateTotalPrice() {
     if (isSoldOut) {
@@ -66,21 +81,14 @@ class ProductDetailController extends GetxController {
       return;
     }
 
-    final double discountedUnitPrice = discount > 0
-        ? unitPrice - (unitPrice * discount / 100)
-        : unitPrice;
-
-    totalPrice.value = discountedUnitPrice * quantity.value;
+    // ✅ Use selling price (after discount)
+    totalPrice.value = sellingPrice * quantity.value;
   }
-
 
   /// ================= ACTIONS =================
   void incrementQuantity() {
     if (isSoldOut) {
-      CommonToast.show(
-        "Product is sold out",
-        type: ToastType.error,
-      );
+      CommonToast.show("Product is sold out", type: ToastType.error);
       return;
     }
 
@@ -94,7 +102,6 @@ class ProductDetailController extends GetxController {
 
     quantity.value++;
   }
-
 
   void decrementQuantity() {
     if (quantity.value > 1) {

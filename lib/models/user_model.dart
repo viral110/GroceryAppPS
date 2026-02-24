@@ -1,6 +1,5 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-
 class UserModel {
   String uid;
   String storeId;
@@ -8,9 +7,9 @@ class UserModel {
   String? lastName;
   String? email;
   String? mobileNumber;
-  int? credit;
-  int? usedCredits;
-  int? remainingCredits;
+  double? credit; // ✅ Changed from int to double
+  double? usedCredits; // ✅ Changed from int to double
+  double? remainingCredits; // ✅ Changed from int to double
   // Address
   String? area;
   String? city;
@@ -22,7 +21,7 @@ class UserModel {
   bool isNotification;
   bool isAdmin;
   bool isEnable;
-
+  String? businessName;
 
   UserModel({
     this.uid = "",
@@ -43,23 +42,27 @@ class UserModel {
     this.updateAt,
     this.isNotification = true,
     this.isAdmin = false,
-    this.isEnable= false,
+    this.isEnable = false,
+    this.businessName,
   });
 
   /// Convert Firestore doc to model
   factory UserModel.fromJson(Map map, {String? id}) {
     return UserModel(
       uid: id ?? '',
-      storeId: map['store_id']??"",
+      storeId: map['store_id'] ?? "",
       firstName: map['first_name'],
       lastName: map['last_name'],
+      businessName: map['businessName'],
       email: map['email'],
       mobileNumber: map['mobile_number'],
       area: map['area'],
       city: map['city'],
-      credit: map['credit'],
-      usedCredits: map['used_credits'],
-      remainingCredits: map['remaining_credits'],
+      credit: (map['credit'] as num?)?.toDouble(), // ✅ Convert to double
+      usedCredits: (map['used_credits'] as num?)
+          ?.toDouble(), // ✅ Convert to double
+      remainingCredits: (map['remaining_credits'] as num?)
+          ?.toDouble(), // ✅ Convert to double
       state: map['state'],
       pincode: map['pincode'],
       createdAt: checkObjectForDateTime(map['created_at']),
@@ -77,7 +80,8 @@ class UserModel {
       if (setInHive) "uid": uid,
       'first_name': firstName,
       'last_name': lastName,
-     'store_id': storeId ??"",
+      'businessName': businessName,
+      'store_id': storeId ?? "",
       'email': email,
       'mobile_number': mobileNumber,
       'credit': credit,
@@ -92,7 +96,7 @@ class UserModel {
       'fcm_token': fcmToken,
       'isNotification': isNotification,
       'isAdmin': isAdmin,
-      'isEnable':isEnable,
+      'isEnable': isEnable,
     };
   }
 

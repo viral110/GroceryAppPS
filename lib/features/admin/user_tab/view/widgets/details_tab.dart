@@ -1,3 +1,5 @@
+import 'dart:developer';
+
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -54,7 +56,7 @@ class UserDetailsTab extends StatelessWidget {
                 ),
                 Spacer(),
                 SizedBox(
-                  width: 200.w,
+                  width: 220.w,
                   child: CommonButton(
                     fontSize: 17.sp,
 
@@ -95,34 +97,34 @@ class UserDetailsTab extends StatelessWidget {
 
               final data = snapshot.data!.data() ?? {};
 
-              final int totalCredit = data['credit'] ?? 0;
-              final int spentCredit = data['used_credits'] ?? 0;
-              final int pendingCredit =data['remaining_credits'] ?? 0;
+              final double totalCredit = (data['credit'] ?? 0).toDouble();
+              final double spentCredit = (data['used_credits'] ?? 0).toDouble();
+              final double pendingCredit = (data['remaining_credits'] ?? 0)
+                  .toDouble();
 
               return Row(
                 children: [
                   _creditCard(
                     "Current",
-                    "₹$totalCredit",
+                    "₹${totalCredit.toStringAsFixed(2)}",
                     Colors.green,
                   ),
                   SizedBox(width: 12.w),
                   _creditCard(
                     "Spent",
-                    "₹$spentCredit",
+                    "₹${spentCredit.toStringAsFixed(2)}",
                     Colors.orange,
                   ),
                   SizedBox(width: 12.w),
                   _creditCard(
                     "Pending",
-                    "₹$pendingCredit",
+                    "₹${pendingCredit.toStringAsFixed(2)}",
                     Colors.red,
                   ),
                 ],
               );
             },
           ),
-
 
           SizedBox(height: 24.h),
 
@@ -132,6 +134,7 @@ class UserDetailsTab extends StatelessWidget {
               _infoRow(
                 leftLabel: "Name",
                 leftValue: "${userModel.firstName} ${userModel.lastName}",
+
                 rightLabel: "Email",
                 rightValue: userModel.email ?? "",
               ),
@@ -157,8 +160,8 @@ class UserDetailsTab extends StatelessWidget {
               _infoRow(
                 leftLabel: "Area",
                 leftValue: userModel.area ?? "",
-                rightLabel: "",
-                rightValue: "",
+                rightLabel: "Business Name",
+                rightValue: userModel.businessName ?? "",
               ),
             ],
           ),
@@ -245,7 +248,9 @@ class UserDetailsTab extends StatelessWidget {
                 /// AMOUNT FIELD
                 TextField(
                   controller: creditController,
-                  keyboardType: TextInputType.number,
+                  keyboardType: const TextInputType.numberWithOptions(
+                    decimal: true,
+                  ),
                   style: TextStyle(
                     fontSize: 14.sp,
                     fontWeight: FontWeight.w600,
@@ -314,25 +319,27 @@ class UserDetailsTab extends StatelessWidget {
                     Expanded(
                       child: ElevatedButton(
                         onPressed: () async {
-                          final amount = int.tryParse(
+                          final amount = double.tryParse(
                             creditController.text.trim(),
                           );
 
                           if (amount == null || amount <= 0) {
                             CommonToast.show(
-                              "Enter valid amount",
+                              "Please enter a valid amount",
                               type: ToastType.warning,
                             );
                             return;
                           }
 
+                          // Close dialog first
+                          Get.back();
+
+                          // Then perform the operation
                           await _updateUserCredit(
                             userId: user.uid,
                             amount: amount,
                             isAdd: isAdd.value,
                           );
-
-                          Get.back();
                         },
                         style: ElevatedButton.styleFrom(
                           backgroundColor: AppColors.primary,
@@ -398,9 +405,10 @@ class UserDetailsTab extends StatelessWidget {
     );
   }
 
+  /// ✅ FIXED: Deduct now subtracts from current (credit) instead of adding to spent
   Future<void> _updateUserCredit({
     required String userId,
-    required int amount,
+    required double amount,
     required bool isAdd,
   }) async {
     final userRef = FirebaseFirestore.instance
@@ -419,48 +427,57 @@ class UserDetailsTab extends StatelessWidget {
 
         final data = snapshot.data()!;
 
-        final int totalCredit = (data['credit'] ?? 0) as int;
-        final int usedCredit = (data['used_credits'] ?? 0) as int;
-        final int remainingCredit =
-        (data['remaining_credits'] ?? 0) as int;
+        final double currentCredit = (data['credit'] ?? 0).toDouble();
+        final double remainingCredit = (data['remaining_credits'] ?? 0)
+            .toDouble();
 
         if (isAdd) {
           /// ✅ ADD CREDIT
           transaction.update(userRef, {
-            'credit': totalCredit + amount,
+            'credit': currentCredit + amount,
             'remaining_credits': remainingCredit + amount,
             'updated_at': FieldValue.serverTimestamp(),
           });
         } else {
-          /// ❌ DEDUCT CREDIT
+          ///  DEDUCT CREDIT - Validate before deducting
           if (remainingCredit < amount) {
-            throw Exception("Insufficient remaining credit");
+            throw Exception(
+              "Cannot deduct ₹${amount.toStringAsFixed(2)}. Only ₹${remainingCredit.toStringAsFixed(2)} remaining credit available.",
+            );
+          }
+
+          if (currentCredit < amount) {
+            throw Exception(
+              "Cannot deduct ₹${amount.toStringAsFixed(2)}. Current credit is only ₹${currentCredit.toStringAsFixed(2)}.",
+            );
           }
 
           transaction.update(userRef, {
-            'credit': totalCredit - amount,
+            'credit': currentCredit - amount,
             'remaining_credits': remainingCredit - amount,
-            'used_credits': usedCredit + amount,
             'updated_at': FieldValue.serverTimestamp(),
           });
         }
       });
 
+      CommonLoader.hide();
+
       CommonToast.show(
-        isAdd ? "Credit added successfully" : "Credit deducted successfully",
+        isAdd
+            ? "₹${amount.toStringAsFixed(2)} credit added successfully"
+            : "₹${amount.toStringAsFixed(2)} credit deducted successfully",
         type: ToastType.success,
       );
     } catch (e) {
-      CommonToast.show(
-        e.toString().replaceAll('Exception: ', ''),
-        type: ToastType.error,
-      );
-    } finally {
       CommonLoader.hide();
+
+      // Clean error message - remove "Exception: " prefix
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
+      log("ERROR MESSAGE: $errorMessage");
+      // Show user-friendly error message
+      CommonToast.show("Please check amount ", type: ToastType.error);
     }
   }
-
-
 
   Widget _infoRow({
     required String leftLabel,
@@ -595,23 +612,19 @@ class UserDetailsTab extends StatelessWidget {
       ),
     );
   }
+
   void _showResetCreditConfirm(BuildContext context, String userId) {
     Get.dialog(
       AlertDialog(
         title: const Text("Reset Credit"),
         content: const Text(
           "This will reset all credit values to zero.\n\n"
-              "This action cannot be undone.",
+          "This action cannot be undone.",
         ),
         actions: [
-          TextButton(
-            onPressed: () => Get.back(),
-            child: const Text("Cancel"),
-          ),
+          TextButton(onPressed: () => Get.back(), child: const Text("Cancel")),
           ElevatedButton(
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Colors.redAccent,
-            ),
+            style: ElevatedButton.styleFrom(backgroundColor: Colors.redAccent),
             onPressed: () async {
               Get.back();
               await _resetUserCredit(userId);
@@ -623,6 +636,7 @@ class UserDetailsTab extends StatelessWidget {
       barrierDismissible: false,
     );
   }
+
   Future<void> _resetUserCredit(String userId) async {
     final userRef = FirebaseFirestore.instance
         .collection(AppConstantStrings.userCollection)
@@ -646,18 +660,19 @@ class UserDetailsTab extends StatelessWidget {
         });
       });
 
+      CommonLoader.hide();
+
       CommonToast.show(
         "User credit reset successfully",
         type: ToastType.success,
       );
     } catch (e) {
-      CommonToast.show(
-        e.toString().replaceAll('Exception: ', ''),
-        type: ToastType.error,
-      );
-    } finally {
       CommonLoader.hide();
+
+      // Clean error message
+      String errorMessage = e.toString().replaceAll('Exception: ', '');
+
+      CommonToast.show(errorMessage, type: ToastType.error);
     }
   }
-
 }
