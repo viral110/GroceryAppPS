@@ -175,6 +175,25 @@ class UserService {
     await setUserInHive(user);
   }
 
+  /// Update the FCM token for a user in Firestore and sync local Hive copy.
+  Future<void> updateFcmToken(String userId, String? token) async {
+    try {
+      final docRef = firestore.collection(AppConstantStrings.userCollection).doc(userId);
+
+      // Use update when token field already exists or set to empty string if removing
+      await docRef.set({'fcm_token': token ?? ''}, SetOptions(merge: true));
+
+      // Update Hive local copy if it matches
+      final local = getUserFromHive();
+      if (local.uid.isNotEmpty && local.uid == userId) {
+        local.fcmToken = token ?? '';
+        await setUserInHive(local);
+      }
+    } catch (e) {
+      log('Failed to update FCM token for user $userId: $e');
+    }
+  }
+
   logOut() async {
     CommonLoader.show();
     try {

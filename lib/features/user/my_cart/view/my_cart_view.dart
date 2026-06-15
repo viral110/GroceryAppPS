@@ -1,17 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
-import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/my_cart_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/controller/order_controller.dart';
 import 'package:online_groceries_app/features/user/my_cart/view/widgets/check_out_bottmsheet.dart';
-import 'package:online_groceries_app/utils/product_pricing_extension.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 
 import '../../../../common_widgets/common_app_bar.dart';
+import 'package:online_groceries_app/features/user/product_detail/view/product_detail_view.dart';
 
 /// ================= VIEW =================
 class MyCartView extends StatefulWidget {
@@ -79,98 +78,117 @@ class _MyCartViewState extends State<MyCartView> {
                 separatorBuilder: (_, __) => const Divider(height: 36),
                 itemBuilder: (context, index) {
                   final item = controller.cartItems[index];
-                  return Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Image.network(
-                        item.product.thumbnail,
-                        height: 70.h,
-                        width: 70.h,
-                        errorBuilder: (_, __, ___) =>
-                            const Icon(Icons.image_not_supported),
-                      ),
+                  return Material(
+                    color: Colors.transparent,
+                    child: InkWell(
+                      onTap: () {
+                        final product = item.product;
+                        if (product.id.isEmpty) {
+                          CommonToast.show(
+                            "Product information unavailable",
+                            type: ToastType.warning,
+                          );
+                          return;
+                        }
+                        Get.to(() => ProductDetailView(product: product,), arguments: {
+                          "packagingLabel": item.packagingLabel,
+                          "quantity": item.quantity,
+                        },);
+                      },
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Image.network(
+                            item.product.thumbnail,
+                            height: 70.h,
+                            width: 70.h,
+                            errorBuilder: (_, __, ___) =>
+                                const Icon(Icons.image_not_supported),
+                          ),
 
-                      SizedBox(width: 12.w),
+                          SizedBox(width: 12.w),
 
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            /// TITLE + REMOVE
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          Expanded(
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
-                                Expanded(
-                                  child: Text(
-                                    item.product.name,
-                                    maxLines: 2,
-                                    overflow: TextOverflow.ellipsis,
-                                    style: TextStyle(
-                                      fontWeight: FontWeight.w600,
-                                      fontSize: 16.sp,
-                                    ),
-                                  ),
-                                ),
-                                GestureDetector(
-                                  onTap: () async =>
-                                      await controller.removeItem(index),
-                                  child: const Icon(
-                                    Icons.close,
-                                    color: Colors.grey,
-                                  ),
-                                ),
-                              ],
-                            ),
-
-                            const SizedBox(height: 4),
-
-                            /// SUBTITLE
-                            Text(
-                              item.packagingLabel, // ✅ selected packaging (e.g. 500g, 1kg)
-                              style: const TextStyle(
-                                color: Colors.grey,
-                                fontSize: 12,
-                              ),
-                            ),
-
-                            const SizedBox(height: 10),
-
-                            /// QTY + PRICE
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
+                                /// TITLE + REMOVE
                                 Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                   children: [
-                                    GestureDetector(
-                                      onTap: () => controller.decrement(index),
-                                      child: MyCartView._qtyButton(
-                                        Icons.remove,
+                                    Expanded(
+                                      child: Text(
+                                        item.product.name,
+                                        maxLines: 2,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: TextStyle(
+                                          fontWeight: FontWeight.w600,
+                                          fontSize: 16.sp,
+                                        ),
                                       ),
                                     ),
-                                    const SizedBox(width: 10),
-                                    Text(item.quantity.toString()),
-                                    const SizedBox(width: 10),
                                     GestureDetector(
-                                      onTap: () => controller.increment(index),
-                                      child: MyCartView._qtyButton(
-                                        Icons.add,
-                                        isAdd: true,
+                                      onTap: () async =>
+                                          await controller.removeItem(index),
+                                      child: const Icon(
+                                        Icons.close,
+                                        color: Colors.grey,
                                       ),
                                     ),
                                   ],
                                 ),
+
+                                const SizedBox(height: 4),
+
+                                /// SUBTITLE
                                 Text(
-                                  "${AppConstantStrings.rupeeSymbol} ${item.totalPrice.toStringAsFixed(2)}",
+                                  item.packagingLabel, // ✅ selected packaging (e.g. 500g, 1kg)
                                   style: const TextStyle(
-                                    fontWeight: FontWeight.bold,
+                                    color: Colors.grey,
+                                    fontSize: 12,
                                   ),
+                                ),
+
+                                const SizedBox(height: 10),
+
+                                /// QTY + PRICE
+                                Row(
+                                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                                  children: [
+                                    Row(
+                                      children: [
+                                        GestureDetector(
+                                          onTap: () => controller.decrement(index),
+                                          child: MyCartView._qtyButton(
+                                            Icons.remove,
+                                          ),
+                                        ),
+                                        const SizedBox(width: 10),
+                                        Text(item.quantity.toString()),
+                                        const SizedBox(width: 10),
+                                        GestureDetector(
+                                          onTap: () => controller.increment(index),
+                                          child: MyCartView._qtyButton(
+                                            Icons.add,
+                                            isAdd: true,
+                                          ),
+                                        ),
+                                      ],
+                                    ),
+                                    Text(
+                                      "${AppConstantStrings.rupeeSymbol} ${item.totalPrice.toStringAsFixed(2)}",
+                                      style: const TextStyle(
+                                        fontWeight: FontWeight.bold,
+                                      ),
+                                    ),
+                                  ],
                                 ),
                               ],
                             ),
-                          ],
-                        ),
+                          ),
+                        ],
                       ),
-                    ],
+                    ),
                   );
                 },
               );
@@ -239,7 +257,7 @@ class _MyCartViewState extends State<MyCartView> {
                         vertical: 4,
                       ),
                       decoration: BoxDecoration(
-                        color: AppColors.whiteColor.withOpacity(0.2),
+                        color: AppColors.whiteColor.withAlpha(51), // 0.2 opacity
                         borderRadius: BorderRadius.circular(8),
                       ),
                       child: Obx(() {

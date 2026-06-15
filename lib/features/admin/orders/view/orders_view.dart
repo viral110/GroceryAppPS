@@ -196,7 +196,7 @@ class AdminOrdersView extends StatelessWidget {
         padding: EdgeInsets.symmetric(horizontal: 14.w, vertical: 8.h),
         decoration: BoxDecoration(
           color: isActive
-              ? AppColors.primary.withOpacity(0.1)
+              ? AppColors.primary.withAlpha((0.1*255).round())
               : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
@@ -289,25 +289,25 @@ class AdminOrdersView extends StatelessWidget {
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(left: 10),
-                child: Text(order.deliveryAddress?.name ?? "User"),
+                child: Text(order.deliveryAddress?.name ?? "User",style: TextStyle(fontSize: 14.sp),),
               ),
             ),
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(left: 10),
-                child: Text(DateFormat('dd MMM yyyy').format(order.createdAt!)),
+                child: Text(DateFormat('dd MMM yyyy').format(order.createdAt!),style: TextStyle(fontSize: 14.sp),),
               ),
             ),
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(left: 10),
-                child: Text(itemsText),
+                child: Text(itemsText,style: TextStyle(fontSize: 14.sp),),
               ),
             ),
             Expanded(
               child: Padding(
                 padding: EdgeInsets.only(left: 10),
-                child: Text("₹ ${order.totalAmount.toStringAsFixed(0)}"),
+                child: Text("₹ ${order.totalAmount.toStringAsFixed(0)}",style: TextStyle(fontSize: 14.sp),),
               ),
             ),
             Expanded(
@@ -316,40 +316,44 @@ class AdminOrdersView extends StatelessWidget {
                 style: TextStyle(
                   color: statusColor,
                   fontWeight: FontWeight.w600,
+                  fontSize: 14.sp
                 ),
               ),
             ),
             Expanded(
               child: Column(
                 children: [
+                  order.paymentMethod== "Online"? SizedBox():
                   GestureDetector(
                     onTap: () => _showPaymentStatusDialog(order),
                     child: Container(
-                      padding: EdgeInsets.symmetric(vertical: 6.h),
+                      padding: EdgeInsets.symmetric(vertical: 6.h,horizontal: 5),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text(
+                      child:  Text(
                         "Change Payment Status",
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white,fontSize: 14.sp),
                       ),
                     ),
                   ),
-                  SizedBox(height: 12),
+                  order.paymentMethod== "Online"? SizedBox():
+                  SizedBox(height: 12.h),
                   GestureDetector(
                     onTap: () => _showStatusDialog(order),
                     child: Container(
-                      padding: EdgeInsets.symmetric(vertical: 6.h),
+                      padding: EdgeInsets.symmetric(vertical: 6.h,horizontal: 5),
                       alignment: Alignment.center,
                       decoration: BoxDecoration(
                         color: AppColors.primary,
                         borderRadius: BorderRadius.circular(6),
                       ),
-                      child: const Text(
+                      child:  Text(
                         "Change Order Status",
-                        style: TextStyle(color: Colors.white),
+                        style: TextStyle(color: Colors.white,fontSize: 14.sp),
+
                       ),
                     ),
                   ),
@@ -382,7 +386,7 @@ class AdminOrdersView extends StatelessWidget {
                 child: Chip(
                   label: Text(status),
                   backgroundColor: isSelected
-                      ? AppColors.primary.withOpacity(0.2)
+                      ? AppColors.primary.withAlpha((0.2*255).round())
                       : Colors.white,
                 ),
               );
@@ -402,12 +406,12 @@ class AdminOrdersView extends StatelessWidget {
             width: 140.w,
             child: CommonButton(
               height: 50,
-
               borderRadius: 12,
               title: "Update",
               onTap: () async {
                 await controller.updatePaymentStaus(
                   orderId: order.orderId!,
+                  userID: order.userId ??"",
                   paymentStatus: selectedPaymentStatus.value,
                 );
                 Get.back();
@@ -428,21 +432,22 @@ class AdminOrdersView extends StatelessWidget {
         backgroundColor: Colors.white,
         content: Obx(
           () => Wrap(
-            spacing: 10,
+            spacing: 10.w,
+             runSpacing: 10.h,
             children: controller.orderStatusList.map((status) {
               final isSelected = selectedStatus.value == status;
               return GestureDetector(
                 onTap: () => selectedStatus.value = status,
                 child: Chip(
-                  label: Text(status),
+                  label: Text(status,style: TextStyle(fontSize: 14.sp),),
                   backgroundColor: isSelected
-                      ? AppColors.primary.withOpacity(0.2)
+                      ? AppColors.primary.withAlpha((0.2*255).round())
                       : Colors.white,
                 ),
-              );
-            }).toList(),
-          ),
-        ),
+                 );
+               }).toList(),
+             ),),
+
         actions: [
           TextButton(
             onPressed: Get.back,
@@ -459,6 +464,7 @@ class AdminOrdersView extends StatelessWidget {
               onTap: () async {
                 await controller.updateOrderStatus(
                   orderId: order.orderId!,
+                  userId: order.userId ??"",
                   status: selectedStatus.value,
                 );
                 Get.back();
@@ -475,7 +481,7 @@ class AdminOrdersView extends StatelessWidget {
       color: AppColors.whiteColor,
       borderRadius: BorderRadius.circular(10),
       boxShadow: [
-        BoxShadow(blurRadius: 12, color: Colors.black.withOpacity(0.04)),
+        BoxShadow(blurRadius: 12, color: Colors.black.withAlpha((0.04*255).round())),
       ],
     );
   }

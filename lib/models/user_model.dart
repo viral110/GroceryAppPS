@@ -6,6 +6,8 @@ class UserModel {
   String? firstName;
   String? lastName;
   String? email;
+  String? password;
+  String? gstNumber;
   String? mobileNumber;
   double? credit; // ✅ Changed from int to double
   double? usedCredits; // ✅ Changed from int to double
@@ -29,8 +31,10 @@ class UserModel {
     this.firstName,
     this.lastName,
     this.email,
+    this.gstNumber,
     this.mobileNumber,
     this.credit,
+    this.password,
     this.usedCredits,
     this.remainingCredits,
     this.area,
@@ -53,8 +57,10 @@ class UserModel {
       storeId: map['store_id'] ?? "",
       firstName: map['first_name'],
       lastName: map['last_name'],
+      password: map['password'],
       businessName: map['businessName'],
       email: map['email'],
+      gstNumber: map['gst_number'],
       mobileNumber: map['mobile_number'],
       area: map['area'],
       city: map['city'],
@@ -80,9 +86,11 @@ class UserModel {
       if (setInHive) "uid": uid,
       'first_name': firstName,
       'last_name': lastName,
+      'password': password,
       'businessName': businessName,
       'store_id': storeId ?? "",
       'email': email,
+      'gst_number': gstNumber,
       'mobile_number': mobileNumber,
       'credit': credit,
       'used_credits': usedCredits,

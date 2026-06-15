@@ -13,6 +13,8 @@ import 'package:online_groceries_app/features/user/my_cart/view/order_success_vi
 import 'package:online_groceries_app/models/order_model.dart';
 import 'package:online_groceries_app/services/razorpay_service.dart';
 import 'package:online_groceries_app/services/user_services.dart';
+import 'package:online_groceries_app/services/admin_notification_service.dart';
+import 'package:online_groceries_app/models/user_model.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 import 'package:razorpay_flutter/razorpay_flutter.dart';
 
@@ -303,6 +305,15 @@ class OrderController extends GetxController {
 
     final errorMessage = _razorpayService.getPaymentErrorMessage(response);
     CommonToast.show(errorMessage, type: ToastType.error);
+    try {
+      final user = UserService.getUserFromHive();
+      final token = user.fcmToken ?? '';
+      if (token.trim().isNotEmpty) {
+        AdminNotificationService().sendPaymentFailed(token,user.uid);
+      }
+    } catch (e) {
+      log('Failed to send payment failed notification: $e');
+    }
   }
 
   /// ================= RAZORPAY EXTERNAL WALLET CALLBACK =================
@@ -480,6 +491,7 @@ class OrderController extends GetxController {
         orderId: orderDoc.id,
         userId: user.uid,
         shortOrderId: shortOrderId,
+        gstNumber: user.gstNumber ??"",
         deliveryDate: formattedDate,
         storeId: user.storeId,
         orderStatus: "Pending",
@@ -518,6 +530,16 @@ class OrderController extends GetxController {
       }
 
       await orderDoc.set(orderData);
+      // Send order placed notification to user (if token exists)
+      try {
+        final freshUser = await UserService().getUserFromDbById(user.uid);
+        final token = freshUser.fcmToken ?? user.fcmToken ?? '';
+        if (token.trim().isNotEmpty) {
+          await AdminNotificationService().sendOrderPlaced(token,freshUser.uid);
+        }
+      } catch (e) {
+        log('Failed to send order placed notification: $e');
+      }
       await _decreaseStockAfterOrder(cartController.cartItems, user.storeId);
 
       /// ================= CLEAR CART =================
@@ -558,7 +580,9 @@ class OrderController extends GetxController {
     if (!orderStatuses.contains(status)) {
       throw Exception("Invalid order status");
     }
-
+    CommonLoader.show();
+    UserModel user =
+        await UserService().getUserFromDbById(userId);
     final orderRef = _firestore
         .collection(AppConstantStrings.orderCollection)
         .doc(orderId);
@@ -567,6 +591,29 @@ class OrderController extends GetxController {
       'orderStatus': status,
       'updatedAt': FieldValue.serverTimestamp(),
     });
+    if ((user.fcmToken?? "").isNotEmpty) {
+      // Send a message based on new status
+      switch (status) {
+        case 'Pending':
+          await AdminNotificationService().sendOrderPlaced(user.fcmToken ??" ", user.uid);
+          break;
+        case 'Ongoing':
+          await AdminNotificationService().sendOrderConfirmed(user.fcmToken ??" ", user.uid);
+          break;
+        case 'Completed':
+          await AdminNotificationService().sendOrderDelivered(user.fcmToken ??" ", user.uid);
+          break;
+        case 'Cancelled':
+          await AdminNotificationService().sendOrderCancelled(user.fcmToken ??" ", user.uid);
+          break;
+        default:
+          await AdminNotificationService().sendOrderPlaced(user.fcmToken ??" ", user.uid);
+      }
+    } else {
+      // Log that no token was found for this user
+      print('No FCM token for user $userId; skipping push notification.');
+    }
+    CommonLoader.hide();
   }
 
   /// ================= CLEAR CART =================
@@ -642,6 +689,22 @@ class OrderController extends GetxController {
     user.usedCredits = (user.usedCredits ?? 0).toDouble() + creditToDeduct;
 
     await UserService.setUserInHive(user);
+
+    // Send credit used notification and low balance check
+    try {
+      final fresh = await UserService().getUserFromDbById(user.uid);
+      final token = fresh.fcmToken ?? user.fcmToken ?? '';
+      if (token.trim().isNotEmpty) {
+        await AdminNotificationService().sendCreditUsed(token, creditToDeduct.toInt(),fresh.uid);
+        // Low credit threshold — notify if remaining is below 50
+        final remaining = fresh.remainingCredits ?? (user.remainingCredits ?? 0.0);
+        if (remaining < 10000) {
+          await AdminNotificationService().sendLowCredit(token,fresh.uid);
+        }
+      }
+    } catch (e) {
+      log('Failed to send credit-used/low-credit notifications: $e');
+    }
   }
 
   Rx<DateTime?> selectedDate = Rx<DateTime?>(null);

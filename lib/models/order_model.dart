@@ -2,6 +2,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 
 class OrderModel {
   final String? orderId;
+  final String? gstNumber;
   final String? shortOrderId;
   final String? userId;
   final String? storeId;
@@ -22,6 +23,7 @@ class OrderModel {
 
   OrderModel({
     this.orderId,
+    this.gstNumber,
     this.shortOrderId,
     this.userId,
     this.storeId,
@@ -48,6 +50,7 @@ class OrderModel {
       orderId: map['order_id'],
       shortOrderId: map['short_order_id'],
       userId: map['user_id'],
+      gstNumber: map['gst_number'],
       storeId: map['store_id'],
       orderStatus: map['order_status'],
       paymentStatus: map['payment_status'],
@@ -89,6 +92,7 @@ class OrderModel {
       'discount': discount,
       'delivery_date': deliveryDate,
       'total_amount': totalAmount,
+      "gst_number":gstNumber,
       'squared_off_amount': squaredOffAmount, // ✅ NEW
       if (deliveryAddress != null) 'delivery_address': deliveryAddress!.toMap(),
       'created_at': createdAt ?? FieldValue.serverTimestamp(),

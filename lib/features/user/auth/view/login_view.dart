@@ -40,10 +40,7 @@ class _LoginScreenState extends State<LoginScreen> {
                   SizedBox(height: 60.h),
 
                   Center(
-                    child: SvgPicture.asset(
-                      'assets/svg/logo_2.svg',
-                      height: 50.h,
-                    ),
+                    child:Image.asset("assets/png/removebg_logo.png",width: 150,),
                   ),
 
                   SizedBox(height: 100.h),

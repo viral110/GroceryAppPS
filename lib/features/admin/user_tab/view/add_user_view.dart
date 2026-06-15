@@ -134,12 +134,28 @@ class AdminAddAdminView extends StatelessWidget {
                       SizedBox(height: 25.h),
 
                       /// ✅ PASSWORD FIELD (only show for new user)
-                      if (!controller.isEditMode.value)
-                        CommonTextField(
-                          label: "Password",
-                          hint: "Enter password",
-                          keyboardType: TextInputType.visiblePassword,
-                          controller: controller.password,
+
+                        Row(
+                          children: [
+                            if (!controller.isEditMode.value)
+                            Expanded(
+                              child: CommonTextField(
+                                label: "Password",
+                                hint: "Enter password",
+                                keyboardType: TextInputType.visiblePassword,
+                                controller: controller.password,
+                              ),
+                            ),
+                            if (!controller.isEditMode.value)
+                            SizedBox(width: 16.w),
+                            Expanded(
+                              child: CommonTextField(
+                                label: "GST Number",
+                                hint: "Enter GST number",
+                                controller: controller.gstNumber,
+                              ),
+                            ),
+                          ],
                         ),
                     ],
                   ),

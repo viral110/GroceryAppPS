@@ -5,6 +5,7 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/foundation.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 
 import '../models/user_model.dart';
 import '../services/user_services.dart';
@@ -46,6 +47,17 @@ class AuthServices {
 
       // save in Hive
       await UserService.setUserInHive(user);
+
+      // Try to fetch and save FCM token for this user (best-effort)
+      try {
+        // Import is already present in file? If not, we use fully qualified name to avoid import edits.
+        final token = await FirebaseMessaging.instance.getToken();
+        if (token != null && user.uid.isNotEmpty) {
+          await UserService().updateFcmToken(user.uid, token);
+        }
+      } catch (e) {
+        log('FCM token fetch/save failed: $e');
+      }
 
       return user;
     } catch (e, s) {
@@ -142,6 +154,16 @@ class AuthServices {
   /// 🔹 Sign Out (email/google)
   Future<void> signOut() async {
     try {
+      // Attempt to clear FCM token for the current user (best-effort)
+      try {
+        final currentUid = firebaseAuth.currentUser?.uid ?? UserService.getUserFromHive().uid;
+        if (currentUid.isNotEmpty) {
+          await UserService().updateFcmToken(currentUid, '');
+        }
+      } catch (e) {
+        log('Failed to clear FCM token on signOut: $e');
+      }
+
       await firebaseAuth.signOut();
 
       // 🔹 Clear local user data

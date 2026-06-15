@@ -1,6 +1,6 @@
 {
-    "name": "online_groceries_app",
-    "short_name": "online_groceries_app",
+    "name": "Pocket B2B",
+    "short_name": "Pocket B2B",
     "start_url": ".",
     "display": "standalone",
     "background_color": "#0175C2",

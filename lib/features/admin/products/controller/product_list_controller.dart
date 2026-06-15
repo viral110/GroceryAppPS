@@ -25,12 +25,17 @@ class ProductListController extends GetxController {
   Future<void> fetchProducts() async {
     try {
       isLoading.value = true;
+
       final snapshot = await _firestore
           .collection(AppConstantStrings.productsCollection)
           .get();
+
       _allProducts.value = snapshot.docs
           .map((doc) => ProductModel.fromDoc(doc))
           .toList();
+
+      _allProducts.sort((a, b) =>
+          a.name.toLowerCase().compareTo(b.name.toLowerCase()));
 
       _filterProducts();
     } catch (e, s) {
@@ -79,16 +84,24 @@ class ProductListController extends GetxController {
   }
 
   void _filterProducts() {
+    List<ProductModel> filtered;
+
     if (searchQuery.value.isEmpty) {
-      products.value = _allProducts;
+      filtered = List.from(_allProducts);
     } else {
-      products.value = _allProducts.where((product) {
+      filtered = _allProducts.where((product) {
         final name = product.name.toLowerCase();
         final category = product.categoryName.toLowerCase();
-        final query = searchQuery.value;
+        final query = searchQuery.value.toLowerCase();
 
         return name.contains(query) || category.contains(query);
       }).toList();
     }
-  }
-}
+
+    // ✅ Alphabetical sorting
+    filtered.sort(
+          (a, b) => a.name.toLowerCase().compareTo(b.name.toLowerCase()),
+    );
+
+    products.value = filtered;
+  }}

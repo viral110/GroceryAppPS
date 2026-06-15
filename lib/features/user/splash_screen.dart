@@ -3,9 +3,11 @@ import 'dart:developer';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/features/admin/auth/view/admin_login_view.dart';
 import 'package:online_groceries_app/features/admin/dashboard/view/admin_dashboard.dart';
+import 'package:online_groceries_app/features/user/auth/view/login_view.dart';
 import 'package:online_groceries_app/features/user/dashboard/view/dashboard_view.dart';
 import 'package:online_groceries_app/features/user/welcome/view/welcome_view.dart';
 import 'package:online_groceries_app/services/user_services.dart';
@@ -33,9 +35,9 @@ class _SplashScreenState extends State<SplashScreen> {
     if (!mounted) return;
 
     final user = UserService.getUserFromHive();
-    log("USER:$user");
+    log("USER:${user.uid}");
 
-    if (user.uid.isNotEmpty) {
+    if (user != null && user.uid.isNotEmpty) {
       // ✅ SYNC USER CREDITS FROM FIRESTORE (for mobile users only)
       if (!kIsWeb) {
         await _syncUserCreditsFromFirestore(user.uid);
@@ -50,7 +52,7 @@ class _SplashScreenState extends State<SplashScreen> {
       if (kIsWeb) {
         Get.off(() => AdminLoginView());
       } else {
-        Get.off(() => WelcomeView());
+        Get.off(() => LoginScreen());
       }
     }
   }
@@ -117,8 +119,8 @@ class _SplashScreenState extends State<SplashScreen> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.primary,
-      body: Center(child: SvgPicture.asset("assets/svg/logo.svg")),
+      backgroundColor: Colors.white,
+      body: Center(child: Image.asset("assets/png/logo.jpg",width: 200.w,),),
     );
   }
 }

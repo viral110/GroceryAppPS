@@ -23,6 +23,7 @@ class AddUserController extends GetxController {
   final city = TextEditingController();
   final state = TextEditingController();
   final pincode = TextEditingController();
+  final gstNumber = TextEditingController();
 
   final isLoading = false.obs;
   final isEditMode = false.obs; // ✅ Track if editing
@@ -52,6 +53,7 @@ class AddUserController extends GetxController {
     businessName.text = user.businessName ?? ''; // ✅ Set business name
     area.text = user.area ?? '';
     city.text = user.city ?? '';
+    gstNumber.text = user.gstNumber ?? '';
     state.text = user.state ?? '';
     pincode.text = user.pincode ?? '';
     selectedStoreId.value = user.storeId ?? '';
@@ -68,6 +70,7 @@ class AddUserController extends GetxController {
     businessName.clear();
     area.clear();
     city.clear();
+    gstNumber.clear();
     state.clear();
     pincode.clear();
     selectedStoreId.value = '';
@@ -226,9 +229,11 @@ class AddUserController extends GetxController {
       remainingCredits: double.parse(credit.text),
       businessName: businessName.text.trim(), // ✅ Add business name
       area: area.text.trim(),
+      password: password.text.trim(),
       state: state.text.trim(),
       isNotification: false,
       city: city.text.trim(),
+      gstNumber: gstNumber.text.trim(),
       pincode: pincode.text.trim(),
       createdAt: DateTime.now(),
       fcmToken: "",
@@ -280,9 +285,9 @@ class AddUserController extends GetxController {
         .collection(AppConstantStrings.userCollection)
         .doc(editingUserId)
         .update({
-          'firstName': firstName.text.trim(),
-          'lastName': lastName.text.trim(),
-          'mobileNumber': mobile.text.trim(),
+          'first_name': firstName.text.trim(),
+          'last_name': lastName.text.trim(),
+          'mobile_number': mobile.text.trim(),
           'email': email.text.trim(),
           'credit': newCredit,
           'remaining_credits': currentRemainingCredits + creditDifference,

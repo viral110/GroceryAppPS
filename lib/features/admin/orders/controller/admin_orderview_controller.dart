@@ -1,13 +1,17 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:flutter/foundation.dart';
+import 'package:pdf/widgets.dart' as pw;
+import 'package:flutter/services.dart';
 import 'package:get/get.dart';
+import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/user/help/controller/customer_support_controller.dart';
-import 'package:online_groceries_app/features/user/help/view/customer_support.dart';
 import 'package:online_groceries_app/models/order_model.dart';
 import 'package:online_groceries_app/models/support_model.dart';
+import 'package:online_groceries_app/services/admin_notification_service.dart';
 import 'package:online_groceries_app/services/pdf_invoice_service.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
+import 'package:pdf/src/widgets/image_provider.dart';
 
 class AdminOrdersController extends GetxController {
   RxInt selectedTab = 0.obs;
@@ -97,8 +101,12 @@ class AdminOrdersController extends GetxController {
 
   Future<void> updateOrderStatus({
     required String orderId,
+    required String userId,
     required String status,
   }) async {
+    CommonLoader.show();
+    String fcmToken = (await UserService().getUserFromDbById(userId)).fcmToken ?? "";
+    String uid = (await UserService().getUserFromDbById(userId)).uid ?? "";
     final snapshot = await FirebaseFirestore.instance
         .collection(AppConstantStrings.orderCollection)
         .where('order_id', isEqualTo: orderId)
@@ -111,24 +119,65 @@ class AdminOrdersController extends GetxController {
         'updated_at': FieldValue.serverTimestamp(),
       });
     }
+    if (fcmToken.trim().isNotEmpty) {
+      // Send a message based on new status
+      switch (status) {
+        case 'Pending':
+          await AdminNotificationService().sendOrderPlaced(fcmToken,uid);
+          break;
+        case 'Ongoing':
+          await AdminNotificationService().sendOrderConfirmed(fcmToken,uid);
+          break;
+        case 'Completed':
+          await AdminNotificationService().sendOrderDelivered(fcmToken,uid);
+          break;
+        case 'Cancelled':
+          await AdminNotificationService().sendOrderCancelled(fcmToken,uid);
+          break;
+        default:
+          await AdminNotificationService().sendOrderPlaced(fcmToken,uid);
+      }
+    } else {
+      // Log that no token was found for this user
+      print('No FCM token for user $userId; skipping push notification.');
+    }
+    CommonLoader.hide();
   }
 
   Future<void> updatePaymentStaus({
     required String orderId,
     required String paymentStatus,
+    required String userID,
   }) async {
+    CommonLoader.show();
     final snapshot = await FirebaseFirestore.instance
         .collection(AppConstantStrings.orderCollection)
         .where('order_id', isEqualTo: orderId)
         .limit(1)
         .get();
-
+    String fcmToken = (await UserService().getUserFromDbById(userID)).fcmToken ?? "";
+    String uid = (await UserService().getUserFromDbById(userID)).uid ?? "";
     if (snapshot.docs.isNotEmpty) {
       await snapshot.docs.first.reference.update({
         'payment_status': paymentStatus,
         'updated_at': FieldValue.serverTimestamp(),
       });
     }
+    if (fcmToken.trim().isNotEmpty) {
+      switch (paymentStatus) {
+        case 'paid':
+          await AdminNotificationService().sendPaymentSuccess(fcmToken,uid);
+          break;
+        case 'pending':
+          await AdminNotificationService().sendPaymentPending(fcmToken,uid);
+          break;
+      }
+    } else {
+      // Log that no token was found for this user
+      print('No FCM token for user $userID; skipping push notification.');
+    }
+    CommonLoader.hide();
+
   }
 
   /// Download invoice PDF for an order
@@ -144,9 +193,11 @@ class AdminOrdersController extends GetxController {
       } else {
         support = SupportModel(email: '', phone: '');
       }
-
+      final logo = pw.MemoryImage(
+        (await rootBundle.load('assets/png/logo.jpg')).buffer.asUint8List(),
+      );
       // For web platform
-      final pdf = await PdfInvoiceService.createInvoicePDF(order, support);
+      final pdf = await PdfInvoiceService.createInvoicePDF(order, support,logo as MemoryImage? );
       final pdfBytes = await pdf.save();
       await PdfInvoiceService.downloadPdf(
         pdfBytes,
@@ -156,7 +207,9 @@ class AdminOrdersController extends GetxController {
         'Invoice downloaded successfully',
         type: ToastType.success,
       );
-    } catch (e) {
+    } catch (e,s) {
+      print(e);
+      print(s);
       CommonToast.show('Failed to download invoice', type: ToastType.error);
     } finally {
       isDownloading.value = false;

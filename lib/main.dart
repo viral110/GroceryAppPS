@@ -1,4 +1,5 @@
 import 'package:firebase_core/firebase_core.dart';
+import 'package:firebase_messaging/firebase_messaging.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
@@ -8,6 +9,7 @@ import 'package:hive_flutter/adapters.dart';
 import 'package:online_groceries_app/features/user/help/controller/customer_support_controller.dart';
 import 'package:online_groceries_app/features/user/splash_screen.dart';
 import 'package:online_groceries_app/firebase_options.dart';
+import 'package:online_groceries_app/services/fcm_service.dart';
 import 'package:online_groceries_app/services/razorpay_service.dart';
 import 'package:online_groceries_app/services/user_services.dart';
 
@@ -20,6 +22,12 @@ void main() async {
   Get.put(CustomerSupportController(), permanent: true);
   await Hive.initFlutter();
   await Hive.openBox(boxName);
+
+  // Initialize FCM service (fetch token and listen for refreshes)
+  final fcmService = FcmService();
+  await fcmService.init();
+if(!kIsWeb)
+  FirebaseMessaging.instance.subscribeToTopic("all_users");
   runApp(const MyApp());
 }
 
@@ -35,7 +43,7 @@ class MyApp extends StatelessWidget {
           : const Size(414, 896), // MOBILE (User App)      minTextAdapt: true,
       splitScreenMode: true,
       child: GetMaterialApp(
-        title: 'Flutter Demo',
+        title: 'Pocket B2B',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
           fontFamily: "Gilroy",

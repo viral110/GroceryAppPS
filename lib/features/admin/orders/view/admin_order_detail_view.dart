@@ -1,6 +1,7 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:get/get_core/src/get_main.dart';
 import 'package:intl/intl.dart';
@@ -153,7 +154,14 @@ class AdminOrderDetailView extends StatelessWidget {
             children: [
               Text("Payment Status", style: _grayText),
               isEditable
-                  ? _dropdown(
+                  ? order.paymentMethod== "Online"?Text(
+                order.paymentStatus ??"-" ,
+                style: TextStyle(
+                  fontWeight: FontWeight.w600,
+                  color: _statusColor(order.paymentStatus),
+                ),
+              ):
+              _dropdown(
                       value: order.paymentStatus,
                       items: paymentStatuses,
                       onChanged: (val) {
@@ -163,7 +171,7 @@ class AdminOrderDetailView extends StatelessWidget {
                   : _statusText(order.paymentStatus),
             ],
           ),
-
+         order.paymentMethod== "Online" ?SizedBox(height: 10.h,):SizedBox(),
           _row("Payment Method", order.paymentMethod),
 
           _row(

@@ -409,7 +409,7 @@ class AdminAddProductView extends StatelessWidget {
                                                     text: pkg.price == 0
                                                         ? ""
                                                         : pkg.price.toString()),
-                                                label: "Price",
+                                                label: "MRP",
                                                 keyboardType: TextInputType.number,
                                                 onChanged: (v) {
                                                   pkg.price =

@@ -7,7 +7,9 @@ import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
+import 'package:online_groceries_app/features/admin/change_password/view/change_password_view.dart';
 import 'package:online_groceries_app/models/user_model.dart';
+import 'package:online_groceries_app/services/admin_notification_service.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 
@@ -29,7 +31,9 @@ class UserDetailsTab extends StatelessWidget {
               children: [
                 CircleAvatar(
                   radius: 26,
-                  backgroundColor: AppColors.primary.withOpacity(0.15),
+                  backgroundColor: AppColors.primary.withAlpha(
+                    (0.15 * 255).round(),
+                  ),
                   child: const Icon(
                     Icons.person,
                     size: 28,
@@ -165,6 +169,16 @@ class UserDetailsTab extends StatelessWidget {
               ),
             ],
           ),
+          SizedBox(height: 30.h),
+          CommonButton(
+            onTap: () => Get.to(
+              () => ChangePasswordView(
+                email: userModel.email ?? "",
+                userId: userModel.uid,
+              ),
+            ),
+            title: 'Change Password',
+          ),
         ],
       ),
     );
@@ -269,13 +283,17 @@ class UserDetailsTab extends StatelessWidget {
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide(
-                        color: AppColors.grayTextColor.withOpacity(0.3),
+                        color: AppColors.grayTextColor.withAlpha(
+                          (0.3 * 255).round(),
+                        ),
                       ),
                     ),
                     enabledBorder: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(12.r),
                       borderSide: BorderSide(
-                        color: AppColors.grayTextColor.withOpacity(0.3),
+                        color: AppColors.grayTextColor.withAlpha(
+                          (0.3 * 255).round(),
+                        ),
                       ),
                     ),
                     focusedBorder: OutlineInputBorder(
@@ -302,7 +320,9 @@ class UserDetailsTab extends StatelessWidget {
                             borderRadius: BorderRadius.circular(12.r),
                           ),
                           side: BorderSide(
-                            color: AppColors.grayTextColor.withOpacity(0.4),
+                            color: AppColors.grayTextColor.withAlpha(
+                              (0.4 * 255).round(),
+                            ),
                           ),
                         ),
                         child: Text(
@@ -381,13 +401,13 @@ class UserDetailsTab extends StatelessWidget {
           padding: EdgeInsets.symmetric(vertical: 12.h),
           decoration: BoxDecoration(
             color: selected
-                ? AppColors.primary.withOpacity(0.12)
+                ? AppColors.primary.withAlpha((0.12 * 255).round())
                 : AppColors.whiteColor,
             borderRadius: BorderRadius.circular(12.r),
             border: Border.all(
               color: selected
                   ? AppColors.primary
-                  : AppColors.grayTextColor.withOpacity(0.3),
+                  : AppColors.grayTextColor.withAlpha((0.3 * 255).round()),
             ),
           ),
           child: Center(
@@ -468,6 +488,41 @@ class UserDetailsTab extends StatelessWidget {
             : "₹${amount.toStringAsFixed(2)} credit deducted successfully",
         type: ToastType.success,
       );
+
+      // Send notifications for credit changes
+      try {
+        final userSnapshot = await FirebaseFirestore.instance
+            .collection(AppConstantStrings.userCollection)
+            .doc(userId)
+            .get();
+        final token = (userSnapshot.data()?['fcm_token'] as String?) ?? '';
+        final uid = (userSnapshot.data()?['uid'] as String?) ?? '';
+        if (token.trim().isNotEmpty) {
+          if (isAdd) {
+            await AdminNotificationService().sendCreditAdded(
+              token,
+              amount.toInt(),
+                uid
+            );
+          } else {
+            await AdminNotificationService().sendCreditUsed(
+              token,
+              amount.toInt(),
+                uid
+            );
+            // low balance check
+            final remaining =
+                (userSnapshot.data()?['remaining_credits'] as num?)
+                    ?.toDouble() ??
+                0.0;
+            if (remaining < 10000) {
+              await AdminNotificationService().sendLowCredit(token,uid);
+            }
+          }
+        }
+      } catch (e) {
+        log('Failed to send credit change notification: $e');
+      }
     } catch (e) {
       CommonLoader.hide();
 
@@ -550,7 +605,10 @@ class UserDetailsTab extends StatelessWidget {
         color: AppColors.whiteColor,
         borderRadius: BorderRadius.circular(14),
         boxShadow: [
-          BoxShadow(blurRadius: 16, color: Colors.black.withOpacity(0.05)),
+          BoxShadow(
+            blurRadius: 16,
+            color: Colors.black.withAlpha((0.05 * 255).round()),
+          ),
         ],
       ),
       child: Column(
@@ -576,7 +634,10 @@ class UserDetailsTab extends StatelessWidget {
       color: AppColors.whiteColor,
       borderRadius: BorderRadius.circular(14),
       boxShadow: [
-        BoxShadow(blurRadius: 16, color: Colors.black.withOpacity(0.05)),
+        BoxShadow(
+          blurRadius: 16,
+          color: Colors.black.withAlpha((0.05 * 255).round()),
+        ),
       ],
     );
   }
@@ -589,7 +650,10 @@ class UserDetailsTab extends StatelessWidget {
           color: AppColors.whiteColor,
           borderRadius: BorderRadius.circular(14),
           boxShadow: [
-            BoxShadow(blurRadius: 16, color: Colors.black.withOpacity(0.05)),
+            BoxShadow(
+              blurRadius: 16,
+              color: Colors.black.withAlpha((0.05 * 255).round()),
+            ),
           ],
         ),
         child: Column(

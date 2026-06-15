@@ -34,13 +34,15 @@ class AdminDashboardView extends StatelessWidget {
                 Padding(
                   padding: EdgeInsets.symmetric(horizontal: 24.w),
                   child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      SvgPicture.asset("assets/svg/logo_2.svg",height: 37.h,),
+                      Image.asset("assets/png/logo.jpg",width: 70.w,),
+                    //  SvgPicture.asset("assets/svg/logo_2.svg",height: 37.h,),
                       SizedBox(width: 15.w,height: 15.h,),
                       Text(
                         "Admin Panel",
                         style: TextStyle(
-                          fontSize: 25.sp,
+                          fontSize: 19.sp,
                           fontWeight: FontWeight.w800,
                           color: AppColors.textColor,
                         ),

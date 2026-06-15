@@ -5,6 +5,7 @@ import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/admin/promocode/controller/promocode_controller.dart';
+import 'package:online_groceries_app/services/admin_notification_service.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 
@@ -16,94 +17,96 @@ class PromoListView extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        /// HEADER
-        Row(
-          children: [
-            Text(
-              "Promo Codes",
-              style: TextStyle(
-                fontSize: 24.sp,
-                fontWeight: FontWeight.w800,
-                color: AppColors.textColor,
+    return SingleChildScrollView(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          /// HEADER
+          Row(
+            children: [
+              Text(
+                "Promo Codes",
+                style: TextStyle(
+                  fontSize: 24.sp,
+                  fontWeight: FontWeight.w800,
+                  color: AppColors.textColor,
+                ),
               ),
-            ),
-            const Spacer(),
-            SizedBox(
-              width: 400.w,
-              child: TextField(
-                onChanged: controller.onSearch,
-                decoration: InputDecoration(
-                  hintText: "Search by promo code",
-                  prefixIcon: const Icon(Icons.search),
-                  filled: true,
-                  fillColor: AppColors.whiteColor,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: BorderSide.none,
+              const Spacer(),
+              SizedBox(
+                width: 400.w,
+                child: TextField(
+                  onChanged: controller.onSearch,
+                  decoration: InputDecoration(
+                    hintText: "Search by promo code",
+                    prefixIcon: const Icon(Icons.search),
+                    filled: true,
+                    fillColor: AppColors.whiteColor,
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(12),
+                      borderSide: BorderSide.none,
+                    ),
                   ),
                 ),
               ),
-            ),
-            SizedBox(width: 20.w),
-            SizedBox(
-              width: 160.w,
-              child: CommonButton(
-                title: "Add Promo",
-                onTap: () {
-                  showPromoDialog(context);
-                },
+              SizedBox(width: 20.w),
+              SizedBox(
+                width: 160.w,
+                child: CommonButton(
+                  title: "Add Promo",
+                  onTap: () {
+                    showPromoDialog(context);
+                  },
+                ),
               ),
-            ),
-          ],
-        ),
+            ],
+          ),
 
-        SizedBox(height: 20.h),
+          SizedBox(height: 20.h),
 
-        _tableHeader(),
+          _tableHeader(),
 
-        SizedBox(height: 12.h),
+          SizedBox(height: 12.h),
 
-        /// PROMO LIST
-        StreamBuilder<List<PromoModel>>(
-          stream: controller.getPromos(),
-          builder: (context, snapshot) {
-            if (snapshot.connectionState == ConnectionState.waiting) {
-              return const Center(child: CircularProgressIndicator());
-            }
-
-            if (!snapshot.hasData || snapshot.data!.isEmpty) {
-              return const Center(child: Text("No promo codes found"));
-            }
-
-            return Obx(() {
-              final promos = controller.filterPromos(snapshot.data!);
-
-              if (promos.isEmpty) {
-                return const Center(child: Text("No matching promo codes"));
+          /// PROMO LIST
+          StreamBuilder<List<PromoModel>>(
+            stream: controller.getPromos(),
+            builder: (context, snapshot) {
+              if (snapshot.connectionState == ConnectionState.waiting) {
+                return const Center(child: CircularProgressIndicator());
               }
 
-              return Column(
-                children: promos.map((promo) {
-                  return _promoRow(
-                    promo.code,
-                    promo.discountType.toLowerCase() == 'flat'
-                        ? "₹${promo.discountValue}"
-                        : "${promo.discountValue}%",
-                    "₹${promo.minOrderAmount}",
-                    "${promo.usedCount}",
-                    onEdit: () => showPromoDialog(context, promo: promo),
-                    onDelete: () => controller.deletePromo(promo.id),
-                  );
-                }).toList(),
-              );
-            });
-          },
-        )
+              if (!snapshot.hasData || snapshot.data!.isEmpty) {
+                return const Center(child: Text("No promo codes found"));
+              }
 
-      ],
+              return Obx(() {
+                final promos = controller.filterPromos(snapshot.data!);
+
+                if (promos.isEmpty) {
+                  return const Center(child: Text("No matching promo codes"));
+                }
+
+                return Column(
+                  children: promos.map((promo) {
+                    return _promoRow(
+                      promo.code,
+                      promo.discountType.toLowerCase() == 'flat'
+                          ? "₹${promo.discountValue}"
+                          : "${promo.discountValue}%",
+                      "₹${promo.minOrderAmount}",
+                      "${promo.usedCount}",
+                      onEdit: () => showPromoDialog(context, promo: promo),
+                      onDelete: () => controller.deletePromo(promo.id),
+                    );
+                  }).toList(),
+                );
+              });
+            },
+          )
+
+        ],
+      ),
     );
   }
   void showPromoDialog(BuildContext context, {PromoModel? promo}) {
@@ -301,6 +304,14 @@ class PromoListView extends StatelessWidget {
 
                     if (promo == null) {
                       await ref.add(data);
+                      // Notify all users about new promo
+                      try {
+                        final title = "🎉 New Offer: ${data['code']}";
+                        final body = "Get ${data['discountValue']}${data['discountType']=='flat'?'₹':'%'} off. Min order: ₹${data['minOrderAmount']}";
+                        await AdminNotificationService().sendNewOffer(title, body);
+                      } catch (e) {
+                        debugPrint('Failed to send promo notification: $e');
+                      }
                     } else {
                       await ref.doc(promo.id).update(data);
                     }
@@ -365,7 +376,7 @@ class PromoListView extends StatelessWidget {
           fillColor: AppColors.whiteColor,
           border: OutlineInputBorder(
             borderRadius: BorderRadius.circular(12),
-            borderSide: BorderSide(color: AppColors.grayTextColor.withOpacity(.2)),
+            borderSide: BorderSide(color: AppColors.grayTextColor.withAlpha((0.2*255).round())),
           ),
         ),
       ),
@@ -383,7 +394,7 @@ class PromoListView extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
-          border: Border.all(color: AppColors.grayTextColor.withOpacity(.3)),
+          border: Border.all(color: AppColors.grayTextColor.withAlpha((0.3*255).round())),
           borderRadius: BorderRadius.circular(12),
         ),
         child: Column(
@@ -417,7 +428,7 @@ class PromoListView extends StatelessWidget {
         title,
         style: const TextStyle(color: AppColors.textColor),
       ),
-      activeColor: AppColors.primary,
+      activeThumbColor: AppColors.primary,
       value: value,
       onChanged: onChanged,
     );
@@ -494,7 +505,7 @@ class PromoListView extends StatelessWidget {
       boxShadow: [
         BoxShadow(
           blurRadius: 16,
-          color: Colors.black.withOpacity(0.05),
+          color: Colors.black.withAlpha((0.05*255).round()),
         ),
       ],
     );

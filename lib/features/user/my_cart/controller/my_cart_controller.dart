@@ -154,24 +154,30 @@ class CartController extends GetxController {
     required PackagingModel packaging,
     required double unitPrice,
     int quantity = 1,
+    bool replaceQuantity = false,
   }) async {
     try {
       isLoading.value = true;
+
       final int availableStock = _getAvailableStock(product, packaging.label);
+
       if (availableStock <= 0) {
         CommonToast.show("Product is Sold Out", type: ToastType.error);
         return;
       }
 
       final index = cartItems.indexWhere(
-        (item) =>
-            item.product.id == product.id &&
+            (item) =>
+        item.product.id == product.id &&
             item.packagingLabel == packaging.label,
       );
 
       final int currentQty = index != -1 ? cartItems[index].quantity : 0;
 
-      if (currentQty + quantity > availableStock) {
+      /// 🔹 Calculate new quantity
+      final int newQty = replaceQuantity ? quantity : currentQty + quantity;
+
+      if (newQty > availableStock) {
         CommonToast.show(
           "Only $availableStock item(s) available",
           type: ToastType.error,
@@ -179,18 +185,14 @@ class CartController extends GetxController {
         return;
       }
 
-      // final int discount = packaging.discount;
-      // final double discountedUnitPrice = discount > 0
-      //     ? unitPrice - (unitPrice * discount / 100)
-      //     : unitPrice;
-
       final docId = "${product.id}_${packaging.label}";
 
       if (index != -1) {
-        cartItems[index].quantity += quantity;
+        /// 🔹 Update existing item
+        cartItems[index].quantity = newQty;
         cartItems.refresh();
 
-        // ✅ Sort after update
+        /// Sort cart items
         cartItems.sort((a, b) => a.product.name.compareTo(b.product.name));
         cartItems.refresh();
 
@@ -199,8 +201,11 @@ class CartController extends GetxController {
             .doc(_userId)
             .collection(AppConstantStrings.cartCollection)
             .doc(docId)
-            .update({'quantity': cartItems[index].quantity});
+            .update({
+          'quantity': newQty,
+        });
       } else {
+        /// 🔹 Add new item
         final cartItem = CartItem(
           product: product,
           packagingLabel: packaging.label,

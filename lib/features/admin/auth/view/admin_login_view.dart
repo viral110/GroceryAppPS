@@ -5,6 +5,7 @@ import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_textfield.dart';
 import 'package:online_groceries_app/features/admin/auth/controller/admin_login_controller.dart';
 import 'package:online_groceries_app/features/admin/dashboard/view/admin_dashboard.dart';
+import 'package:online_groceries_app/features/user/auth/view/forgot_password_screen.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 class AdminLoginView extends StatefulWidget {
@@ -38,6 +39,8 @@ class _AdminLoginViewState extends State<AdminLoginView> {
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
+              Image.asset('assets/png/logo.jpg',width: 150.w,),
+              SizedBox(height: 10.h,),
               Text(
                 "Admin Panel",
                 style: TextStyle(
@@ -80,7 +83,23 @@ class _AdminLoginViewState extends State<AdminLoginView> {
                   });
                 },
               ),
-
+              Align(
+                alignment: Alignment.centerRight,
+                child: TextButton(
+                  onPressed: () {
+                    // controller.f
+                    Get.to(() => const ForgotPasswordScreen());
+                  },
+                  child: Text(
+                    "Forgot Password?",
+                    style: TextStyle(
+                      color: AppColors.textColor,
+                      fontWeight: FontWeight.w500,
+                      fontSize: 14.sp,
+                    ),
+                  ),
+                ),
+              ),
               SizedBox(height: 30.h),
 
             CommonButton(title: "Login", onTap: () {

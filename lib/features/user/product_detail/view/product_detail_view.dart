@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
 import 'package:get/get.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
@@ -322,29 +323,76 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                   const SizedBox(height: 25),
 
                   /// ================= ADD TO CART =================
+                  // CommonButton(
+                  //   title: "Add To Basket",
+                  //   onTap: () {
+                  //     if (controller.isSoldOut) {
+                  //       CommonToast.show(
+                  //         "Your selected packaging is Out Of Stock",
+                  //         type: ToastType.warning,
+                  //       );
+                  //     } else {
+                  //       Get.back();
+                  //       CommonLoader.show();
+                  //       final cartController = Get.put(CartController());
+                  //
+                  //       // ✅ Pass the selling price (after discount)
+                  //       cartController.addToCart(
+                  //         product: widget.product,
+                  //         packaging: controller.selectedPackaging,
+                  //         unitPrice: controller.sellingPrice,
+                  //         quantity: controller.quantity.value,
+                  //       );
+                  //
+                  //       CommonLoader.hide();
+                  //     }
+                  //   },
+                  // ),
                   CommonButton(
                     title: "Add To Basket",
-                    onTap: () {
+                    onTap: () async {
                       if (controller.isSoldOut) {
                         CommonToast.show(
                           "Your selected packaging is Out Of Stock",
                           type: ToastType.warning,
                         );
-                      } else {
-                        Get.back();
-                        CommonLoader.show();
-                        final cartController = Get.put(CartController());
+                        return;
+                      }
+                      Get.back();
+                      CommonLoader.show();
 
-                        // ✅ Pass the selling price (after discount)
-                        cartController.addToCart(
+                      final cartController = Get.find<CartController>();
+
+                      final existingItem = cartController.cartItems
+                          .firstWhereOrNull(
+                            (e) =>
+                                e.product.id == widget.product.id &&
+                                e.packagingLabel ==
+                                    controller.selectedPackaging.label,
+                          );
+
+                      if (existingItem != null) {
+                        /// UPDATE quantity
+                        await cartController.addToCart(
                           product: widget.product,
                           packaging: controller.selectedPackaging,
                           unitPrice: controller.sellingPrice,
                           quantity: controller.quantity.value,
+                          replaceQuantity: true,
                         );
-
-                        CommonLoader.hide();
+                      } else {
+                        /// ADD new item
+                        await cartController.addToCart(
+                          product: widget.product,
+                          packaging: controller.selectedPackaging,
+                          unitPrice: controller.sellingPrice,
+                          quantity: controller.quantity.value,
+                          replaceQuantity: false,
+                        );
                       }
+
+                      CommonLoader.hide();
+                      Get.back();
                     },
                   ),
 
@@ -386,18 +434,21 @@ class _ProductDetailViewState extends State<ProductDetailView> {
                     onPageChanged: (index) =>
                         controller.currentIndex.value = index,
                     itemBuilder: (_, index) {
-                      return Image.network(
-                        images[index],
+                      return CachedNetworkImage(
+                        imageUrl: images[index],
                         fit: BoxFit.contain,
-                        errorBuilder: (context, error, stackTrace) {
-                          return const Center(
-                            child: Icon(
-                              Icons.broken_image,
-                              size: 80,
-                              color: Colors.grey,
-                            ),
-                          );
-                        },
+                        memCacheHeight: 400, // medium quality
+                        memCacheWidth: 400, // medium quality
+                        placeholder: (context, url) => const Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                        errorWidget: (context, url, error) => const Center(
+                          child: Icon(
+                            Icons.broken_image,
+                            size: 80,
+                            color: Colors.grey,
+                          ),
+                        ),
                       );
                     },
                   )

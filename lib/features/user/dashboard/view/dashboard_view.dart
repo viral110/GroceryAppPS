@@ -9,6 +9,7 @@ import 'package:online_groceries_app/features/user/explore/view/explore_view.dar
 import 'package:online_groceries_app/features/user/favourite/view/favourite_view.dart';
 import 'package:online_groceries_app/features/user/home/view/home_view.dart';
 import 'package:online_groceries_app/features/user/my_cart/view/my_cart_view.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 import 'package:online_groceries_app/utils/app_constant.dart';
 
@@ -104,7 +105,8 @@ class MainScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final String uid = FirebaseAuth.instance.currentUser!.uid;
+    final String uid = UserService.getUserFromHive().uid ??"";
+    print("Current UserID${uid}");
 
     return StreamBuilder<DocumentSnapshot>(
       stream: FirebaseFirestore.instance
@@ -125,7 +127,6 @@ class MainScreen extends StatelessWidget {
         if (!dashboardEnabled) {
           return const DashboardBlockedPage();
         }
-
         return _ActualDashboard();
       },
     );

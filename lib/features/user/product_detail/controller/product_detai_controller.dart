@@ -45,9 +45,21 @@ class ProductDetailController extends GetxController {
   void onInit() {
     super.onInit();
 
-    /// 🔹 store config (user store)
+    final args = Get.arguments;
+    String? selectedPackagingLabel;
+    int? cartQuantity;
+
+    if (args != null) {
+      selectedPackagingLabel = args["packagingLabel"];
+      cartQuantity = args["quantity"];
+      if (cartQuantity != null) {
+        quantity.value = cartQuantity;
+      }
+    }
+
+    /// 🔹 store config
     final storeConfig = product.storeConfigs.firstWhereOrNull(
-      (s) => s.storeId == UserService.getUserFromHive().storeId,
+          (s) => s.storeId == UserService.getUserFromHive().storeId,
     );
 
     if (storeConfig == null && product.storeConfigs.isNotEmpty) {
@@ -58,15 +70,25 @@ class ProductDetailController extends GetxController {
       packagingList = [];
     }
 
-    if (packagingList.isEmpty) {
-      return;
+    if (packagingList.isEmpty) return;
+
+    /// ✅ Only packaging selection from cart
+    if (selectedPackagingLabel != null) {
+      final index = packagingList.indexWhere(
+            (p) => p.label == selectedPackagingLabel,
+      );
+
+      selectedWeightIndex.value =
+      index != -1 ? index : 0;
+    } else {
+      /// 🔹 default logic
+      final defaultIndex =
+      packagingList.indexWhere((p) => p.isDefault);
+
+      selectedWeightIndex.value =
+      defaultIndex != -1 ? defaultIndex : 0;
     }
 
-    /// 🔹 auto select default packaging
-    final defaultIndex = packagingList.indexWhere((p) => p.isDefault);
-    selectedWeightIndex.value = defaultIndex != -1 ? defaultIndex : 0;
-
-    /// 🔹 listeners
     everAll([selectedWeightIndex, quantity], (_) {
       _updateTotalPrice();
     });

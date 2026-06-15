@@ -218,151 +218,247 @@ class _UserOrderCard extends StatelessWidget {
     // ✅ Check if payment method is "Credit"
     final bool isCreditOrder = paymentMethod.toLowerCase() == "credit";
 
-    return GestureDetector(
-      onTap: () {
-        Get.to(() => AdminOrderDetailView(orderId: orderId));
-      },
-      child: Container(
-        margin: EdgeInsets.only(bottom: 14.h),
-        padding: EdgeInsets.all(16.w),
-        decoration: BoxDecoration(
-          color: AppColors.whiteColor,
-          borderRadius: BorderRadius.circular(12),
-          boxShadow: [
-            BoxShadow(blurRadius: 12, color: Colors.black.withOpacity(0.04)),
-          ],
-        ),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            /// ORDER ID + STATUS
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              children: [
-                Text(
-                  "#$orderId",
-                  style: TextStyle(
-                    fontSize: 14.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textColor,
-                  ),
-                ),
-                Container(
-                  padding: EdgeInsets.symmetric(
-                    horizontal: 12.w,
-                    vertical: 6.h,
-                  ),
-                  decoration: BoxDecoration(
-                    color: _statusColor().withOpacity(0.15),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: Text(
-                    status,
-                    style: TextStyle(
-                      fontSize: 12.sp,
-                      fontWeight: FontWeight.w600,
-                      color: _statusColor(),
-                    ),
-                  ),
+    return StreamBuilder<DocumentSnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection(AppConstantStrings.orderCollection)
+          .doc(orderId)
+          .snapshots(),
+      builder: (context, snapshot) {
+        // ✅ Calculate remaining square-off amount
+        double squaredOffAmount = 0.0;
+
+        if (snapshot.hasData && snapshot.data!.exists) {
+          final data = snapshot.data!.data() as Map<String, dynamic>?;
+          squaredOffAmount =
+              (data?['squared_off_amount'] as num?)?.toDouble() ?? 0.0;
+        }
+
+        final double remainingAmount = totalAmount - squaredOffAmount;
+        return GestureDetector(
+          onTap: () {
+            Get.to(() => AdminOrderDetailView(orderId: orderId));
+          },
+          child: Container(
+            margin: EdgeInsets.only(bottom: 14.h),
+            padding: EdgeInsets.all(16.w),
+            decoration: BoxDecoration(
+              color: AppColors.whiteColor,
+              borderRadius: BorderRadius.circular(12),
+              boxShadow: [
+                BoxShadow(
+                  blurRadius: 12,
+                  color: Colors.black.withOpacity(0.04),
                 ),
               ],
             ),
-
-            SizedBox(height: 8.h),
-
-            /// DATE
-            Text(
-              date,
-              style: TextStyle(fontSize: 12.sp, color: AppColors.grayTextColor),
-            ),
-
-            SizedBox(height: 10.h),
-
-            /// ITEMS
-            Text(
-              items,
-              style: TextStyle(
-                fontSize: 14.sp,
-                fontWeight: FontWeight.w500,
-                color: AppColors.textColor,
-              ),
-            ),
-
-            SizedBox(height: 14.h),
-
-            /// AMOUNT + VIEW DETAILS + SQUARE OFF (only for Credit orders)
-            Row(
+            child: Row(
               mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text(
-                  amount,
-                  style: TextStyle(
-                    fontSize: 16.sp,
-                    fontWeight: FontWeight.w700,
-                    color: AppColors.textColor,
-                  ),
-                ),
-                Row(
-                  children: [
-                    /// VIEW DETAILS BUTTON
-                    Container(
-                      padding: EdgeInsets.symmetric(
-                        horizontal: 14.w,
-                        vertical: 6.h,
-                      ),
-                      decoration: BoxDecoration(
-                        borderRadius: BorderRadius.circular(6),
-                        border: Border.all(color: AppColors.primary),
-                      ),
-                      child: Text(
-                        "View Details",
+                Flexible(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        "#$orderId",
                         style: TextStyle(
-                          fontSize: 13.sp,
-                          fontWeight: FontWeight.w600,
-                          color: AppColors.primary,
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textColor,
                         ),
                       ),
-                    ),
+                      SizedBox(height: 8.h),
 
-                    /// ✅ SQUARE OFF BUTTON - Only show for Credit payment method
-                    if (isCreditOrder) ...[
-                      SizedBox(width: 10.w),
-                      GestureDetector(
-                        onTap: () {
-                          _showSquareOffDialog(
-                            context,
-                            orderId: orderId,
-                            userId: userId,
-                            orderAmount: totalAmount,
-                          );
-                        },
-                        child: Container(
+                      /// DATE
+                      Text(
+                        date,
+                        style: TextStyle(
+                          fontSize: 12.sp,
+                          color: AppColors.grayTextColor,
+                        ),
+                      ),
+                      SizedBox(height: 10.h),
+
+                      /// ITEMS
+                      Text(
+                        items,
+                        style: TextStyle(
+                          fontSize: 14.sp,
+                          fontWeight: FontWeight.w500,
+                          color: AppColors.textColor,
+                        ),
+                      ),
+                      SizedBox(height: 8.h),
+                      Container(
+                        padding: EdgeInsets.symmetric(
+                          horizontal: 12.w,
+                          vertical: 6.h,
+                        ),
+                        decoration: BoxDecoration(
+                          color: _statusColor().withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          status,
+                          style: TextStyle(
+                            fontSize: 12.sp,
+                            fontWeight: FontWeight.w600,
+                            color: _statusColor(),
+                          ),
+                        ),
+                      ),
+
+                      /// ORDER ID + STATUS
+                    ],
+                  ),
+                ),
+                Column(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  crossAxisAlignment: CrossAxisAlignment.end,
+                  children: [
+                    Container(
+                      width: 250.w,
+                      padding: EdgeInsets.all(12.w),
+                      decoration: BoxDecoration(
+                        color: AppColors.primary.withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8.r),
+                      ),
+                      child: Column(
+                        children: [
+                          Row(
+                            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                            children: [
+                              Text(
+                                "Order Amount:",
+                                style: TextStyle(
+                                  fontSize: 14.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.textColor,
+                                ),
+                              ),
+                              Text(
+                                "₹ ${totalAmount.toStringAsFixed(2)}",
+                                style: TextStyle(
+                                  fontSize: 16.sp,
+                                  fontWeight: FontWeight.w700,
+                                  color: AppColors.primary,
+                                ),
+                              ),
+                            ],
+                          ),
+
+                          if (squaredOffAmount > 0) ...[
+                            SizedBox(height: 8.h),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Already Squared Off:",
+                                  style: TextStyle(
+                                    fontSize: 13.sp,
+                                    fontWeight: FontWeight.w500,
+                                    color: Colors.grey,
+                                  ),
+                                ),
+                                Text(
+                                  "₹ ${squaredOffAmount.toStringAsFixed(2)}",
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w600,
+                                    color: Colors.orange,
+                                  ),
+                                ),
+                              ],
+                            ),
+                            Divider(height: 16.h, color: Colors.grey.shade300),
+                            Row(
+                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                              children: [
+                                Text(
+                                  "Remaining:",
+                                  style: TextStyle(
+                                    fontSize: 14.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: AppColors.textColor,
+                                  ),
+                                ),
+                                Text(
+                                  "₹ ${remainingAmount.toStringAsFixed(2)}",
+                                  style: TextStyle(
+                                    fontSize: 16.sp,
+                                    fontWeight: FontWeight.w700,
+                                    color: Colors.green,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    SizedBox(height: 15.h,),
+                    Row(
+                      children: [
+                        Container(
                           padding: EdgeInsets.symmetric(
                             horizontal: 14.w,
                             vertical: 6.h,
                           ),
                           decoration: BoxDecoration(
                             borderRadius: BorderRadius.circular(6),
-                            color: Colors.orange,
+                            border: Border.all(color: AppColors.primary),
                           ),
                           child: Text(
-                            "Square Off",
+                            "View Details",
                             style: TextStyle(
                               fontSize: 13.sp,
                               fontWeight: FontWeight.w600,
-                              color: AppColors.whiteColor,
+                              color: AppColors.primary,
                             ),
                           ),
                         ),
-                      ),
-                    ],
+
+                        /// ✅ SQUARE OFF BUTTON - Only show for Credit payment method
+                        if (isCreditOrder) ...[
+                          SizedBox(width: 10.w),
+                          GestureDetector(
+                            onTap: () {
+                              _showSquareOffDialog(
+                                context,
+                                orderId: orderId,
+                                userId: userId,
+                                orderAmount: totalAmount,
+                              );
+                            },
+                            child: Container(
+                              padding: EdgeInsets.symmetric(
+                                horizontal: 14.w,
+                                vertical: 6.h,
+                              ),
+                              decoration: BoxDecoration(
+                                borderRadius: BorderRadius.circular(6),
+                                color: Colors.orange,
+                              ),
+                              child: Text(
+                                "Square Off",
+                                style: TextStyle(
+                                  fontSize: 13.sp,
+                                  fontWeight: FontWeight.w600,
+                                  color: AppColors.whiteColor,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ],
+                      ],
+                    ),
                   ],
                 ),
               ],
             ),
-          ],
-        ),
-      ),
+          ),
+        );
+      },
     );
   }
 

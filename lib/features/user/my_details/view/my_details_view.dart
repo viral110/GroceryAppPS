@@ -65,6 +65,12 @@ class _MyDetailsViewState extends State<MyDetailsView> {
                 keyboardType: TextInputType.phone,
                 isReadOnly: true,
               ),
+              const SizedBox(height: 16),
+              CommonTextField(
+                label: "GST Number",
+                hint: "Enter GST number",
+                controller: controller.gstNumber,
+              ),
 
               const SizedBox(height: 24),
 

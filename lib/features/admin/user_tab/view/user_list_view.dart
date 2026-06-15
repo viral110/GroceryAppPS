@@ -85,15 +85,19 @@ class UserListView extends StatelessWidget {
                 return const Center(child: Text("No matching users"));
               }
 
-              return Column(
-                children: filteredUsers.map((user) {
-                  return GestureDetector(
-                    onTap: () {
-                      Get.to(() => AdminUserDetailView(userModel: user));
-                    },
-                    child: _userRow(user),
-                  );
-                }).toList(),
+              return Expanded(
+                child: SingleChildScrollView(
+                  child: Column(
+                    children: filteredUsers.map((user) {
+                      return GestureDetector(
+                        onTap: () {
+                          Get.to(() => AdminUserDetailView(userModel: user));
+                        },
+                        child: _userRow(user),
+                      );
+                    }).toList(),
+                  ),
+                ),
               );
             });
           },

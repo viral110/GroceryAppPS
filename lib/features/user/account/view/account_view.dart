@@ -3,7 +3,6 @@ import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_loader.dart';
-import 'package:online_groceries_app/common_widgets/common_tost.dart';
 import 'package:online_groceries_app/features/user/about/view/about_view.dart';
 import 'package:online_groceries_app/features/user/auth/view/login_view.dart';
 import 'package:online_groceries_app/features/user/my_orders/view/my_order_view.dart';
@@ -91,12 +90,7 @@ class AccountView extends StatelessWidget {
                     Get.to(() => PromoCodeView());
                   }),
                   _menuItem(Icons.notifications_none, "Notifications", () {
-                    // Get.to(() => NotificationsView());
-                    // CommonToast.show(
-                    //   "Notification Comming Soon...",
-                    //   type: ToastType.info,
-                    // );
-                    showComingSoonPopup();
+                    Get.to(() => NotificationsView(userId: UserService.getUserFromHive().uid,));
                   }),
                   _menuItem(Icons.help_outline, "Help", () {
                     Get.to(() => HelpView());

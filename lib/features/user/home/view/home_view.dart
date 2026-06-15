@@ -2,6 +2,7 @@ import 'package:carousel_slider/carousel_slider.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_screenutil/flutter_screenutil.dart';
 import 'package:flutter_svg/flutter_svg.dart';
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:get/get.dart';
 import 'package:online_groceries_app/common_widgets/common_loader.dart';
 import 'package:online_groceries_app/features/admin/products/models/produce_model.dart';
@@ -36,7 +37,7 @@ class GroceryHomeScreen extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
                 children: [
                   const SizedBox(width: 40), // Spacer for alignment
-                  SvgPicture.asset("assets/svg/logo_2.svg", height: 27.h),
+                  Image.asset("assets/png/logo.jpg", height: 30.h),
 
                   // ✅ Cart Icon with Badge
                   GestureDetector(
@@ -176,22 +177,31 @@ class GroceryHomeScreen extends StatelessWidget {
                         final banner = controller.banners[index];
                         return ClipRRect(
                           borderRadius: BorderRadius.circular(16),
-                          child: Image.network(
-                            banner.image,
+                          child: CachedNetworkImage(
+                            filterQuality: FilterQuality.medium,
+                            imageUrl: banner.image,
                             fit: BoxFit.cover,
                             width: double.infinity,
-                            errorBuilder: (context, error, stackTrace) {
-                              return Container(
-                                color: Colors.grey.shade200,
-                                child: Center(
-                                  child: Icon(
-                                    Icons.image_not_supported,
-                                    size: 60,
-                                    color: Colors.grey.shade400,
-                                  ),
+                            memCacheHeight: 300, // medium quality
+                            memCacheWidth: 600, // medium quality
+                            placeholder: (context, url) => Container(
+                              color: Colors.grey.shade200,
+                              child: const Center(
+                                child: CircularProgressIndicator(
+                                  strokeWidth: 2,
                                 ),
-                              );
-                            },
+                              ),
+                            ),
+                            errorWidget: (context, url, error) => Container(
+                              color: Colors.grey.shade200,
+                              child: Center(
+                                child: Icon(
+                                  Icons.image_not_supported,
+                                  size: 60,
+                                  color: Colors.grey.shade400,
+                                ),
+                              ),
+                            ),
                           ),
                         );
                       },
@@ -272,9 +282,10 @@ class GroceryHomeScreen extends StatelessWidget {
                       child: IntrinsicHeight(
                         child: Row(
                           children: List.generate(
-                            controller.exclusiveOffers.length,
+                            controller.paginatedExclusiveOffers.length,
                             (index) {
-                              final product = controller.exclusiveOffers[index];
+                              final product =
+                                  controller.paginatedExclusiveOffers[index];
                               return Padding(
                                 padding: EdgeInsets.only(right: 20.w),
                                 child: ProductCard(product: product),
@@ -284,6 +295,12 @@ class GroceryHomeScreen extends StatelessWidget {
                         ),
                       ),
                     ),
+                    if (controller.paginatedExclusiveOffers.length <
+                        controller.exclusiveOffers.length)
+                      TextButton(
+                        onPressed: controller.loadMoreExclusive,
+                        child: Text("Load More"),
+                      ),
                   ],
                 );
               }),
@@ -509,42 +526,34 @@ class ProductCard extends StatelessWidget {
                   alignment: Alignment.center,
                   child: ClipRRect(
                     borderRadius: BorderRadius.circular(12),
-                    child: Image.network(
-                      product.thumbnail,
+                    child: CachedNetworkImage(
+                      filterQuality: FilterQuality.low,
+                      imageUrl: product.thumbnail,
                       fit: BoxFit.contain,
                       height: 100.h,
                       width: 100.h,
-                      errorBuilder: (context, error, stackTrace) {
-                        return Container(
-                          height: 100.h,
-                          width: 100.h,
-                          decoration: BoxDecoration(
-                            color: Colors.grey.shade200,
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                          child: Icon(
-                            Icons.shopping_bag_outlined,
-                            size: 40,
-                            color: Colors.grey.shade400,
-                          ),
-                        );
-                      },
-                      loadingBuilder: (context, child, loadingProgress) {
-                        if (loadingProgress == null) return child;
-                        return SizedBox(
-                          height: 100.h,
-                          width: 100.h,
-                          child: Center(
-                            child: CircularProgressIndicator(
-                              strokeWidth: 2,
-                              value: loadingProgress.expectedTotalBytes != null
-                                  ? loadingProgress.cumulativeBytesLoaded /
-                                        loadingProgress.expectedTotalBytes!
-                                  : null,
-                            ),
-                          ),
-                        );
-                      },
+                      memCacheHeight: 300, // medium quality
+                      memCacheWidth: 300, // medium quality
+                      placeholder: (context, url) => SizedBox(
+                        height: 100.h,
+                        width: 100.h,
+                        child: Center(
+                          child: CircularProgressIndicator(strokeWidth: 2),
+                        ),
+                      ),
+                      errorWidget: (context, url, error) => Container(
+                        height: 100.h,
+                        width: 100.h,
+                        decoration: BoxDecoration(
+                          color: Colors.grey.shade200,
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                        child: Icon(
+                          Icons.shopping_bag_outlined,
+                          size: 40,
+                          color: Colors.grey.shade400,
+                        ),
+                      ),
                     ),
                   ),
                 ),

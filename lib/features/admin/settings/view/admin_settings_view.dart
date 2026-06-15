@@ -6,12 +6,14 @@ import 'package:online_groceries_app/common_widgets/common_app_bar.dart';
 import 'package:online_groceries_app/common_widgets/common_button.dart';
 import 'package:online_groceries_app/common_widgets/common_textfield.dart';
 import 'package:online_groceries_app/common_widgets/common_tost.dart';
+import 'package:online_groceries_app/features/admin/change_password/view/change_password_view.dart';
 import 'package:online_groceries_app/features/admin/settings/view/add_banner_view.dart';
 import 'package:online_groceries_app/features/admin/settings/view/admin_about_view.dart';
 import 'package:online_groceries_app/features/admin/settings/view/admin_feedbacks_view.dart';
 import 'package:online_groceries_app/features/admin/settings/view/admin_help_view.dart';
 import 'package:online_groceries_app/features/admin/settings/view/admin_home_section_view.dart';
 import 'package:online_groceries_app/features/admin/settings/view/manage_category.dart';
+import 'package:online_groceries_app/services/user_services.dart';
 import 'package:online_groceries_app/utils/app_colors.dart';
 
 class AdminSettingsView extends StatelessWidget {
@@ -70,6 +72,11 @@ class AdminSettingsView extends StatelessWidget {
                   title: "Home Sections",
                   subtitle: "Customize home screen sections",
                   onTap: () => Get.to(() => const ManageHomeSectionsView()),
+                ),
+                _settingItem(
+                  title: "Change Password",
+                  subtitle: "Update your password for security",
+                  onTap: () => Get.to(() => ChangePasswordView(email: UserService.getUserFromHive().email ??"", userId: UserService.getUserFromHive().uid)),
                 ),
               ],
             ),

@@ -176,7 +176,7 @@ class AdminProductController extends GetxController {
       final bytes = await image.readAsBytes();
 
       // ❌ Max 100 KB validation
-      if (bytes.lengthInBytes > 200 * 1024) {
+      if (bytes.lengthInBytes > 400 * 1024) {
         CommonToast.show("Thumbnail must be under 100 KB");
         return;
       }
@@ -191,7 +191,7 @@ class AdminProductController extends GetxController {
       final fileSize = await file.length();
 
       // ❌ Max 100 KB validation
-      if (fileSize > 200 * 1024) {
+      if (fileSize > 400 * 1024) {
         CommonToast.show("Thumbnail must be under 100 KB");
         return;
       }
@@ -253,7 +253,7 @@ class AdminProductController extends GetxController {
         final bytes = await img.readAsBytes();
 
         // ❌ Max 500 KB validation
-        if (bytes.lengthInBytes > 800 * 1024) {
+        if (bytes.lengthInBytes > 1000 * 1024) {
           CommonToast.show("Image must be under 500 KB");
           continue;
         }

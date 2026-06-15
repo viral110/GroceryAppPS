@@ -12,6 +12,19 @@ import 'package:online_groceries_app/services/user_services.dart';
 import '../../../admin/store_manage/models/store_model.dart';
 
 class HomeController extends GetxController {
+  // Pagination for exclusiveOffers
+  final int pageSize = 5;
+  final RxInt exclusivePage = 1.obs;
+
+  List<ProductModel> get paginatedExclusiveOffers =>
+      exclusiveOffers.take(exclusivePage.value * pageSize).toList();
+
+  void loadMoreExclusive() {
+    if (paginatedExclusiveOffers.length < exclusiveOffers.length) {
+      exclusivePage.value += 1;
+    }
+  }
+
   final currentIndex = 0.obs;
 
   var banners = <BannerModel>[].obs;
